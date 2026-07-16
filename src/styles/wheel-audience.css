@@ -1,0 +1,221 @@
+.wheel-audience {
+  position: relative;
+  min-height: 100%;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: linear-gradient(to bottom right, #064e3b, #065f46, #022c22);
+}
+
+.wheel-audience .font-gameshow {
+  font-family: var(--font-oswald), sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.wheel-audience .sparkle-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.wheel-audience .sparkle {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  opacity: 0;
+  animation: wheel-sparkle infinite;
+  box-shadow:
+    0 0 8px 3px rgba(255, 255, 255, 0.9),
+    0 0 15px 5px rgba(255, 255, 255, 0.5);
+}
+
+@keyframes wheel-sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(2) rotate(180deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(360deg);
+  }
+}
+
+.wheel-audience .texture-animated {
+  animation: wheel-texture-rotate 30s linear infinite;
+}
+
+@keyframes wheel-texture-rotate {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
+}
+
+.wheel-audience .light-beam {
+  position: absolute;
+  width: 300px;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 235, 150, 0.3) 20%,
+    rgba(255, 255, 200, 0.5) 50%,
+    rgba(255, 235, 150, 0.3) 80%,
+    transparent 100%
+  );
+  animation: wheel-light-beam infinite;
+  transform-origin: left center;
+  box-shadow:
+    0 0 20px rgba(255, 255, 200, 0.4),
+    0 0 40px rgba(255, 235, 150, 0.3);
+  border-radius: 2px;
+}
+
+@keyframes wheel-light-beam {
+  0% {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(3);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+}
+
+.wheel-audience .shiny-border {
+  position: relative;
+  border-radius: 24px;
+  padding: 8px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.2) 25%,
+    rgba(255, 235, 150, 0.25) 50%,
+    rgba(255, 255, 255, 0.2) 75%,
+    rgba(255, 255, 255, 0.3) 100%
+  );
+  box-shadow:
+    0 0 25px rgba(255, 255, 255, 0.7),
+    0 0 45px rgba(255, 255, 255, 0.5),
+    0 0 65px rgba(255, 215, 0, 0.4),
+    inset 0 0 25px rgba(255, 255, 255, 0.3);
+  animation: wheel-border-shine 3s ease-in-out infinite;
+}
+
+@keyframes wheel-border-shine {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.1);
+  }
+}
+
+.wheel-audience .letter-reveal {
+  animation: wheel-letter-flip 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-style: preserve-3d;
+}
+
+.wheel-audience .letter-reveal span {
+  animation: wheel-letter-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes wheel-letter-flip {
+  0% {
+    transform: perspective(1000px) rotateY(90deg) scale(0.8);
+    opacity: 0.3;
+  }
+  50% {
+    transform: perspective(1000px) rotateY(-5deg) scale(1.05);
+    opacity: 0.9;
+  }
+  100% {
+    transform: perspective(1000px) rotateY(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes wheel-letter-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.wheel-audience .board-gradient {
+  background: linear-gradient(
+    135deg,
+    rgba(6, 95, 70, 0.7) 0%,
+    rgba(6, 78, 59, 0.75) 20%,
+    rgba(2, 44, 34, 0.8) 40%,
+    rgba(5, 85, 65, 0.75) 60%,
+    rgba(6, 78, 59, 0.7) 80%,
+    rgba(6, 95, 70, 0.7) 100%
+  );
+  background-size: 400% 400%;
+  animation: wheel-gradient-shift 10s ease infinite;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 30px rgba(0, 0, 0, 0.4),
+    0 0 40px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.wheel-audience .board-gradient::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(6, 95, 70, 0.15) 30%,
+    transparent 70%
+  );
+  animation: wheel-gradient-orbit 15s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes wheel-gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes wheel-gradient-orbit {
+  0% {
+    transform: translate(0%, 0%) rotate(0deg);
+  }
+  100% {
+    transform: translate(0%, 0%) rotate(360deg);
+  }
+}
