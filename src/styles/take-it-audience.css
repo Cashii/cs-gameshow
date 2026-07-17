@@ -295,20 +295,6 @@
   pointer-events: none;
 }
 
-.tioli-audience .tioli-case.just-opened::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: -8%;
-  border: clamp(4px, 0.6vw, 9px) solid rgba(246, 226, 122, 0.9);
-  border-radius: 1rem;
-  box-shadow:
-    0 0 24px rgba(246, 226, 122, 0.9),
-    0 0 70px rgba(212, 175, 55, 0.65);
-  animation: tioli-reveal-burst 2.2s ease-out both;
-  pointer-events: none;
-}
-
 .tioli-audience .tioli-case-badge {
   position: absolute;
   top: -0.15rem;
@@ -332,6 +318,49 @@
   text-transform: uppercase;
   color: rgba(248, 244, 236, 0.7);
   text-align: center;
+}
+
+.tioli-audience .tioli-case-feature {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.72);
+  pointer-events: none;
+  animation: tioli-feature-backdrop 3.4s ease both;
+}
+
+.tioli-audience .tioli-case-featured {
+  width: min(58vw, 75vh, 900px);
+  animation: tioli-case-to-camera 3.4s cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+}
+
+.tioli-audience
+  .tioli-case-featured.just-opened
+  .tioli-suitcase-shell {
+  animation: tioli-feature-shell 3.4s ease both;
+}
+
+.tioli-audience .tioli-case-featured .tioli-suitcase-lid {
+  animation: tioli-feature-lid-open 3.4s cubic-bezier(0.65, 0, 0.35, 1)
+    both;
+}
+
+.tioli-audience .tioli-case-featured .tioli-case-number {
+  --tioli-case-number-size: clamp(9rem, 16vw, 14rem);
+  border-width: clamp(4px, 0.5vw, 8px);
+  font-size: clamp(7rem, 11vw, 11rem);
+}
+
+.tioli-audience .tioli-case-featured .tioli-case-value {
+  font-size: clamp(6rem, 11vw, 12rem);
+  line-height: 0.9;
+  animation: tioli-feature-value-in 3.4s cubic-bezier(0.2, 1.45, 0.4, 1)
+    both;
 }
 
 .tioli-audience .tioli-overlay {
@@ -433,22 +462,99 @@
   }
 }
 
-@keyframes tioli-reveal-burst {
+@keyframes tioli-feature-backdrop {
   0% {
     opacity: 0;
-    transform: scale(0.55);
   }
-  18% {
+  10%,
+  88% {
     opacity: 1;
-    transform: scale(1.05);
-  }
-  58% {
-    opacity: 0.75;
-    transform: scale(1.18);
   }
   100% {
     opacity: 0;
-    transform: scale(1.4);
+  }
+}
+
+@keyframes tioli-case-to-camera {
+  0% {
+    opacity: 0;
+    transform: translate(
+        var(--tioli-feature-x),
+        var(--tioli-feature-y)
+      )
+      rotate(-5deg) scale(0.24);
+  }
+  12% {
+    opacity: 1;
+  }
+  27% {
+    transform: translate(0, 0) rotate(1.5deg) scale(1.1);
+  }
+  36% {
+    transform: translate(0, 0) rotate(0) scale(1);
+  }
+  86% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, -2vh) scale(1.18);
+  }
+}
+
+@keyframes tioli-feature-shell {
+  0%,
+  20% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  29% {
+    filter: brightness(1.7);
+    transform: scale(1.07);
+  }
+  38% {
+    filter: brightness(1.15);
+    transform: scale(0.98);
+  }
+  48%,
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+}
+
+@keyframes tioli-feature-lid-open {
+  0%,
+  35% {
+    opacity: 1;
+    transform: rotateX(0) translateY(0);
+  }
+  62% {
+    opacity: 1;
+    transform: rotateX(108deg) translateY(-7%);
+  }
+  72%,
+  100% {
+    opacity: 0;
+    transform: rotateX(108deg) translateY(-7%);
+  }
+}
+
+@keyframes tioli-feature-value-in {
+  0%,
+  48% {
+    opacity: 0;
+    transform: translateY(40%) scale(0.5);
+  }
+  66% {
+    opacity: 1;
+    transform: translateY(0) scale(1.14);
+  }
+  76%,
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -506,8 +612,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .tioli-audience .tioli-case.just-opened .tioli-suitcase-shell,
-  .tioli-audience .tioli-case.just-opened::before,
   .tioli-audience .tioli-case.just-opened::after,
+  .tioli-audience .tioli-case-feature,
+  .tioli-audience .tioli-case-featured,
+  .tioli-audience .tioli-case-featured .tioli-suitcase-shell,
+  .tioli-audience .tioli-case-featured .tioli-suitcase-lid,
+  .tioli-audience .tioli-case-featured .tioli-case-value,
   .tioli-audience .tioli-overlay,
   .tioli-audience .tioli-offer-card,
   .tioli-audience .tioli-result-card {

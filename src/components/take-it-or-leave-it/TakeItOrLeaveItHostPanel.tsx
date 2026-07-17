@@ -30,16 +30,26 @@ export function TakeItOrLeaveItHostPanel() {
     });
   };
 
-  const shuffleAndStart = () => {
-    updateTakeIt((prev) => ({
-      ...prev,
-      phase: "pick",
-      cases: shuffleValuesIntoCases(prev.values),
-      playerCaseId: null,
-      offerAmount: null,
-      lastOpenedCaseId: null,
-      tookIt: null,
-    }));
+  const startGame = (shuffle: boolean) => {
+    updateTakeIt((prev) => {
+      const cases = shuffle
+        ? shuffleValuesIntoCases(prev.values)
+        : prev.values.map((value, index) => ({
+            id: index + 1,
+            value,
+            opened: false,
+          }));
+
+      return {
+        ...prev,
+        phase: "pick",
+        cases,
+        playerCaseId: null,
+        offerAmount: null,
+        lastOpenedCaseId: null,
+        tookIt: null,
+      };
+    });
     setOfferInput("");
   };
 
@@ -187,13 +197,14 @@ export function TakeItOrLeaveItHostPanel() {
         <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
           <h2 className="mb-2 text-xl font-bold text-white">Prize Amounts</h2>
           <p className="mb-4 text-sm text-neutral-400">
-            Edit the nine prize amounts, then shuffle them into cases.
+            Edit the nine prize amounts. Without shuffling, each amount stays
+            assigned to its matching case number.
           </p>
-          <div className="mb-6 grid grid-cols-3 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9">
+          <div className="mb-6 grid grid-cols-3 gap-3">
             {game.values.map((value, index) => (
               <label key={index} className="block">
                 <span className="mb-1 block text-xs text-neutral-500">
-                  Slot {index + 1}
+                  Case {index + 1}
                 </span>
                 <input
                   type="text"
@@ -205,13 +216,22 @@ export function TakeItOrLeaveItHostPanel() {
               </label>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={shuffleAndStart}
-            className="rounded-md bg-amber-500 px-6 py-3 font-semibold text-neutral-950 hover:bg-amber-400"
-          >
-            Shuffle &amp; Start
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => startGame(true)}
+              className="rounded-md bg-amber-500 px-6 py-3 font-semibold text-neutral-950 hover:bg-amber-400"
+            >
+              Shuffle &amp; Start
+            </button>
+            <button
+              type="button"
+              onClick={() => startGame(false)}
+              className="rounded-md border border-neutral-600 bg-neutral-700 px-6 py-3 font-semibold text-white hover:bg-neutral-600"
+            >
+              Start Without Shuffle
+            </button>
+          </div>
         </div>
       )}
 

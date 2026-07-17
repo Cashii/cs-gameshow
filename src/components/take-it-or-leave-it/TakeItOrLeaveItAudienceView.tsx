@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import {
   createDefaultTakeItState,
   type TakeItGameState,
@@ -48,7 +54,7 @@ export function TakeItOrLeaveItAudienceView({
       const frame = requestAnimationFrame(() => {
         setFlashCaseId(game.lastOpenedCaseId);
       });
-      const timer = window.setTimeout(() => setFlashCaseId(null), 2400);
+      const timer = window.setTimeout(() => setFlashCaseId(null), 3400);
       return () => {
         cancelAnimationFrame(frame);
         clearTimeout(timer);
@@ -73,6 +79,7 @@ export function TakeItOrLeaveItAudienceView({
   }, [game.cases]);
 
   const playerCase = getPlayerCase(game);
+  const featuredCase = game.cases.find((c) => c.id === flashCaseId);
 
   const statusText = (() => {
     if (game.phase === "setup") return "Preparing the cases…";
@@ -109,7 +116,6 @@ export function TakeItOrLeaveItAudienceView({
                   "tioli-case",
                   isPlayer ? "player" : "",
                   c.opened ? "opened" : "",
-                  flashCaseId === c.id ? "just-opened" : "",
                 ]
                   .filter(Boolean)
                   .join(" ")}
@@ -139,6 +145,39 @@ export function TakeItOrLeaveItAudienceView({
       </div>
 
       <MoneyColumn amounts={rightAmounts} eliminated={eliminated} />
+
+      {featuredCase && (
+        <div className="tioli-case-feature" aria-hidden>
+          <div
+            className="tioli-case tioli-case-featured opened just-opened"
+            style={
+              {
+                "--tioli-feature-x": `${
+                  (((featuredCase.id - 1) % 3) - 1) * 28
+                }vw`,
+                "--tioli-feature-y": `${
+                  (Math.floor((featuredCase.id - 1) / 3) - 1) * 24
+                }vh`,
+              } as CSSProperties
+            }
+          >
+            <div className="tioli-suitcase-handle" />
+            <div className="tioli-suitcase-shell">
+              <div className="tioli-suitcase-interior">
+                <span className="tioli-case-value">
+                  {formatTakeItMoney(featuredCase.value)}
+                </span>
+              </div>
+              <div className="tioli-suitcase-lid">
+                <span className="tioli-suitcase-trim" />
+                <span className="tioli-case-number">{featuredCase.id}</span>
+                <span className="tioli-suitcase-latch left" />
+                <span className="tioli-suitcase-latch right" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {game.phase === "offer" && game.offerAmount != null && (
         <div className="tioli-overlay">
