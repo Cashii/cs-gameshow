@@ -9,7 +9,7 @@ import {
   getPlayerCase,
   getSuggestedOffer,
   shuffleValuesIntoCases,
-  shouldAutoReveal,
+  shouldBeginFinalReveal,
 } from "@/lib/take-it-or-leave-it/logic";
 
 export function TakeItOrLeaveItHostPanel() {
@@ -72,13 +72,10 @@ export function TakeItOrLeaveItHostPanel() {
         tookIt: null,
       };
 
-      if (shouldAutoReveal(next)) {
+      if (shouldBeginFinalReveal(next)) {
         return {
           ...next,
-          phase: "revealed" as const,
-          cases: cases.map((c) =>
-            c.id === next.playerCaseId ? { ...c, opened: true } : c,
-          ),
+          phase: "final" as const,
         };
       }
       return next;
@@ -104,11 +101,8 @@ export function TakeItOrLeaveItHostPanel() {
       if (prev.phase !== "offer" || prev.offerAmount == null) return prev;
       return {
         ...prev,
-        phase: "revealed",
+        phase: "final",
         tookIt: true,
-        cases: prev.cases.map((c) =>
-          c.id === prev.playerCaseId ? { ...c, opened: true } : c,
-        ),
       };
     });
   };
@@ -126,10 +120,11 @@ export function TakeItOrLeaveItHostPanel() {
 
   const revealPlayerCase = () => {
     updateTakeIt((prev) => {
-      if (prev.phase !== "playing" || prev.playerCaseId == null) return prev;
+      if (prev.phase !== "final" || prev.playerCaseId == null) return prev;
       return {
         ...prev,
         phase: "revealed",
+        lastOpenedCaseId: prev.playerCaseId,
         cases: prev.cases.map((c) =>
           c.id === prev.playerCaseId ? { ...c, opened: true } : c,
         ),
@@ -228,7 +223,7 @@ export function TakeItOrLeaveItHostPanel() {
           <p className="mb-4 text-sm text-neutral-400">
             Contestant chooses one case to keep.
           </p>
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 md:grid-cols-9">
+          <div className="grid grid-cols-3 gap-3">
             {game.cases.map((c) => (
               <button
                 key={c.id}
@@ -245,16 +240,17 @@ export function TakeItOrLeaveItHostPanel() {
 
       {(game.phase === "playing" ||
         game.phase === "offer" ||
+        game.phase === "final" ||
         game.phase === "revealed") && (
         <>
           <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
-            <h2 className="mb-2 text-xl font-bold text-white">Open Cases</h2>
+            <h2 className="mb-2 text-3xl font-bold text-white">Open Cases</h2>
             <p className="mb-4 text-sm text-neutral-400">
               Click a case to open it on the audience board.
               {game.playerCaseId != null &&
                 ` Player case #${game.playerCaseId} is locked.`}
             </p>
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 md:grid-cols-9">
+            <div className="grid grid-cols-3 gap-3">
               {game.cases.map((c) => {
                 const isPlayer = c.id === game.playerCaseId;
                 const disabled =
@@ -275,7 +271,7 @@ export function TakeItOrLeaveItHostPanel() {
                   >
                     {c.id}
                     {c.opened && (
-                      <span className="mt-1 block text-xs font-medium">
+                      <span className="mt-1 block text-lg font-semibold">
                         {formatTakeItMoney(c.value)}
                       </span>
                     )}
@@ -288,13 +284,13 @@ export function TakeItOrLeaveItHostPanel() {
                 );
               })}
             </div>
-            {game.phase === "playing" && unopenedOthers === 0 && (
+            {game.phase === "final" && (
               <button
                 type="button"
                 onClick={revealPlayerCase}
-                className="mt-4 rounded-md bg-sky-600 px-5 py-2.5 font-semibold text-white hover:bg-sky-500"
+                className="mt-4 rounded-md bg-amber-500 px-5 py-2.5 font-semibold text-neutral-950 hover:bg-amber-400"
               >
-                Reveal Player Case
+                Reveal Final Case
               </button>
             )}
           </div>
@@ -324,29 +320,24 @@ export function TakeItOrLeaveItHostPanel() {
                     className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-4 py-3 text-xl font-semibold text-white placeholder-neutral-500 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                 </label>
-                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-                  <p className="text-xs tracking-wide text-amber-200/80 uppercase">
-                    Suggested tip
-                  </p>
-                  <p className="text-lg font-bold text-amber-300">
-                    {formatTakeItMoney(suggested)}
-                  </p>
-                  <p className="text-xs text-neutral-400">
-                    Avg of remaining cases
-                  </p>
-                </div>
                 <button
                   type="button"
                   onClick={() => setOfferInput(String(suggested))}
-                  className="rounded-md border border-neutral-600 bg-neutral-700 px-4 py-3 font-semibold text-neutral-200 hover:bg-neutral-600"
+                  aria-label={`Use suggested offer ${formatTakeItMoney(suggested)}`}
+                  className="inline-flex h-[54px] items-center gap-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-4 text-left transition-colors hover:border-amber-400/60 hover:bg-amber-500/20"
                 >
-                  Use tip
+                  <span className="text-xs tracking-wide text-amber-200/80 uppercase">
+                    Suggested tip
+                  </span>
+                  <span className="text-lg font-bold text-amber-300">
+                    {formatTakeItMoney(suggested)}
+                  </span>
                 </button>
                 <button
                   type="button"
                   onClick={showOffer}
                   disabled={!offerInput.trim()}
-                  className={`rounded-md px-5 py-3 font-semibold ${
+                  className={`h-[54px] rounded-md px-5 font-semibold ${
                     offerInput.trim()
                       ? "bg-amber-500 text-neutral-950 hover:bg-amber-400"
                       : "cursor-not-allowed bg-neutral-700 text-neutral-500"

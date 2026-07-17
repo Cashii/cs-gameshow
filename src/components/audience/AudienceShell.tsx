@@ -8,6 +8,20 @@ import { WheelAudienceView } from "@/components/wheel/WheelAudienceView";
 import { NumberDrawReveal } from "@/components/draw/NumberDrawReveal";
 import { TakeItOrLeaveItAudienceView } from "@/components/take-it-or-leave-it/TakeItOrLeaveItAudienceView";
 
+const standbyScreen = (
+  <div className="flex h-screen w-screen flex-col items-center justify-center bg-neutral-950 text-center">
+    <h1
+      className="text-5xl font-bold tracking-wide text-white sm:text-7xl"
+      style={{ fontFamily: "var(--font-oswald), Impact, sans-serif" }}
+    >
+      CS Gameshow
+    </h1>
+    <p className="mt-4 text-lg tracking-[0.2em] text-neutral-400 uppercase">
+      Stand by
+    </p>
+  </div>
+);
+
 function AudienceContent() {
   const { state, currentFeudRound } = useSuite();
   const [displayedGame, setDisplayedGame] = useState<ActiveGame>(
@@ -48,7 +62,9 @@ function AudienceContent() {
 
   let content: ReactNode;
 
-  if (displayedGame === "feud") {
+  if (state.audienceCovered || displayedGame === "idle") {
+    content = standbyScreen;
+  } else if (displayedGame === "feud") {
     if (!currentFeudRound) {
       content = (
         <div className="flex h-screen items-center justify-center bg-neutral-950 text-white">
@@ -85,19 +101,7 @@ function AudienceContent() {
       </div>
     );
   } else {
-    content = (
-      <div className="flex h-screen w-screen flex-col items-center justify-center bg-neutral-950 text-center">
-        <h1
-          className="text-5xl font-bold tracking-wide text-white sm:text-7xl"
-          style={{ fontFamily: "var(--font-oswald), Impact, sans-serif" }}
-        >
-          CS Gameshow
-        </h1>
-        <p className="mt-4 text-lg tracking-[0.2em] text-neutral-400 uppercase">
-          Stand by
-        </p>
-      </div>
-    );
+    content = standbyScreen;
   }
 
   return (

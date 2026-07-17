@@ -52,7 +52,7 @@ export function countUnopenedNonPlayer(game: TakeItGameState): number {
   ).length;
 }
 
-export function shouldAutoReveal(game: TakeItGameState): boolean {
+export function shouldBeginFinalReveal(game: TakeItGameState): boolean {
   return (
     game.phase === "playing" &&
     game.playerCaseId != null &&

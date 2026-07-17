@@ -11,6 +11,7 @@ export type ActiveGame = "feud" | "wheel" | "draw" | "takeIt" | "idle";
 
 export type SuiteState = {
   activeGame: ActiveGame;
+  audienceCovered: boolean;
   feud: FeudGameState;
   wheel: WheelGameState;
   draw: DrawGameState;
@@ -29,6 +30,7 @@ export const SUITE_FALLBACK_KEY = "cs_gameshow_last_state";
 export function createDefaultSuiteState(): SuiteState {
   return {
     activeGame: "idle",
+    audienceCovered: true,
     feud: createSampleFeudGame(),
     wheel: createDefaultWheelState(),
     draw: createDefaultDrawState(),
@@ -74,6 +76,7 @@ export function normalizeSuiteState(
     ...defaults,
     ...raw,
     activeGame,
+    audienceCovered: raw.audienceCovered ?? defaults.audienceCovered,
     feud: {
       ...createSampleFeudGame(),
       ...raw.feud,

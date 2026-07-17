@@ -48,6 +48,7 @@ type SuiteContextValue = {
   state: SuiteState;
   setState: React.Dispatch<React.SetStateAction<SuiteState>>;
   setActiveGame: (game: ActiveGame) => void;
+  setAudienceCovered: (covered: boolean) => void;
   updateFeud: (updater: (feud: FeudGameState) => FeudGameState) => void;
   updateWheel: (updater: (wheel: WheelGameState) => WheelGameState) => void;
   updateDraw: (updater: (draw: DrawGameState) => DrawGameState) => void;
@@ -77,6 +78,10 @@ export function SuiteProvider({
 
   const setActiveGame = useCallback((game: ActiveGame) => {
     setState((prev) => ({ ...prev, activeGame: game }));
+  }, []);
+
+  const setAudienceCovered = useCallback((covered: boolean) => {
+    setState((prev) => ({ ...prev, audienceCovered: covered }));
   }, []);
 
   const updateFeud = useCallback(
@@ -120,6 +125,7 @@ export function SuiteProvider({
       state,
       setState,
       setActiveGame,
+      setAudienceCovered,
       updateFeud,
       updateWheel,
       updateDraw,
@@ -129,6 +135,7 @@ export function SuiteProvider({
     [
       state,
       setActiveGame,
+      setAudienceCovered,
       updateFeud,
       updateWheel,
       updateDraw,

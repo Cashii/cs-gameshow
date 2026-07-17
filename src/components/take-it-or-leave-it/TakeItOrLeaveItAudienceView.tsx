@@ -48,7 +48,7 @@ export function TakeItOrLeaveItAudienceView({
       const frame = requestAnimationFrame(() => {
         setFlashCaseId(game.lastOpenedCaseId);
       });
-      const timer = window.setTimeout(() => setFlashCaseId(null), 900);
+      const timer = window.setTimeout(() => setFlashCaseId(null), 2400);
       return () => {
         cancelAnimationFrame(frame);
         clearTimeout(timer);
@@ -79,6 +79,9 @@ export function TakeItOrLeaveItAudienceView({
     if (game.phase === "pick") return "Choose your case";
     if (game.phase === "playing") return "Open a case";
     if (game.phase === "offer") return "Banker is calling…";
+    if (game.phase === "final") {
+      return game.tookIt ? "Take It!" : "Final case";
+    }
     if (game.tookIt) return "Take It!";
     return "Final reveal";
   })();

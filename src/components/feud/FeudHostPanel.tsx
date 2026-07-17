@@ -533,7 +533,24 @@ export function FeudHostPanel() {
             padding: 20,
           }}
         >
-          <div className="host-embed" style={{ width: "100%", height: "100%" }}>
+          <div className="mb-3 shrink-0">
+            <div>
+              <p className="text-sm font-semibold text-white">Audience view</p>
+              <p
+                className={`text-xs font-medium ${
+                  state.audienceCovered ? "text-amber-400" : "text-emerald-400"
+                }`}
+              >
+                {state.audienceCovered
+                  ? "Covered — safe to prepare"
+                  : "Live — changes are visible"}
+              </p>
+            </div>
+          </div>
+          <div
+            className="host-embed"
+            style={{ width: "100%", flex: "1 1 auto", minHeight: 0 }}
+          >
             <FeudAudienceView
               round={round}
               showHeader={feud.showHeader}

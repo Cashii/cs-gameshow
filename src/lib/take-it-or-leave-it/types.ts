@@ -3,6 +3,7 @@ export type TakeItPhase =
   | "pick"
   | "playing"
   | "offer"
+  | "final"
   | "revealed";
 
 export type TakeItCase = {

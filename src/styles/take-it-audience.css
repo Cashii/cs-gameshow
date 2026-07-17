@@ -5,9 +5,9 @@
   min-height: 100%;
   overflow: hidden;
   display: grid;
-  grid-template-columns: minmax(140px, 18vw) 1fr minmax(140px, 18vw);
-  gap: clamp(0.75rem, 2vw, 1.5rem);
-  padding: clamp(1rem, 2.5vw, 2rem);
+  grid-template-columns: minmax(160px, 18vw) 1fr minmax(160px, 18vw);
+  gap: clamp(0.35rem, 0.75vw, 0.75rem);
+  padding: clamp(0.25rem, 0.75vw, 0.75rem);
   background:
     radial-gradient(ellipse at 50% 20%, #2a2118 0%, #0d0b09 55%, #050403 100%);
   color: #f8f4ec;
@@ -37,12 +37,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.45rem 0.5rem;
+  padding: clamp(0.65rem, 0.9vw, 1rem) 0.65rem;
   border-radius: 0.45rem;
   border: 2px solid #b8860b;
   background: linear-gradient(180deg, #1f1710, #12100d);
   color: #f6e27a;
-  font-size: clamp(0.85rem, 1.8vw, 1.35rem);
+  font-size: clamp(1.1rem, 2.2vw, 2.2rem);
   font-weight: 700;
   letter-spacing: 0.02em;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -73,7 +73,7 @@
 
 .tioli-audience .tioli-title {
   margin-bottom: clamp(0.75rem, 2vh, 1.5rem);
-  font-size: clamp(1.25rem, 3vw, 2.25rem);
+  font-size: clamp(1.75rem, 4vw, 3.5rem);
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -84,8 +84,8 @@
 .tioli-audience .tioli-case-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(0.6rem, 1.5vw, 1.25rem);
-  width: min(100%, 720px);
+  gap: clamp(0.4rem, 1vw, 1rem);
+  width: min(100%, 820px, 96vh);
 }
 
 .tioli-audience .tioli-case {
@@ -119,9 +119,9 @@
 .tioli-audience .tioli-suitcase-shell {
   position: relative;
   z-index: 1;
-  width: 94%;
-  height: 72%;
-  margin-top: 15%;
+  width: 100%;
+  height: 78%;
+  margin-top: 12%;
   border-radius: clamp(0.45rem, 1vw, 0.8rem);
   transform-style: preserve-3d;
   box-shadow:
@@ -169,8 +169,8 @@
   transform-origin: top center;
   backface-visibility: hidden;
   transition:
-    transform 0.85s cubic-bezier(0.65, 0, 0.35, 1),
-    opacity 0.3s ease 0.55s;
+    transform 1.25s cubic-bezier(0.65, 0, 0.35, 1),
+    opacity 0.45s ease 0.8s;
 }
 
 .tioli-audience .tioli-suitcase-trim {
@@ -203,17 +203,20 @@
 }
 
 .tioli-audience .tioli-case-number {
+  --tioli-case-number-size: clamp(3.4rem, 8vw, 6.5rem);
   position: relative;
   z-index: 2;
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  width: clamp(2.7rem, 7vw, 5rem);
-  aspect-ratio: 1;
-  border-radius: 50%;
+  width: var(--tioli-case-number-size);
+  height: var(--tioli-case-number-size);
+  box-sizing: border-box;
+  border-radius: 9999px;
   border: 3px solid #d4af37;
   background: linear-gradient(180deg, #211a10, #090806);
-  font-size: clamp(1.8rem, 5vw, 3.7rem);
+  font-size: clamp(2.3rem, 6vw, 4.8rem);
   font-weight: 700;
   color: #fff8d6;
   text-shadow: 0 3px 0 rgba(0, 0, 0, 0.55);
@@ -228,24 +231,26 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 82%;
-  min-height: 58%;
-  padding: 0.4rem;
+  min-width: 92%;
+  min-height: 68%;
+  padding: 0.2rem;
   border: 3px solid #d4af37;
   border-radius: 0.45rem;
   background: linear-gradient(180deg, #fff4b8, #d4af37);
-  font-size: clamp(1rem, 2.8vw, 1.85rem);
+  font-size: clamp(2rem, 4.5vw, 4rem);
   font-weight: 700;
+  letter-spacing: -0.035em;
   color: #1d160b;
   text-align: center;
+  white-space: nowrap;
   box-shadow:
     0 0 22px rgba(246, 226, 122, 0.7),
     inset 0 2px 0 rgba(255, 255, 255, 0.65);
   opacity: 0;
   transform: translateY(40%) scale(0.55);
   transition:
-    opacity 0.38s ease 0.4s,
-    transform 0.65s cubic-bezier(0.2, 1.45, 0.4, 1) 0.35s;
+    opacity 0.55s ease 0.85s,
+    transform 0.9s cubic-bezier(0.2, 1.45, 0.4, 1) 0.75s;
 }
 
 .tioli-audience .tioli-case.opened .tioli-suitcase-lid {
@@ -272,7 +277,7 @@
 }
 
 .tioli-audience .tioli-case.just-opened .tioli-suitcase-shell {
-  animation: tioli-suitcase-impact 1.15s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: tioli-suitcase-impact 2.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .tioli-audience .tioli-case.just-opened::after {
@@ -286,7 +291,21 @@
     rgba(246, 226, 122, 0.8) 0deg 3deg,
     transparent 3deg 16deg
   );
-  animation: tioli-reveal-rays 1.2s ease-out both;
+  animation: tioli-reveal-rays 2.3s ease-out both;
+  pointer-events: none;
+}
+
+.tioli-audience .tioli-case.just-opened::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -8%;
+  border: clamp(4px, 0.6vw, 9px) solid rgba(246, 226, 122, 0.9);
+  border-radius: 1rem;
+  box-shadow:
+    0 0 24px rgba(246, 226, 122, 0.9),
+    0 0 70px rgba(212, 175, 55, 0.65);
+  animation: tioli-reveal-burst 2.2s ease-out both;
   pointer-events: none;
 }
 
@@ -308,7 +327,7 @@
 
 .tioli-audience .tioli-status {
   margin-top: clamp(0.75rem, 2vh, 1.25rem);
-  font-size: clamp(0.95rem, 2vw, 1.35rem);
+  font-size: clamp(1.75rem, 4vw, 3.5rem);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(248, 244, 236, 0.7);
@@ -375,16 +394,24 @@
 @keyframes tioli-suitcase-impact {
   0% {
     transform: translateY(0) scale(1);
+    filter: brightness(1);
   }
-  18% {
-    transform: translateY(-7%) scale(1.08);
-    filter: brightness(1.35);
+  12% {
+    transform: translateY(-12%) scale(1.14) rotate(-2deg);
+    filter: brightness(1.65);
   }
-  42% {
-    transform: translateY(3%) scale(0.97);
+  25% {
+    transform: translateY(5%) scale(0.94) rotate(1deg);
   }
-  68% {
-    transform: translateY(-1.5%) scale(1.025);
+  40% {
+    transform: translateY(-4%) scale(1.07) rotate(-0.5deg);
+  }
+  58% {
+    transform: translateY(1.5%) scale(0.985);
+    filter: brightness(1.25);
+  }
+  78% {
+    transform: translateY(-1%) scale(1.02);
   }
   100% {
     transform: translateY(0) scale(1);
@@ -402,7 +429,26 @@
   }
   100% {
     opacity: 0;
-    transform: scale(1.45) rotate(10deg);
+    transform: scale(1.8) rotate(14deg);
+  }
+}
+
+@keyframes tioli-reveal-burst {
+  0% {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  18% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  58% {
+    opacity: 0.75;
+    transform: scale(1.18);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.4);
   }
 }
 
@@ -426,6 +472,21 @@
   }
 }
 
+@media (min-width: 1600px) and (min-height: 1000px) {
+  .tioli-audience .tioli-case-grid {
+    width: min(100%, 58vw, 86vh, 1500px);
+  }
+
+  .tioli-audience .tioli-case-number {
+    --tioli-case-number-size: clamp(6.5rem, 6vw, 8.5rem);
+    font-size: clamp(4.8rem, 4.5vw, 6.5rem);
+  }
+
+  .tioli-audience .tioli-case-value {
+    font-size: clamp(4rem, 3.5vw, 5.5rem);
+  }
+}
+
 @media (max-width: 900px) {
   .tioli-audience {
     grid-template-columns: 1fr;
@@ -445,6 +506,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .tioli-audience .tioli-case.just-opened .tioli-suitcase-shell,
+  .tioli-audience .tioli-case.just-opened::before,
   .tioli-audience .tioli-case.just-opened::after,
   .tioli-audience .tioli-overlay,
   .tioli-audience .tioli-offer-card,

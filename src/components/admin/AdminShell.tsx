@@ -4,6 +4,8 @@ import {
   Briefcase,
   ChevronRight,
   CircleDollarSign,
+  Eye,
+  EyeOff,
   Home,
   PanelLeftClose,
   PanelLeftOpen,
@@ -42,8 +44,9 @@ const GAME_DESCRIPTIONS: Record<Exclude<ActiveGame, "idle">, string> = {
 };
 
 function AdminContent() {
-  const { state, setActiveGame } = useSuite();
+  const { state, setActiveGame, setAudienceCovered } = useSuite();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const audienceCoverLabel = state.audienceCovered ? "Go Live" : "Show Cover";
 
   const openAudience = () => {
     window.open(
@@ -117,7 +120,28 @@ function AdminContent() {
           })}
         </nav>
 
-        <div className="border-t border-neutral-800 p-3">
+        <div className="space-y-2 border-t border-neutral-800 p-3">
+          <button
+            type="button"
+            onClick={() => setAudienceCovered(!state.audienceCovered)}
+            title={sidebarCollapsed ? audienceCoverLabel : undefined}
+            aria-label={audienceCoverLabel}
+            aria-pressed={state.audienceCovered}
+            className={`inline-flex w-full items-center justify-center rounded-lg py-3 text-sm font-semibold text-white transition-colors ${
+              sidebarCollapsed ? "px-2" : "gap-2 px-4"
+            } ${
+              state.audienceCovered
+                ? "bg-emerald-600 hover:bg-emerald-500"
+                : "bg-amber-600 hover:bg-amber-500"
+            }`}
+          >
+            {state.audienceCovered ? (
+              <Eye size={17} className="shrink-0" aria-hidden />
+            ) : (
+              <EyeOff size={17} className="shrink-0" aria-hidden />
+            )}
+            {!sidebarCollapsed && audienceCoverLabel}
+          </button>
           <button
             type="button"
             onClick={openAudience}
