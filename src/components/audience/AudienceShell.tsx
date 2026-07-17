@@ -9,7 +9,7 @@ import { NumberDrawReveal } from "@/components/draw/NumberDrawReveal";
 import { TakeItOrLeaveItAudienceView } from "@/components/take-it-or-leave-it/TakeItOrLeaveItAudienceView";
 
 const standbyScreen = (
-  <div className="flex h-screen w-screen flex-col items-center justify-center bg-neutral-950 text-center">
+  <div className="flex h-full w-full flex-col items-center justify-center bg-neutral-950 text-center">
     <h1
       className="text-5xl font-bold tracking-wide text-white sm:text-7xl"
       style={{ fontFamily: "var(--font-oswald), Impact, sans-serif" }}
@@ -27,20 +27,31 @@ function AudienceContent() {
   const [displayedGame, setDisplayedGame] = useState<ActiveGame>(
     state.activeGame,
   );
+  const [displayedCovered, setDisplayedCovered] = useState(
+    state.audienceCovered,
+  );
   const [transitionPhase, setTransitionPhase] = useState<
     "visible" | "exit" | "enter"
   >("visible");
   const displayedGameRef = useRef(displayedGame);
+  const displayedCoveredRef = useRef(displayedCovered);
 
   useEffect(() => {
-    if (state.activeGame === displayedGameRef.current) return;
+    if (
+      state.activeGame === displayedGameRef.current &&
+      state.audienceCovered === displayedCoveredRef.current
+    ) {
+      return;
+    }
 
     const exitFrame = requestAnimationFrame(() => {
       setTransitionPhase("exit");
     });
     const swapTimer = window.setTimeout(() => {
       displayedGameRef.current = state.activeGame;
+      displayedCoveredRef.current = state.audienceCovered;
       setDisplayedGame(state.activeGame);
+      setDisplayedCovered(state.audienceCovered);
       setTransitionPhase("enter");
     }, 350);
     const settleTimer = window.setTimeout(() => {
@@ -52,7 +63,7 @@ function AudienceContent() {
       clearTimeout(swapTimer);
       clearTimeout(settleTimer);
     };
-  }, [state.activeGame]);
+  }, [state.activeGame, state.audienceCovered]);
 
   const toggleFullscreen = () => {
     const el = document.documentElement;
@@ -62,18 +73,18 @@ function AudienceContent() {
 
   let content: ReactNode;
 
-  if (state.audienceCovered || displayedGame === "idle") {
+  if (displayedCovered || displayedGame === "idle") {
     content = standbyScreen;
   } else if (displayedGame === "feud") {
     if (!currentFeudRound) {
       content = (
-        <div className="flex h-screen items-center justify-center bg-neutral-950 text-white">
+        <div className="flex h-full w-full items-center justify-center bg-neutral-950 text-white">
           No round data.
         </div>
       );
     } else {
       content = (
-        <div className="h-screen w-screen overflow-hidden">
+        <div className="h-full w-full overflow-hidden">
           <FeudAudienceView
             round={currentFeudRound}
             showHeader={state.feud.showHeader}
@@ -84,19 +95,19 @@ function AudienceContent() {
     }
   } else if (displayedGame === "wheel") {
     content = (
-      <div className="h-screen w-screen overflow-hidden">
+      <div className="h-full w-full overflow-hidden">
         <WheelAudienceView wheel={state.wheel} />
       </div>
     );
   } else if (displayedGame === "draw") {
     content = (
-      <div className="h-screen w-screen overflow-hidden">
+      <div className="h-full w-full overflow-hidden">
         <NumberDrawReveal draw={state.draw} />
       </div>
     );
   } else if (displayedGame === "takeIt") {
     content = (
-      <div className="h-screen w-screen overflow-hidden">
+      <div className="h-full w-full overflow-hidden">
         <TakeItOrLeaveItAudienceView game={state.takeIt} />
       </div>
     );
