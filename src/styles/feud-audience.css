@@ -248,40 +248,73 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: feud-pop 1.5s ease-out forwards;
+  animation: feud-pop 2.5s ease-out forwards;
   pointer-events: none;
   z-index: 9999;
   background: rgba(0, 0, 0, 0.4);
 }
 
 .feud-audience .bigx-inner {
-  font-size: min(40vw, 400px);
-  line-height: 1;
+  font-family: "Arial Black", "Helvetica Neue", Arial, sans-serif;
+  font-size: min(calc(88vw / var(--strike-count)), 82vh, 850px);
+  font-style: normal;
+  line-height: 0.8;
   font-weight: 900;
   color: #ff1a1a;
+  animation: feud-strike-boomerang 3.5s cubic-bezier(0.22, 0.8, 0.25, 1)
+    forwards;
+  transform-origin: center;
   text-shadow:
     0 10px 0 rgba(0, 0, 0, 0.5),
     0 0 60px rgba(255, 0, 0, 0.9);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.015em;
   -webkit-text-stroke: 3px rgba(139, 0, 0, 0.8);
 }
 
 @keyframes feud-pop {
   0% {
     opacity: 0;
-    transform: scale(0.7);
   }
-  15% {
+  6% {
     opacity: 1;
-    transform: scale(1);
   }
-  85% {
+  94% {
     opacity: 1;
-    transform: scale(1);
   }
   100% {
     opacity: 0;
-    transform: scale(1.05);
+  }
+}
+
+@keyframes feud-strike-boomerang {
+  0% {
+    opacity: 0;
+    transform: translate(-20vw, 12vh) rotate(-30deg) scale(0.25);
+  }
+  5% {
+    opacity: 1;
+    transform: translate(5vw, -4vh) rotate(14deg) scale(1.45);
+  }
+  10% {
+    transform: translate(-2vw, 1vh) rotate(-7deg) scale(0.72);
+  }
+  15% {
+    transform: translate(0.8vw, -0.5vh) rotate(3deg) scale(1.2);
+  }
+  20% {
+    transform: translate(0, 0) rotate(-1deg) scale(0.88);
+  }
+  26% {
+    transform: translate(0, 0) rotate(0deg) scale(1.08);
+  }
+  31%,
+  92% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-15vw, -10vh) rotate(-22deg) scale(0.35);
   }
 }
 
@@ -384,5 +417,9 @@
 @media (prefers-reduced-motion: reduce) {
   .feud-audience .tile-inner {
     transition-duration: 1ms;
+  }
+
+  .feud-audience .bigx-inner {
+    animation: none;
   }
 }

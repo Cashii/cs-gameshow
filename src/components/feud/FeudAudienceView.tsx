@@ -42,7 +42,7 @@ export function FeudAudienceView({
     });
     const t = setTimeout(() => {
       setStrikePulse(null);
-    }, 1500);
+    }, 3500);
 
     return () => {
       cancelAnimationFrame(frame);
@@ -110,7 +110,14 @@ export function FeudAudienceView({
 
       {strikePulse != null && strikePulse > 0 && (
         <div key={strikePulse} className="bigx">
-          <div className="bigx-inner">
+          <div
+            className="bigx-inner"
+            style={
+              {
+                "--strike-count": Math.max(1, strikePulse),
+              } as React.CSSProperties
+            }
+          >
             {"X".repeat(Math.max(1, strikePulse))}
           </div>
         </div>
