@@ -10,7 +10,9 @@ export function AnswerTile({
   return (
     <div className={`tile ${revealed ? "revealed" : "concealed"}`}>
       <div className="tile-inner">
-        <div className="tile-front">{index + 1}</div>
+        <div className="tile-front">
+          <span className="tile-number">{index + 1}</span>
+        </div>
         <div className="tile-back">
           <span className="tile-text">{answer.text}</span>
           <span className="tile-points">{answer.points}</span>
