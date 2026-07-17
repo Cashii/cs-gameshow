@@ -12,6 +12,7 @@ import {
 import {
   createDefaultSuiteState,
   loadSuiteState,
+  normalizeSuiteState,
   saveSuiteState,
   SUITE_FALLBACK_KEY,
   type ActiveGame,
@@ -21,13 +22,17 @@ import { useBroadcastSync } from "@/lib/sync/useBroadcastSync";
 import type { FeudGameState, FeudRound } from "@/lib/feud/types";
 import type { WheelGameState } from "@/lib/wheel/types";
 import type { DrawGameState } from "@/lib/draw/types";
+import {
+  createDefaultTakeItState,
+  type TakeItGameState,
+} from "@/lib/take-it-or-leave-it/types";
 
 function loadFallbackSuiteState(): SuiteState | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(SUITE_FALLBACK_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as SuiteState;
+    return normalizeSuiteState(JSON.parse(raw));
   } catch {
     return null;
   }
@@ -46,6 +51,7 @@ type SuiteContextValue = {
   updateFeud: (updater: (feud: FeudGameState) => FeudGameState) => void;
   updateWheel: (updater: (wheel: WheelGameState) => WheelGameState) => void;
   updateDraw: (updater: (draw: DrawGameState) => DrawGameState) => void;
+  updateTakeIt: (updater: (game: TakeItGameState) => TakeItGameState) => void;
   currentFeudRound: FeudRound | undefined;
 };
 
@@ -94,6 +100,16 @@ export function SuiteProvider({
     [],
   );
 
+  const updateTakeIt = useCallback(
+    (updater: (game: TakeItGameState) => TakeItGameState) => {
+      setState((prev) => ({
+        ...prev,
+        takeIt: updater(prev.takeIt ?? createDefaultTakeItState()),
+      }));
+    },
+    [],
+  );
+
   const currentFeudRound = useMemo(
     () => state.feud.rounds[state.feud.currentRoundIndex],
     [state.feud],
@@ -107,6 +123,7 @@ export function SuiteProvider({
       updateFeud,
       updateWheel,
       updateDraw,
+      updateTakeIt,
       currentFeudRound,
     }),
     [
@@ -115,6 +132,7 @@ export function SuiteProvider({
       updateFeud,
       updateWheel,
       updateDraw,
+      updateTakeIt,
       currentFeudRound,
     ],
   );

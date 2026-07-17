@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Briefcase,
   ChevronRight,
   CircleDollarSign,
   Home,
@@ -21,20 +22,23 @@ import { TooltipProvider } from "@/components/ui/Tooltip";
 import { FeudHostPanel } from "@/components/feud/FeudHostPanel";
 import { WheelHostPanel } from "@/components/wheel/WheelHostPanel";
 import { DrawHostPanel } from "@/components/draw/DrawHostPanel";
+import { TakeItOrLeaveItHostPanel } from "@/components/take-it-or-leave-it/TakeItOrLeaveItHostPanel";
 
-const GAMES: ActiveGame[] = ["idle", "feud", "wheel", "draw"];
+const GAMES: ActiveGame[] = ["idle", "feud", "wheel", "draw", "takeIt"];
 
 const GAME_ICONS: Record<ActiveGame, LucideIcon> = {
   idle: Home,
   feud: Users,
   wheel: CircleDollarSign,
   draw: Ticket,
+  takeIt: Briefcase,
 };
 
 const GAME_DESCRIPTIONS: Record<Exclude<ActiveGame, "idle">, string> = {
   feud: "Reveal survey answers, track strikes, and run each round.",
   wheel: "Set a phrase and reveal letters on the audience board.",
   draw: "Draw a ticket number and animate it for the audience.",
+  takeIt: "Open nine cases, take banker offers, and decide take it or leave it.",
 };
 
 function AdminContent() {
@@ -53,7 +57,7 @@ function AdminContent() {
     <div className="flex h-screen overflow-hidden bg-neutral-950 text-neutral-100">
       <aside
         className={`flex shrink-0 flex-col border-r border-neutral-800 bg-neutral-900 transition-[width] duration-200 ${
-          sidebarCollapsed ? "w-20" : "w-64"
+          sidebarCollapsed ? "w-16" : "w-64"
         }`}
       >
         <div
@@ -159,8 +163,8 @@ function AdminContent() {
                 </p>
               </div>
 
-              <div className="grid gap-5 md:grid-cols-3">
-                {(["feud", "wheel", "draw"] as const).map((game) => {
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                {(["feud", "wheel", "draw", "takeIt"] as const).map((game) => {
                   const Icon = GAME_ICONS[game];
                   return (
                     <button
@@ -194,6 +198,7 @@ function AdminContent() {
           {state.activeGame === "feud" && <FeudHostPanel />}
           {state.activeGame === "wheel" && <WheelHostPanel />}
           {state.activeGame === "draw" && <DrawHostPanel />}
+          {state.activeGame === "takeIt" && <TakeItOrLeaveItHostPanel />}
         </main>
       </div>
     </div>

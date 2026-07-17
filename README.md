@@ -7,6 +7,7 @@ Live game show suite for business game nights. Host controls games from an admin
 - **Friendly Feud** — survey board with reveals, strikes, and scoring
 - **Wheel of Riches** — letter board phrase reveal
 - **Number Draw** — animated ticket number reveal
+- **Take It or Leave It** — 9 cases, banker offers, take it or leave it
 
 ## Setup
 

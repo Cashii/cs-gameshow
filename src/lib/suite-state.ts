@@ -2,14 +2,24 @@ import { createSampleFeudGame } from "@/lib/feud/defaults";
 import type { FeudGameState } from "@/lib/feud/types";
 import { createDefaultWheelState, type WheelGameState } from "@/lib/wheel/types";
 import { createDefaultDrawState, type DrawGameState } from "@/lib/draw/types";
+import {
+  createDefaultTakeItState,
+  type TakeItGameState,
+} from "@/lib/take-it-or-leave-it/types";
 
-export type ActiveGame = "feud" | "wheel" | "draw" | "idle";
+export type ActiveGame = "feud" | "wheel" | "draw" | "takeIt" | "idle";
 
 export type SuiteState = {
   activeGame: ActiveGame;
   feud: FeudGameState;
   wheel: WheelGameState;
   draw: DrawGameState;
+  takeIt: TakeItGameState;
+};
+
+type LegacySuiteState = Partial<Omit<SuiteState, "activeGame">> & {
+  activeGame?: ActiveGame | "deal";
+  deal?: TakeItGameState & { dealAccepted?: boolean | null };
 };
 
 export const SUITE_STORAGE_KEY = "cs_gameshow_suite_v1";
@@ -22,6 +32,66 @@ export function createDefaultSuiteState(): SuiteState {
     feud: createSampleFeudGame(),
     wheel: createDefaultWheelState(),
     draw: createDefaultDrawState(),
+    takeIt: createDefaultTakeItState(),
+  };
+}
+
+function normalizeTakeItState(
+  raw: LegacySuiteState["takeIt"] | LegacySuiteState["deal"] | undefined,
+): TakeItGameState {
+  const defaults = createDefaultTakeItState();
+  if (!raw) return defaults;
+
+  const legacyAccepted =
+    "dealAccepted" in raw ? raw.dealAccepted : undefined;
+
+  return {
+    ...defaults,
+    ...raw,
+    values: raw.values?.length === 9 ? raw.values : defaults.values,
+    cases: Array.isArray(raw.cases) ? raw.cases : defaults.cases,
+    tookIt:
+      typeof raw.tookIt === "boolean" || raw.tookIt === null
+        ? raw.tookIt
+        : typeof legacyAccepted === "boolean" || legacyAccepted === null
+          ? legacyAccepted
+          : defaults.tookIt,
+  };
+}
+
+export function normalizeSuiteState(
+  raw: LegacySuiteState | null | undefined,
+): SuiteState {
+  const defaults = createDefaultSuiteState();
+  if (!raw || typeof raw !== "object") return defaults;
+
+  const activeGame: ActiveGame =
+    raw.activeGame === "deal"
+      ? "takeIt"
+      : ((raw.activeGame as ActiveGame | undefined) ?? defaults.activeGame);
+
+  return {
+    ...defaults,
+    ...raw,
+    activeGame,
+    feud: {
+      ...createSampleFeudGame(),
+      ...raw.feud,
+      showHeader: raw.feud?.showHeader ?? true,
+      rounds: raw.feud?.rounds?.length
+        ? raw.feud.rounds
+        : createSampleFeudGame().rounds,
+    },
+    wheel: {
+      ...createDefaultWheelState(),
+      ...raw.wheel,
+      zoom: typeof raw.wheel?.zoom === "number" ? raw.wheel.zoom : 1,
+    },
+    draw: {
+      ...createDefaultDrawState(),
+      ...raw.draw,
+    },
+    takeIt: normalizeTakeItState(raw.takeIt ?? raw.deal),
   };
 }
 
@@ -30,28 +100,7 @@ export function loadSuiteState(): SuiteState {
   try {
     const raw = localStorage.getItem(SUITE_STORAGE_KEY);
     if (!raw) return createDefaultSuiteState();
-    const parsed = JSON.parse(raw) as SuiteState;
-    return {
-      ...createDefaultSuiteState(),
-      ...parsed,
-      feud: {
-        ...createSampleFeudGame(),
-        ...parsed.feud,
-        showHeader: parsed.feud?.showHeader ?? true,
-        rounds: parsed.feud?.rounds?.length
-          ? parsed.feud.rounds
-          : createSampleFeudGame().rounds,
-      },
-      wheel: {
-        ...createDefaultWheelState(),
-        ...parsed.wheel,
-        zoom: typeof parsed.wheel?.zoom === "number" ? parsed.wheel.zoom : 1,
-      },
-      draw: {
-        ...createDefaultDrawState(),
-        ...parsed.draw,
-      },
-    };
+    return normalizeSuiteState(JSON.parse(raw) as LegacySuiteState);
   } catch {
     return createDefaultSuiteState();
   }
@@ -71,4 +120,5 @@ export const ACTIVE_GAME_LABELS: Record<ActiveGame, string> = {
   feud: "Friendly Feud",
   wheel: "Wheel of Riches",
   draw: "Number Draw",
+  takeIt: "Take It or Leave It",
 };

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import {
+  normalizeSuiteState,
   SUITE_FALLBACK_KEY,
   SUITE_SYNC_CHANNEL,
   type SuiteState,
@@ -34,7 +35,7 @@ export function useBroadcastSync(
     bc.onmessage = (ev: MessageEvent) => {
       const msg = (ev.data || {}) as SyncMsg;
       if (msg.type === "STATE_PUSH" && isAudience) {
-        setState(msg.payload);
+        setState(normalizeSuiteState(msg.payload));
       } else if (msg.type === "REQUEST_STATE" && !isAudience) {
         bc.postMessage({ type: "STATE_PUSH", payload: stateRef.current });
       }
@@ -68,7 +69,7 @@ export function useBroadcastSync(
     const applyFallback = () => {
       try {
         const raw = localStorage.getItem(SUITE_FALLBACK_KEY);
-        if (raw) setState(JSON.parse(raw) as SuiteState);
+        if (raw) setState(normalizeSuiteState(JSON.parse(raw) as SuiteState));
       } catch {
         // ignore
       }
@@ -82,7 +83,7 @@ export function useBroadcastSync(
     const onStorage = (e: StorageEvent) => {
       if (e.key === SUITE_FALLBACK_KEY && e.newValue) {
         try {
-          setState(JSON.parse(e.newValue) as SuiteState);
+          setState(normalizeSuiteState(JSON.parse(e.newValue) as SuiteState));
         } catch {
           // ignore
         }

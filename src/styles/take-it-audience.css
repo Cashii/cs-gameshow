@@ -1,0 +1,459 @@
+.tioli-audience {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(140px, 18vw) 1fr minmax(140px, 18vw);
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  padding: clamp(1rem, 2.5vw, 2rem);
+  background:
+    radial-gradient(ellipse at 50% 20%, #2a2118 0%, #0d0b09 55%, #050403 100%);
+  color: #f8f4ec;
+  font-family: var(--font-oswald), Impact, "Arial Black", sans-serif;
+}
+
+.tioli-audience::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 15% 80%, rgba(212, 175, 55, 0.12), transparent 35%),
+    radial-gradient(circle at 85% 25%, rgba(56, 189, 248, 0.08), transparent 30%);
+}
+
+.tioli-audience .tioli-money-col {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.tioli-audience .tioli-money-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.45rem;
+  border: 2px solid #b8860b;
+  background: linear-gradient(180deg, #1f1710, #12100d);
+  color: #f6e27a;
+  font-size: clamp(0.85rem, 1.8vw, 1.35rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition:
+    opacity 0.35s ease,
+    filter 0.35s ease,
+    transform 0.35s ease;
+}
+
+.tioli-audience .tioli-money-tile.eliminated {
+  opacity: 0.28;
+  filter: grayscale(1);
+  text-decoration: line-through;
+  border-color: #4a4032;
+  color: #8a8070;
+  transform: scale(0.97);
+}
+
+.tioli-audience .tioli-center {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.tioli-audience .tioli-title {
+  margin-bottom: clamp(0.75rem, 2vh, 1.5rem);
+  font-size: clamp(1.25rem, 3vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #f6e27a;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+}
+
+.tioli-audience .tioli-case-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.6rem, 1.5vw, 1.25rem);
+  width: min(100%, 720px);
+}
+
+.tioli-audience .tioli-case {
+  position: relative;
+  aspect-ratio: 1.15 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  perspective: 900px;
+  isolation: isolate;
+}
+
+.tioli-audience .tioli-suitcase-handle {
+  position: absolute;
+  top: 5%;
+  left: 50%;
+  z-index: 0;
+  width: 34%;
+  height: 24%;
+  transform: translateX(-50%);
+  border: clamp(4px, 0.7vw, 8px) solid #b8b5ad;
+  border-bottom: 0;
+  border-radius: 0.65rem 0.65rem 0 0;
+  background: linear-gradient(90deg, #595751, #d4d1c8 48%, #68655e);
+  box-shadow:
+    inset 0 0 0 2px rgba(0, 0, 0, 0.35),
+    0 3px 8px rgba(0, 0, 0, 0.45);
+}
+
+.tioli-audience .tioli-suitcase-shell {
+  position: relative;
+  z-index: 1;
+  width: 94%;
+  height: 72%;
+  margin-top: 15%;
+  border-radius: clamp(0.45rem, 1vw, 0.8rem);
+  transform-style: preserve-3d;
+  box-shadow:
+    0 12px 20px rgba(0, 0, 0, 0.5),
+    0 3px 0 rgba(0, 0, 0, 0.65);
+  transition:
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.4s ease;
+}
+
+.tioli-audience .tioli-suitcase-interior {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 4px solid #a7a39b;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 50% 40%, #4b0f17 0%, #21070c 68%),
+    #21070c;
+  box-shadow:
+    inset 0 0 20px rgba(0, 0, 0, 0.75),
+    inset 0 0 0 3px #302d28;
+}
+
+.tioli-audience .tioli-suitcase-lid {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 4px solid #aaa79f;
+  border-radius: inherit;
+  background:
+    linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.2) 48%, transparent 61%),
+    linear-gradient(160deg, #e3e0d8 0%, #8b8983 42%, #4f4d49 100%);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -5px 8px rgba(0, 0, 0, 0.38),
+    0 0 0 2px #3b3935;
+  transform-origin: top center;
+  backface-visibility: hidden;
+  transition:
+    transform 0.85s cubic-bezier(0.65, 0, 0.35, 1),
+    opacity 0.3s ease 0.55s;
+}
+
+.tioli-audience .tioli-suitcase-trim {
+  position: absolute;
+  inset: 9%;
+  border: 2px solid rgba(58, 56, 52, 0.75);
+  border-radius: 0.35rem;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.tioli-audience .tioli-suitcase-latch {
+  position: absolute;
+  top: 4%;
+  width: 13%;
+  height: 13%;
+  border: 2px solid #373530;
+  border-radius: 0.2rem;
+  background: linear-gradient(180deg, #ece9df, #77746d);
+  box-shadow: inset 0 1px 0 #fff;
+}
+
+.tioli-audience .tioli-suitcase-latch.left {
+  left: 18%;
+}
+
+.tioli-audience .tioli-suitcase-latch.right {
+  right: 18%;
+}
+
+.tioli-audience .tioli-case-number {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(2.7rem, 7vw, 5rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid #d4af37;
+  background: linear-gradient(180deg, #211a10, #090806);
+  font-size: clamp(1.8rem, 5vw, 3.7rem);
+  font-weight: 700;
+  color: #fff8d6;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.55);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.45),
+    inset 0 0 12px rgba(212, 175, 55, 0.18);
+}
+
+.tioli-audience .tioli-case-value {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 82%;
+  min-height: 58%;
+  padding: 0.4rem;
+  border: 3px solid #d4af37;
+  border-radius: 0.45rem;
+  background: linear-gradient(180deg, #fff4b8, #d4af37);
+  font-size: clamp(1rem, 2.8vw, 1.85rem);
+  font-weight: 700;
+  color: #1d160b;
+  text-align: center;
+  box-shadow:
+    0 0 22px rgba(246, 226, 122, 0.7),
+    inset 0 2px 0 rgba(255, 255, 255, 0.65);
+  opacity: 0;
+  transform: translateY(40%) scale(0.55);
+  transition:
+    opacity 0.38s ease 0.4s,
+    transform 0.65s cubic-bezier(0.2, 1.45, 0.4, 1) 0.35s;
+}
+
+.tioli-audience .tioli-case.opened .tioli-suitcase-lid {
+  transform: rotateX(108deg) translateY(-7%);
+  opacity: 0;
+}
+
+.tioli-audience .tioli-case.opened .tioli-case-value {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.tioli-audience .tioli-case.opened .tioli-suitcase-handle {
+  opacity: 0.45;
+}
+
+.tioli-audience .tioli-case.player .tioli-suitcase-shell {
+  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.9));
+}
+
+.tioli-audience .tioli-case.player .tioli-suitcase-lid,
+.tioli-audience .tioli-case.player .tioli-suitcase-interior {
+  border-color: #38bdf8;
+}
+
+.tioli-audience .tioli-case.just-opened .tioli-suitcase-shell {
+  animation: tioli-suitcase-impact 1.15s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tioli-audience .tioli-case.just-opened::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -18%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(246, 226, 122, 0.8) 0deg 3deg,
+    transparent 3deg 16deg
+  );
+  animation: tioli-reveal-rays 1.2s ease-out both;
+  pointer-events: none;
+}
+
+.tioli-audience .tioli-case-badge {
+  position: absolute;
+  top: -0.15rem;
+  left: 50%;
+  z-index: 5;
+  transform: translateX(-50%);
+  padding: 0.18rem 0.45rem;
+  border-radius: 999px;
+  background: #075985;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  font-size: clamp(0.55rem, 1.2vw, 0.8rem);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #e0f2fe;
+}
+
+.tioli-audience .tioli-status {
+  margin-top: clamp(0.75rem, 2vh, 1.25rem);
+  font-size: clamp(0.95rem, 2vw, 1.35rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(248, 244, 236, 0.7);
+  text-align: center;
+}
+
+.tioli-audience .tioli-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.62);
+  animation: tioli-overlay-in 0.4s ease both;
+}
+
+.tioli-audience .tioli-offer-card,
+.tioli-audience .tioli-result-card {
+  min-width: min(90vw, 640px);
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border-radius: 1rem;
+  border: 4px solid #d4af37;
+  background: linear-gradient(180deg, #1d160f, #0d0a07);
+  text-align: center;
+  box-shadow:
+    0 0 40px rgba(212, 175, 55, 0.35),
+    0 20px 50px rgba(0, 0, 0, 0.55);
+  animation: tioli-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.tioli-audience .tioli-offer-label,
+.tioli-audience .tioli-result-label {
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #f6e27a;
+  margin-bottom: 0.75rem;
+}
+
+.tioli-audience .tioli-offer-amount {
+  font-size: clamp(3rem, 12vw, 7rem);
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  text-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.35),
+    0 0 40px rgba(212, 175, 55, 0.45);
+}
+
+.tioli-audience .tioli-result-amount {
+  font-size: clamp(2.5rem, 9vw, 5.5rem);
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+}
+
+.tioli-audience .tioli-result-sub {
+  margin-top: 0.85rem;
+  font-size: clamp(0.95rem, 2vw, 1.35rem);
+  color: rgba(248, 244, 236, 0.75);
+}
+
+@keyframes tioli-suitcase-impact {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  18% {
+    transform: translateY(-7%) scale(1.08);
+    filter: brightness(1.35);
+  }
+  42% {
+    transform: translateY(3%) scale(0.97);
+  }
+  68% {
+    transform: translateY(-1.5%) scale(1.025);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes tioli-reveal-rays {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(-12deg);
+  }
+  32% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.45) rotate(10deg);
+  }
+}
+
+@keyframes tioli-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tioli-card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .tioli-audience {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .tioli-audience .tioli-money-col {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .tioli-audience .tioli-money-tile {
+    min-width: 4.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tioli-audience .tioli-case.just-opened .tioli-suitcase-shell,
+  .tioli-audience .tioli-case.just-opened::after,
+  .tioli-audience .tioli-overlay,
+  .tioli-audience .tioli-offer-card,
+  .tioli-audience .tioli-result-card {
+    animation-duration: 0.01ms !important;
+  }
+
+  .tioli-audience .tioli-suitcase-lid,
+  .tioli-audience .tioli-case-value {
+    transition-duration: 0.01ms !important;
+  }
+}

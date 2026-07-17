@@ -8,7 +8,7 @@ export function AnswerTile({
   revealed,
 }: Readonly<{ index: number; answer: FeudAnswer; revealed: boolean }>) {
   return (
-    <div className={`tile ${revealed ? "revealed" : "hidden"}`}>
+    <div className={`tile ${revealed ? "revealed" : "concealed"}`}>
       <div className="tile-inner">
         <div className="tile-front">{index + 1}</div>
         <div className="tile-back">
