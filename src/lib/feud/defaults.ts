@@ -6,6 +6,10 @@ export function createSampleFeudGame(): FeudGameState {
     id: uid(),
     currentRoundIndex: 0,
     showHeader: true,
+    leftTeam: { name: "Left", score: 0 },
+    rightTeam: { name: "Right", score: 0 },
+    showTeamScores: true,
+    showAnswerScores: true,
     rounds: [
       {
         id: uid(),

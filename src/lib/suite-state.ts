@@ -1,25 +1,32 @@
 import { createSampleFeudGame } from "@/lib/feud/defaults";
 import type { FeudGameState } from "@/lib/feud/types";
 import { createDefaultWheelState, type WheelGameState } from "@/lib/wheel/types";
-import { createDefaultDrawState, type DrawGameState } from "@/lib/draw/types";
+import {
+  createDefaultLiveDrawerState,
+  clampLiveDrawerNumberScale,
+  DEFAULT_LIVE_DRAWER_NUMBER_SCALE,
+  type LiveDrawerGameState,
+} from "@/lib/live-drawer/types";
 import {
   createDefaultTakeItState,
   type TakeItGameState,
 } from "@/lib/take-it-or-leave-it/types";
 
-export type ActiveGame = "feud" | "wheel" | "draw" | "takeIt" | "idle";
+export type ActiveGame = "feud" | "wheel" | "liveDrawer" | "takeIt" | "idle";
 
 export type SuiteState = {
   activeGame: ActiveGame;
   audienceCovered: boolean;
   feud: FeudGameState;
   wheel: WheelGameState;
-  draw: DrawGameState;
+  liveDrawer: LiveDrawerGameState;
   takeIt: TakeItGameState;
 };
 
-type LegacySuiteState = Partial<Omit<SuiteState, "activeGame">> & {
-  activeGame?: ActiveGame | "deal";
+type LegacySuiteState = Partial<Omit<SuiteState, "activeGame" | "liveDrawer">> & {
+  activeGame?: ActiveGame | "deal" | "draw";
+  draw?: LiveDrawerGameState & { colors?: unknown };
+  liveDrawer?: LiveDrawerGameState & { colors?: unknown };
   deal?: TakeItGameState & { dealAccepted?: boolean | null };
 };
 
@@ -33,7 +40,7 @@ export function createDefaultSuiteState(): SuiteState {
     audienceCovered: true,
     feud: createSampleFeudGame(),
     wheel: createDefaultWheelState(),
-    draw: createDefaultDrawState(),
+    liveDrawer: createDefaultLiveDrawerState(),
     takeIt: createDefaultTakeItState(),
   };
 }
@@ -61,6 +68,23 @@ function normalizeTakeItState(
   };
 }
 
+function normalizeLiveDrawerState(
+  raw: LegacySuiteState["liveDrawer"] | LegacySuiteState["draw"] | undefined,
+): LiveDrawerGameState {
+  const defaults = createDefaultLiveDrawerState();
+  if (!raw) return defaults;
+  const { colors: _ignored, ...rest } = raw;
+  return {
+    ...defaults,
+    ...rest,
+    colorId: rest.colorId ?? null,
+    numberScale:
+      typeof rest.numberScale === "number"
+        ? clampLiveDrawerNumberScale(rest.numberScale)
+        : DEFAULT_LIVE_DRAWER_NUMBER_SCALE,
+  };
+}
+
 export function normalizeSuiteState(
   raw: LegacySuiteState | null | undefined,
 ): SuiteState {
@@ -70,17 +94,37 @@ export function normalizeSuiteState(
   const activeGame: ActiveGame =
     raw.activeGame === "deal"
       ? "takeIt"
-      : ((raw.activeGame as ActiveGame | undefined) ?? defaults.activeGame);
+      : raw.activeGame === "draw"
+        ? "liveDrawer"
+        : ((raw.activeGame as ActiveGame | undefined) ?? defaults.activeGame);
+
+  const { draw: _legacyDraw, ...rawWithoutDraw } = raw;
 
   return {
     ...defaults,
-    ...raw,
+    ...rawWithoutDraw,
     activeGame,
     audienceCovered: raw.audienceCovered ?? defaults.audienceCovered,
     feud: {
       ...createSampleFeudGame(),
       ...raw.feud,
       showHeader: raw.feud?.showHeader ?? true,
+      leftTeam: {
+        name: raw.feud?.leftTeam?.name ?? "Left",
+        score:
+          typeof raw.feud?.leftTeam?.score === "number"
+            ? raw.feud.leftTeam.score
+            : 0,
+      },
+      rightTeam: {
+        name: raw.feud?.rightTeam?.name ?? "Right",
+        score:
+          typeof raw.feud?.rightTeam?.score === "number"
+            ? raw.feud.rightTeam.score
+            : 0,
+      },
+      showTeamScores: raw.feud?.showTeamScores ?? true,
+      showAnswerScores: raw.feud?.showAnswerScores ?? true,
       rounds: raw.feud?.rounds?.length
         ? raw.feud.rounds
         : createSampleFeudGame().rounds,
@@ -89,11 +133,9 @@ export function normalizeSuiteState(
       ...createDefaultWheelState(),
       ...raw.wheel,
       zoom: typeof raw.wheel?.zoom === "number" ? raw.wheel.zoom : 1,
+      showLetterLegend: raw.wheel?.showLetterLegend ?? true,
     },
-    draw: {
-      ...createDefaultDrawState(),
-      ...raw.draw,
-    },
+    liveDrawer: normalizeLiveDrawerState(raw.liveDrawer ?? raw.draw),
     takeIt: normalizeTakeItState(raw.takeIt ?? raw.deal),
   };
 }
@@ -122,6 +164,6 @@ export const ACTIVE_GAME_LABELS: Record<ActiveGame, string> = {
   idle: "Home",
   feud: "Friendly Feud",
   wheel: "Wheel of Riches",
-  draw: "Number Draw",
+  liveDrawer: "Live Drawer",
   takeIt: "Take It or Leave It",
 };

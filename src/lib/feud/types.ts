@@ -12,9 +12,18 @@ export type FeudRound = {
   answers: FeudAnswer[];
 };
 
+export type FeudTeam = {
+  name: string;
+  score: number;
+};
+
 export type FeudGameState = {
   id: string;
   currentRoundIndex: number;
   rounds: FeudRound[];
   showHeader: boolean;
+  leftTeam: FeudTeam;
+  rightTeam: FeudTeam;
+  showTeamScores: boolean;
+  showAnswerScores: boolean;
 };

@@ -1,17 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import {
-  ChevronUp,
-  ChevronDown,
   Trash2,
   Plus,
-  Save,
-  Upload,
+  Pencil,
   Eye,
   EyeOff,
   RotateCcw,
   RefreshCw,
+  GripVertical,
 } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import { useSound } from "@/lib/feud/useSound";
@@ -28,6 +27,12 @@ export function FeudHostPanel() {
   const sounds = useSound();
   const feud = state.feud;
   const round = currentFeudRound;
+  const [dragAnswerId, setDragAnswerId] = useState<string | null>(null);
+  const [questionDialogOpen, setQuestionDialogOpen] = useState(false);
+  const [questionDialogMode, setQuestionDialogMode] = useState<"add" | "edit">(
+    "add",
+  );
+  const [questionDraft, setQuestionDraft] = useState("");
   const [confirm, setConfirm] = useState<{
     open: boolean;
     title: string;
@@ -73,15 +78,16 @@ export function FeudHostPanel() {
       r.answers = r.answers.filter((a) => a.id !== id);
     });
 
-  const moveAnswer = (id: string, dir: number) =>
+  const reorderAnswer = (fromId: string, toId: string) => {
+    if (fromId === toId) return;
     setRound((r) => {
-      const idx = r.answers.findIndex((a) => a.id === id);
-      const swap = idx + dir;
-      if (swap < 0 || swap >= r.answers.length) return;
-      const temp = r.answers[idx];
-      r.answers[idx] = r.answers[swap];
-      r.answers[swap] = temp;
+      const from = r.answers.findIndex((a) => a.id === fromId);
+      const to = r.answers.findIndex((a) => a.id === toId);
+      if (from < 0 || to < 0) return;
+      const [item] = r.answers.splice(from, 1);
+      r.answers.splice(to, 0, item);
     });
+  };
 
   const reveal = (id: string) =>
     setRound((r) => {
@@ -110,17 +116,41 @@ export function FeudHostPanel() {
       r.strikes = clamp((r.strikes || 0) - 1, 0, 3);
     });
 
-  const addRound = () =>
-    updateFeud((prev) => ({
-      ...prev,
-      rounds: [
-        ...prev.rounds,
-        { id: uid(), question: "", strikes: 0, answers: [] },
-      ],
-      currentRoundIndex: prev.rounds.length,
-    }));
+  const openAddRound = () => {
+    setQuestionDialogMode("add");
+    setQuestionDraft("");
+    setQuestionDialogOpen(true);
+  };
+
+  const openEditQuestion = () => {
+    setQuestionDialogMode("edit");
+    setQuestionDraft(round.question ?? "");
+    setQuestionDialogOpen(true);
+  };
+
+  const saveQuestionDialog = () => {
+    const question = questionDraft.trim();
+    if (!question) return;
+    if (questionDialogMode === "add") {
+      updateFeud((prev) => ({
+        ...prev,
+        rounds: [
+          ...prev.rounds,
+          { id: uid(), question, strikes: 0, answers: [] },
+        ],
+        currentRoundIndex: prev.rounds.length,
+      }));
+    } else {
+      setRound((r) => {
+        r.question = question;
+      });
+    }
+    setQuestionDraft("");
+    setQuestionDialogOpen(false);
+  };
 
   const deleteRound = () => {
+    setQuestionDialogOpen(false);
     setConfirm({
       open: true,
       title: "Delete Round",
@@ -164,7 +194,7 @@ export function FeudHostPanel() {
       open: true,
       title: "Reset Game",
       message:
-        "Are you sure you want to reset the entire game? This will hide all answers, clear all strikes, and return to round 1.",
+        "Are you sure you want to reset the entire game? This will hide all answers, clear all strikes, reset team scores, and return to round 1.",
       variant: "danger",
       onConfirm: () => {
         updateFeud((prev) => {
@@ -176,167 +206,84 @@ export function FeudHostPanel() {
             r.strikes = 0;
           });
           copy.currentRoundIndex = 0;
+          copy.leftTeam = { ...copy.leftTeam, score: 0 };
+          copy.rightTeam = { ...copy.rightTeam, score: 0 };
           return copy;
         });
       },
     });
   };
 
-  const exportJson = () => {
-    const json = JSON.stringify(feud, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `feud-game-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const importJson = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const parsed = JSON.parse(reader.result as string) as FeudGameState;
-        if (parsed.rounds && Array.isArray(parsed.rounds)) {
-          updateFeud(() => ({
-            ...parsed,
-            showHeader: parsed.showHeader ?? true,
-          }));
-        } else {
-          alert("Invalid game file.");
-        }
-      } catch {
-        alert("Failed to parse JSON");
-      }
-    };
-    reader.readAsText(file);
-  };
-
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="shrink-0 border-b border-neutral-800 bg-neutral-900/90 px-6 py-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+            Game actions
+          </span>
+          <button
+            type="button"
+            onClick={resetRound}
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-500 bg-neutral-600 px-4 text-sm font-semibold text-white hover:bg-neutral-500"
+          >
+            <RotateCcw size={16} /> Reset Round
+          </button>
+          <button
+            type="button"
+            onClick={resetGame}
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-red-500 bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
+          >
+            <RefreshCw size={16} /> Reset Game
+          </button>
+        </div>
+      </div>
+
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(320px, 500px) 1fr",
+          padding: "16px 24px",
           flexShrink: 0,
           background: "#1f1f1f",
+          borderBottom: "1px solid #3a3a3a",
         }}
       >
-        <div
-          style={{
-            padding: "16px 24px",
-            borderRight: "1px solid #3a3a3a",
-            borderBottom: "1px solid #3a3a3a",
-          }}
-        >
-          <div style={{ fontWeight: 600, fontSize: 14, color: "#e5e5e5", marginBottom: 8 }}>
-            Round
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <Select
-              value={feud.currentRoundIndex.toString()}
-              onValueChange={(value) =>
-                updateFeud((prev) => ({
-                  ...prev,
-                  currentRoundIndex: Number.parseInt(value, 10),
-                }))
-              }
-              options={feud.rounds.map((r, i) => ({
-                value: i.toString(),
-                label: `${i + 1}. ${r.question?.slice(0, 40) || "(untitled)"}`,
-              }))}
-            />
-            <Tooltip content="Add Round">
-              <IconButton label={<Plus size={16} />} onClick={addRound} />
-            </Tooltip>
-            <Tooltip content="Delete Round">
-              <IconButton label={<Trash2 size={16} />} onClick={deleteRound} />
-            </Tooltip>
-          </div>
+        <div style={{ fontWeight: 600, fontSize: 14, color: "#e5e5e5", marginBottom: 8 }}>
+          Round
         </div>
-        <div
-          style={{
-            padding: "16px 24px",
-            borderBottom: "1px solid #3a3a3a",
-          }}
-        >
-          <div style={{ fontWeight: 600, fontSize: 14, color: "#e5e5e5", marginBottom: 8 }}>
-            Question
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <Select
+            value={feud.currentRoundIndex.toString()}
+            onValueChange={(value) =>
+              updateFeud((prev) => ({
+                ...prev,
+                currentRoundIndex: Number.parseInt(value, 10),
+              }))
+            }
+            options={feud.rounds.map((r, i) => ({
+              value: i.toString(),
+              label: `${i + 1}. ${r.question?.slice(0, 40) || "(untitled)"}`,
+            }))}
+          />
+          <Tooltip content="Add Round">
+            <IconButton label={<Plus size={16} />} onClick={openAddRound} />
+          </Tooltip>
+          <Tooltip content="Edit Question">
+            <IconButton label={<Pencil size={16} />} onClick={openEditQuestion} />
+          </Tooltip>
+          <Tooltip
+            delayDuration={0}
+            content={
+              feud.showHeader
+                ? "Hides the question on the audience display"
+                : "Shows the question on the audience display"
+            }
           >
-            <TextInput
-              value={round.question}
-              onChange={(v) => setRound((r) => {
-                r.question = v;
-              })}
-              placeholder="Type the survey question..."
-              style={{ flex: 1, minWidth: 160 }}
-            />
-            <Tooltip
-              content={
-                feud.showHeader
-                  ? "Hide question on audience display"
-                  : "Show question on audience display"
+            <IconButton
+              label={feud.showHeader ? <Eye size={16} /> : <EyeOff size={16} />}
+              onClick={() =>
+                updateFeud((prev) => ({ ...prev, showHeader: !prev.showHeader }))
               }
-            >
-              <IconButton
-                label={feud.showHeader ? <Eye size={16} /> : <EyeOff size={16} />}
-                onClick={() =>
-                  updateFeud((prev) => ({ ...prev, showHeader: !prev.showHeader }))
-                }
-              />
-            </Tooltip>
-            <Tooltip content="Load Game">
-              <label
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "6px 8px",
-                  border: "1px solid #3a3a3a",
-                  borderRadius: 8,
-                  background: "#2a2a2a",
-                  color: "#e5e5e5",
-                  cursor: "pointer",
-                }}
-              >
-                <Upload size={16} />
-                <input
-                  type="file"
-                  accept="application/json"
-                  style={{ display: "none" }}
-                  onChange={(e) =>
-                    e.target.files?.[0] && importJson(e.target.files[0])
-                  }
-                />
-              </label>
-            </Tooltip>
-            <Tooltip content="Save Game">
-              <IconButton label={<Save size={16} />} onClick={exportJson} />
-            </Tooltip>
-            <button
-              type="button"
-              onClick={resetRound}
-              className="inline-flex items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-3.5 py-2 text-sm font-medium text-neutral-200"
-            >
-              <RotateCcw size={16} /> Reset Round
-            </button>
-            <button
-              type="button"
-              onClick={resetGame}
-              className="inline-flex items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-3.5 py-2 text-sm font-medium text-neutral-200"
-            >
-              <RefreshCw size={16} /> Reset Game
-            </button>
-          </div>
+            />
+          </Tooltip>
         </div>
       </div>
 
@@ -359,6 +306,125 @@ export function FeudHostPanel() {
             overflow: "hidden",
           }}
         >
+          <div
+            style={{
+              padding: "16px 24px",
+              borderBottom: "1px solid #3a3a3a",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 12,
+              }}
+            >
+              <div style={{ fontWeight: 600, fontSize: 14, color: "#e5e5e5" }}>
+                Teams
+              </div>
+              <Tooltip
+                content={
+                  feud.showTeamScores
+                    ? "Hide teams on audience"
+                    : "Show teams on audience"
+                }
+              >
+                <IconButton
+                  label={feud.showTeamScores ? <Eye size={16} /> : <EyeOff size={16} />}
+                  onClick={() =>
+                    updateFeud((prev) => ({
+                      ...prev,
+                      showTeamScores: !prev.showTeamScores,
+                    }))
+                  }
+                />
+              </Tooltip>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 12,
+              }}
+            >
+              {(["leftTeam", "rightTeam"] as const).map((key) => {
+                const team = feud[key];
+                const label = key === "leftTeam" ? "Left" : "Right";
+                return (
+                  <div
+                    key={key}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                      padding: 12,
+                      borderRadius: 8,
+                      border: "1px solid #3a3a3a",
+                      background: "#222",
+                    }}
+                  >
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: 4,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          letterSpacing: "0.04em",
+                          textTransform: "uppercase",
+                          color: "#a3a3a3",
+                        }}
+                      >
+                        Name
+                      </label>
+                      <TextInput
+                        value={team.name}
+                        onChange={(v) =>
+                          updateFeud((prev) => ({
+                            ...prev,
+                            [key]: { ...prev[key], name: v },
+                          }))
+                        }
+                        placeholder={`${label} team`}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: 4,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          letterSpacing: "0.04em",
+                          textTransform: "uppercase",
+                          color: "#a3a3a3",
+                        }}
+                      >
+                        Score
+                      </label>
+                      <NumberInput
+                        value={team.score}
+                        min={0}
+                        max={99999}
+                        style={{ width: "100%" }}
+                        onChange={(v) =>
+                          updateFeud((prev) => ({
+                            ...prev,
+                            [key]: {
+                              ...prev[key],
+                              score: Math.max(0, Number(v) || 0),
+                            },
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           <div
             style={{
               padding: "16px 24px",
@@ -422,46 +488,75 @@ export function FeudHostPanel() {
               </Tooltip>
             </div>
             <div style={{ flex: 1, overflowY: "auto" }}>
-              <div style={{ display: "grid", gap: 5 }}>
+              <div style={{ display: "grid", gap: 6 }}>
                 {round.answers.map((a, index) => (
                   <div
                     key={a.id}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const fromId = e.dataTransfer.getData("text/plain");
+                      if (fromId) reorderAnswer(fromId, a.id);
+                      setDragAnswerId(null);
+                    }}
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "26px 26px 1fr 56px auto",
-                      gap: 6,
+                      gridTemplateColumns: "32px 32px minmax(0, 1fr) 72px auto",
+                      gap: 8,
                       alignItems: "center",
-                      padding: "5px 6px",
-                      borderRadius: 6,
+                      padding: "6px 8px",
+                      borderRadius: 8,
                       background: a.revealed ? "#1a3a2a" : "#1f1f1f",
-                      border: `1px solid ${a.revealed ? "#4a8a6a" : "#3a3a3a"}`,
+                      border: `1px solid ${
+                        dragAnswerId === a.id
+                          ? "#60a5fa"
+                          : a.revealed
+                            ? "#4a8a6a"
+                            : "#3a3a3a"
+                      }`,
+                      opacity: dragAnswerId === a.id ? 0.7 : 1,
                     }}
                   >
+                    <button
+                      type="button"
+                      draggable
+                      aria-label={`Reorder answer ${index + 1}`}
+                      title="Drag to reorder"
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData("text/plain", a.id);
+                        e.dataTransfer.effectAllowed = "move";
+                        setDragAnswerId(a.id);
+                      }}
+                      onDragEnd={() => setDragAnswerId(null)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: 36,
+                        width: 32,
+                        borderRadius: 8,
+                        border: "1px solid #3a3a3a",
+                        background: "#2a2a2a",
+                        color: "#a3a3a3",
+                        cursor: "grab",
+                        padding: 0,
+                      }}
+                    >
+                      <GripVertical size={16} />
+                    </button>
                     <div
                       style={{
                         display: "flex",
-                        flexDirection: "column",
-                        gap: 2,
-                      }}
-                    >
-                      <Tooltip content="Move Up">
-                        <IconButton
-                          label={<ChevronUp size={14} />}
-                          onClick={() => moveAnswer(a.id, -1)}
-                          style={{ marginRight: 0, padding: "1px 3px", minHeight: 22, width: 24 }}
-                        />
-                      </Tooltip>
-                      <Tooltip content="Move Down">
-                        <IconButton
-                          label={<ChevronDown size={14} />}
-                          onClick={() => moveAnswer(a.id, +1)}
-                          style={{ marginRight: 0, padding: "1px 3px", minHeight: 22, width: 24 }}
-                        />
-                      </Tooltip>
-                    </div>
-                    <div
-                      style={{
-                        textAlign: "center",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: 36,
+                        width: 32,
+                        borderRadius: 8,
+                        border: "1px solid #3a3a3a",
+                        background: "#2a2a2a",
                         fontWeight: 600,
                         fontSize: 14,
                         color: "#e5e5e5",
@@ -481,6 +576,8 @@ export function FeudHostPanel() {
                     />
                     <NumberInput
                       value={a.points}
+                      disabled={!feud.showAnswerScores}
+                      style={{ width: "100%" }}
                       onChange={(v) =>
                         setRound((r) => {
                           const aa = r.answers.find((x) => x.id === a.id);
@@ -488,25 +585,40 @@ export function FeudHostPanel() {
                         })
                       }
                     />
-                    <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       {!a.revealed ? (
                         <IconButton
                           label="Reveal"
                           onClick={() => reveal(a.id)}
-                          style={{ marginRight: 0, padding: "6px 8px", fontSize: 12 }}
+                          style={{
+                            marginRight: 0,
+                            height: 36,
+                            padding: "0 12px",
+                            fontSize: 12,
+                          }}
                         />
                       ) : (
                         <IconButton
                           label="Hide"
                           onClick={() => hide(a.id)}
-                          style={{ marginRight: 0, padding: "6px 8px", fontSize: 12 }}
+                          style={{
+                            marginRight: 0,
+                            height: 36,
+                            padding: "0 12px",
+                            fontSize: 12,
+                          }}
                         />
                       )}
                       <Tooltip content="Delete Answer">
                         <IconButton
                           label={<Trash2 size={14} />}
                           onClick={() => removeAnswer(a.id)}
-                          style={{ marginRight: 0, padding: "6px 6px" }}
+                          style={{
+                            marginRight: 0,
+                            height: 36,
+                            width: 36,
+                            padding: 0,
+                          }}
                         />
                       </Tooltip>
                     </div>
@@ -554,11 +666,89 @@ export function FeudHostPanel() {
             <FeudAudienceView
               round={round}
               showHeader={feud.showHeader}
+              leftTeam={feud.leftTeam}
+              rightTeam={feud.rightTeam}
+              showTeamScores={feud.showTeamScores}
+              showAnswerScores={feud.showAnswerScores}
               embedded
             />
           </div>
         </div>
       </div>
+
+      <Dialog.Root
+        open={questionDialogOpen}
+        onOpenChange={(open) => {
+          setQuestionDialogOpen(open);
+          if (!open) setQuestionDraft("");
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[1000] bg-black/70" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 z-[1001] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-neutral-700 bg-neutral-900 p-6 shadow-2xl">
+            <Dialog.Title className="mb-2 text-lg font-semibold text-white">
+              {questionDialogMode === "add" ? "New Round" : "Edit Question"}
+            </Dialog.Title>
+            <Dialog.Description className="mb-4 text-sm text-neutral-400">
+              {questionDialogMode === "add"
+                ? "Enter the survey question for this round."
+                : "Update the survey question for this round."}
+            </Dialog.Description>
+            <input
+              type="text"
+              value={questionDraft}
+              onChange={(e) => setQuestionDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") saveQuestionDialog();
+              }}
+              placeholder="Type the survey question..."
+              className="mb-4 w-full rounded-lg border border-neutral-600 bg-neutral-800 px-4 py-3 text-white placeholder-neutral-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              autoFocus
+            />
+            <div className="flex items-center justify-between gap-3">
+              {questionDialogMode === "edit" ? (
+                <button
+                  type="button"
+                  onClick={deleteRound}
+                  disabled={feud.rounds.length <= 1}
+                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium ${
+                    feud.rounds.length <= 1
+                      ? "cursor-not-allowed border-neutral-800 text-neutral-600"
+                      : "border-red-900/60 bg-red-950/40 text-red-300 hover:bg-red-950/70"
+                  }`}
+                >
+                  <Trash2 size={14} />
+                  Delete Round
+                </button>
+              ) : (
+                <span />
+              )}
+              <div className="flex gap-3">
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-medium text-neutral-200"
+                  >
+                    Cancel
+                  </button>
+                </Dialog.Close>
+                <button
+                  type="button"
+                  onClick={saveQuestionDialog}
+                  disabled={!questionDraft.trim()}
+                  className={`rounded-lg px-4 py-2 text-sm font-medium text-white ${
+                    questionDraft.trim()
+                      ? "bg-blue-600 hover:bg-blue-500"
+                      : "cursor-not-allowed bg-neutral-700 text-neutral-500"
+                  }`}
+                >
+                  {questionDialogMode === "add" ? "Create Round" : "Save"}
+                </button>
+              </div>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       <ConfirmDialog
         open={confirm.open}

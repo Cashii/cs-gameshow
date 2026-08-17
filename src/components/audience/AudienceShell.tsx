@@ -5,7 +5,7 @@ import { SuiteProvider, useSuite } from "@/lib/suite-provider";
 import type { ActiveGame } from "@/lib/suite-state";
 import { FeudAudienceView } from "@/components/feud/FeudAudienceView";
 import { WheelAudienceView } from "@/components/wheel/WheelAudienceView";
-import { NumberDrawReveal } from "@/components/draw/NumberDrawReveal";
+import { LiveDrawerReveal } from "@/components/live-drawer/LiveDrawerReveal";
 import { TakeItOrLeaveItAudienceView } from "@/components/take-it-or-leave-it/TakeItOrLeaveItAudienceView";
 
 const standbyScreen = (
@@ -88,6 +88,10 @@ function AudienceContent() {
           <FeudAudienceView
             round={currentFeudRound}
             showHeader={state.feud.showHeader}
+            leftTeam={state.feud.leftTeam}
+            rightTeam={state.feud.rightTeam}
+            showTeamScores={state.feud.showTeamScores}
+            showAnswerScores={state.feud.showAnswerScores}
             onToggleFullscreen={toggleFullscreen}
           />
         </div>
@@ -99,10 +103,10 @@ function AudienceContent() {
         <WheelAudienceView wheel={state.wheel} />
       </div>
     );
-  } else if (displayedGame === "draw") {
+  } else if (displayedGame === "liveDrawer") {
     content = (
       <div className="h-full w-full overflow-hidden">
-        <NumberDrawReveal draw={state.draw} />
+        <LiveDrawerReveal game={state.liveDrawer} />
       </div>
     );
   } else if (displayedGame === "takeIt") {

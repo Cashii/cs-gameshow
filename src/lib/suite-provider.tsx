@@ -21,7 +21,7 @@ import {
 import { useBroadcastSync } from "@/lib/sync/useBroadcastSync";
 import type { FeudGameState, FeudRound } from "@/lib/feud/types";
 import type { WheelGameState } from "@/lib/wheel/types";
-import type { DrawGameState } from "@/lib/draw/types";
+import type { LiveDrawerGameState } from "@/lib/live-drawer/types";
 import {
   createDefaultTakeItState,
   type TakeItGameState,
@@ -51,7 +51,9 @@ type SuiteContextValue = {
   setAudienceCovered: (covered: boolean) => void;
   updateFeud: (updater: (feud: FeudGameState) => FeudGameState) => void;
   updateWheel: (updater: (wheel: WheelGameState) => WheelGameState) => void;
-  updateDraw: (updater: (draw: DrawGameState) => DrawGameState) => void;
+  updateLiveDrawer: (
+    updater: (game: LiveDrawerGameState) => LiveDrawerGameState,
+  ) => void;
   updateTakeIt: (updater: (game: TakeItGameState) => TakeItGameState) => void;
   currentFeudRound: FeudRound | undefined;
 };
@@ -98,9 +100,12 @@ export function SuiteProvider({
     [],
   );
 
-  const updateDraw = useCallback(
-    (updater: (draw: DrawGameState) => DrawGameState) => {
-      setState((prev) => ({ ...prev, draw: updater(prev.draw) }));
+  const updateLiveDrawer = useCallback(
+    (updater: (game: LiveDrawerGameState) => LiveDrawerGameState) => {
+      setState((prev) => ({
+        ...prev,
+        liveDrawer: updater(prev.liveDrawer),
+      }));
     },
     [],
   );
@@ -128,7 +133,7 @@ export function SuiteProvider({
       setAudienceCovered,
       updateFeud,
       updateWheel,
-      updateDraw,
+      updateLiveDrawer,
       updateTakeIt,
       currentFeudRound,
     }),
@@ -138,7 +143,7 @@ export function SuiteProvider({
       setAudienceCovered,
       updateFeud,
       updateWheel,
-      updateDraw,
+      updateLiveDrawer,
       updateTakeIt,
       currentFeudRound,
     ],

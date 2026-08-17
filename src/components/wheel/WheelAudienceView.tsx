@@ -4,6 +4,8 @@ import LetterBoard from "./LetterBoard";
 import type { WheelGameState } from "@/lib/wheel/types";
 import "@/styles/wheel-audience.css";
 
+const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
 function seeded(n: number) {
   const x = Math.sin(n * 12.9898) * 43758.5453;
   return x - Math.floor(x);
@@ -26,6 +28,12 @@ const LIGHT_BEAMS = Array.from({ length: 25 }, (_, i) => ({
   delay: seeded(i + 801) * 8,
   duration: 10 + seeded(i + 901) * 10,
 }));
+
+function isLetterSelected(wheel: WheelGameState, letter: string): boolean {
+  if (wheel.revealedLetters.includes(letter)) return true;
+  if (!wheel.revealedAll) return false;
+  return wheel.phrase.toUpperCase().includes(letter);
+}
 
 export function WheelAudienceView({
   wheel,
@@ -97,7 +105,9 @@ export function WheelAudienceView({
       </div>
 
       <div
-        className="relative z-10 flex h-full w-full items-center justify-center p-4 sm:p-6"
+        className={`relative z-10 flex h-full w-full items-center justify-center p-4 sm:p-6 board-stage${
+          wheel.showLetterLegend ? " has-letter-legend" : ""
+        }`}
         style={{ overflow: "hidden" }}
       >
         <LetterBoard
@@ -106,6 +116,24 @@ export function WheelAudienceView({
           revealedAll={wheel.revealedAll}
           zoom={wheel.zoom || 1}
         />
+      </div>
+
+      <div
+        className={`letter-legend${wheel.showLetterLegend ? " is-visible" : ""}`}
+        aria-hidden={!wheel.showLetterLegend}
+        aria-label="Selected letters"
+      >
+        {ALPHABET.map((letter) => {
+          const selected = isLetterSelected(wheel, letter);
+          return (
+            <span
+              key={letter}
+              className={`letter-legend-item${selected ? " selected" : ""}`}
+            >
+              {letter}
+            </span>
+          );
+        })}
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ export type WheelGameState = {
   revealedLetters: string[];
   revealedAll: boolean;
   zoom: number;
+  showLetterLegend: boolean;
 };
 
 export function createDefaultWheelState(): WheelGameState {
@@ -11,5 +12,6 @@ export function createDefaultWheelState(): WheelGameState {
     revealedLetters: [],
     revealedAll: false,
     zoom: 1,
+    showLetterLegend: true,
   };
 }

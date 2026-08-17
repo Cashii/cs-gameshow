@@ -44,11 +44,15 @@ export function NumberInput({
   onChange,
   min = 0,
   max = 200,
+  disabled = false,
+  style,
 }: Readonly<{
   value: number;
   onChange: (v: number) => void;
   min?: number;
   max?: number;
+  disabled?: boolean;
+  style?: React.CSSProperties;
 }>) {
   return (
     <input
@@ -56,6 +60,7 @@ export function NumberInput({
       value={value}
       min={min}
       max={max}
+      disabled={disabled}
       onChange={(e) =>
         onChange(
           Math.max(min, Math.min(max, Number.parseInt(e.target.value || "0", 10))),
@@ -63,11 +68,16 @@ export function NumberInput({
       }
       style={{
         width: 60,
-        padding: 6,
+        height: 36,
+        boxSizing: "border-box",
+        padding: "0 8px",
         borderRadius: 8,
         border: "1px solid #3a3a3a",
-        background: "#2a2a2a",
-        color: "#e5e5e5",
+        background: disabled ? "#1a1a1a" : "#2a2a2a",
+        color: disabled ? "#666" : "#e5e5e5",
+        cursor: disabled ? "not-allowed" : "text",
+        opacity: disabled ? 0.6 : 1,
+        ...style,
       }}
     />
   );
@@ -92,7 +102,9 @@ export function TextInput({
       onChange={(e) => onChange(e.target.value)}
       style={{
         width: "100%",
-        padding: 8,
+        height: 36,
+        boxSizing: "border-box",
+        padding: "0 10px",
         borderRadius: 8,
         border: "1px solid #3a3a3a",
         background: "#2a2a2a",

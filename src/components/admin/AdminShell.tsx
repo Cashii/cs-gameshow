@@ -4,6 +4,7 @@ import {
   Briefcase,
   ChevronRight,
   CircleDollarSign,
+  Download,
   Eye,
   EyeOff,
   Home,
@@ -11,41 +12,47 @@ import {
   PanelLeftOpen,
   Presentation,
   Ticket,
+  Upload,
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { SuiteProvider, useSuite } from "@/lib/suite-provider";
 import {
   ACTIVE_GAME_LABELS,
+  normalizeSuiteState,
   type ActiveGame,
+  type SuiteState,
 } from "@/lib/suite-state";
 import { TooltipProvider } from "@/components/ui/Tooltip";
 import { FeudHostPanel } from "@/components/feud/FeudHostPanel";
 import { WheelHostPanel } from "@/components/wheel/WheelHostPanel";
-import { DrawHostPanel } from "@/components/draw/DrawHostPanel";
+import { LiveDrawerHostPanel } from "@/components/live-drawer/LiveDrawerHostPanel";
+import { LiveDrawerHeaderSettings } from "@/components/live-drawer/LiveDrawerHeaderSettings";
+import { FeudHeaderSettings } from "@/components/feud/FeudHeaderSettings";
 import { TakeItOrLeaveItHostPanel } from "@/components/take-it-or-leave-it/TakeItOrLeaveItHostPanel";
 
-const GAMES: ActiveGame[] = ["idle", "feud", "wheel", "draw", "takeIt"];
+const GAMES: ActiveGame[] = ["idle", "feud", "wheel", "liveDrawer", "takeIt"];
 
 const GAME_ICONS: Record<ActiveGame, LucideIcon> = {
   idle: Home,
   feud: Users,
   wheel: CircleDollarSign,
-  draw: Ticket,
+  liveDrawer: Ticket,
   takeIt: Briefcase,
 };
 
 const GAME_DESCRIPTIONS: Record<Exclude<ActiveGame, "idle">, string> = {
   feud: "Reveal survey answers, track strikes, and run each round.",
   wheel: "Set a phrase and reveal letters on the audience board.",
-  draw: "Draw a ticket number and animate it for the audience.",
+  liveDrawer: "Draw live text and color for the audience display.",
   takeIt: "Open nine cases, take banker offers, and decide take it or leave it.",
 };
 
 function AdminContent() {
-  const { state, setActiveGame, setAudienceCovered } = useSuite();
+  const { state, setState, setActiveGame, setAudienceCovered } = useSuite();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const loadInputRef = useRef<HTMLInputElement>(null);
   const audienceCoverLabel = state.audienceCovered ? "Go Live" : "Show Cover";
 
   const openAudience = () => {
@@ -54,6 +61,30 @@ function AdminContent() {
       "cs_gameshow_audience",
       "width=1400,height=900",
     );
+  };
+
+  const saveSuiteJson = () => {
+    const json = JSON.stringify(state, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cs-gameshow-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const loadSuiteJson = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result as string) as SuiteState;
+        setState(normalizeSuiteState(parsed));
+      } catch {
+        alert("Failed to load gameshow file. Make sure it is valid JSON.");
+      }
+    };
+    reader.readAsText(file);
   };
 
   return (
@@ -154,11 +185,52 @@ function AdminContent() {
             <Presentation size={17} className="shrink-0" />
             {!sidebarCollapsed && "Open Audience"}
           </button>
+          <div
+            className={`flex w-full ${
+              sidebarCollapsed ? "flex-col gap-1.5" : "gap-1.5"
+            }`}
+          >
+            <button
+              type="button"
+              onClick={saveSuiteJson}
+              title={sidebarCollapsed ? "Save all games" : undefined}
+              aria-label="Save all games"
+              className={`inline-flex items-center justify-center rounded-md border border-neutral-600 bg-neutral-800 text-xs font-semibold text-neutral-200 transition-colors hover:bg-neutral-700 ${
+                sidebarCollapsed ? "h-9 w-full px-2" : "h-9 flex-1 gap-1.5 px-2"
+              }`}
+            >
+              <Download size={14} className="shrink-0" />
+              {!sidebarCollapsed && "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => loadInputRef.current?.click()}
+              title={sidebarCollapsed ? "Load all games" : undefined}
+              aria-label="Load all games"
+              className={`inline-flex items-center justify-center rounded-md border border-neutral-600 bg-neutral-800 text-xs font-semibold text-neutral-200 transition-colors hover:bg-neutral-700 ${
+                sidebarCollapsed ? "h-9 w-full px-2" : "h-9 flex-1 gap-1.5 px-2"
+              }`}
+            >
+              <Upload size={14} className="shrink-0" />
+              {!sidebarCollapsed && "Load"}
+            </button>
+            <input
+              ref={loadInputRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) loadSuiteJson(file);
+                e.target.value = "";
+              }}
+            />
+          </div>
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center border-b border-neutral-800 bg-neutral-900/80 px-6 py-4">
+        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-neutral-800 bg-neutral-900/80 px-6 py-4">
           <div>
             <h1 className="text-xl font-bold text-white">
               {ACTIVE_GAME_LABELS[state.activeGame]}
@@ -169,11 +241,13 @@ function AdminContent() {
                 : "Host controls"}
             </p>
           </div>
+          {state.activeGame === "liveDrawer" && <LiveDrawerHeaderSettings />}
+          {state.activeGame === "feud" && <FeudHeaderSettings />}
         </header>
 
-        <main className="min-h-0 flex-1 overflow-auto">
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {state.activeGame === "idle" && (
-            <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col justify-center px-8 py-12">
+            <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col justify-center overflow-auto px-8 py-12">
               <div className="mb-10">
                 <p className="mb-3 text-sm font-semibold tracking-[0.2em] text-blue-400 uppercase">
                   Host Dashboard
@@ -188,7 +262,7 @@ function AdminContent() {
               </div>
 
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                {(["feud", "wheel", "draw", "takeIt"] as const).map((game) => {
+                {(["feud", "wheel", "liveDrawer", "takeIt"] as const).map((game) => {
                   const Icon = GAME_ICONS[game];
                   return (
                     <button
@@ -221,8 +295,16 @@ function AdminContent() {
           )}
           {state.activeGame === "feud" && <FeudHostPanel />}
           {state.activeGame === "wheel" && <WheelHostPanel />}
-          {state.activeGame === "draw" && <DrawHostPanel />}
-          {state.activeGame === "takeIt" && <TakeItOrLeaveItHostPanel />}
+          {state.activeGame === "liveDrawer" && (
+            <div className="min-h-0 flex-1 overflow-auto">
+              <LiveDrawerHostPanel />
+            </div>
+          )}
+          {state.activeGame === "takeIt" && (
+            <div className="min-h-0 flex-1 overflow-auto">
+              <TakeItOrLeaveItHostPanel />
+            </div>
+          )}
         </main>
       </div>
     </div>

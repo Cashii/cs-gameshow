@@ -15,13 +15,15 @@ export function Tooltip({
   children,
   content,
   side = "top",
+  delayDuration,
 }: {
   children: ReactElement;
   content: string;
   side?: "top" | "right" | "bottom" | "left";
+  delayDuration?: number;
 }) {
   return (
-    <TooltipPrimitive.Root>
+    <TooltipPrimitive.Root delayDuration={delayDuration}>
       <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
       <TooltipPrimitive.Portal>
         <TooltipPrimitive.Content

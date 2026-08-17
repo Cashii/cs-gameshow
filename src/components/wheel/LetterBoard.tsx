@@ -89,7 +89,7 @@ export default function LetterBoard({
             style={{ position: "relative", zIndex: 1, gap: `${6 * zoom * 0.25}rem` }}
           >
             <div
-              className="flex"
+              className="flex preparing-placeholders"
               style={{
                 gap: `clamp(${0.2 * zoom}rem, ${0.8 * zoom}vw, ${0.8 * zoom}rem)`,
               }}
@@ -97,21 +97,23 @@ export default function LetterBoard({
               {Array.from({ length: 6 }, (_, i) => (
                 <div
                   key={`placeholder-${i}`}
-                  className="rounded-md bg-white opacity-30 shadow-xl"
+                  className="preparing-placeholder rounded-md bg-white shadow-xl"
                   style={{
                     width: `clamp(${5 * zoom}rem, ${16 * zoom}vw, ${28 * zoom}rem)`,
                     height: `clamp(${8 * zoom}rem, ${24 * zoom}vw, ${42 * zoom}rem)`,
+                    animationDelay: `${i * 0.12}s`,
                   }}
                 />
               ))}
             </div>
             <p
-              className="font-gameshow text-center text-white/80"
+              className="preparing-text font-gameshow text-center text-white/80"
               style={{
                 fontSize: `clamp(${1.5 * zoom}rem, ${4 * zoom}vw, ${3 * zoom}rem)`,
+                letterSpacing: "0.28em",
               }}
             >
-              Preparing game...
+              PREPARING BOARD
             </p>
           </div>
         </div>

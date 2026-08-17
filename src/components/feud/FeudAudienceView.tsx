@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { FeudRound } from "@/lib/feud/types";
+import type { FeudRound, FeudTeam } from "@/lib/feud/types";
 import { AnswerTile } from "./AnswerTile";
 import "@/styles/feud-audience.css";
 
@@ -17,14 +17,34 @@ const LIGHTBULBS = Array.from(
   }),
 );
 
+function TeamScore({
+  team,
+  side,
+}: Readonly<{ team: FeudTeam; side: "left" | "right" }>) {
+  return (
+    <div className={`team-score team-score-${side}`}>
+      <div className="team-score-name">{team.name || (side === "left" ? "Left" : "Right")}</div>
+      <div className="team-score-value">{team.score}</div>
+    </div>
+  );
+}
+
 export function FeudAudienceView({
   round,
   showHeader,
+  leftTeam,
+  rightTeam,
+  showTeamScores = true,
+  showAnswerScores = true,
   embedded = false,
   onToggleFullscreen,
 }: Readonly<{
   round: FeudRound;
   showHeader: boolean;
+  leftTeam: FeudTeam;
+  rightTeam: FeudTeam;
+  showTeamScores?: boolean;
+  showAnswerScores?: boolean;
   embedded?: boolean;
   onToggleFullscreen?: () => void;
 }>) {
@@ -90,7 +110,21 @@ export function FeudAudienceView({
         </div>
       )}
 
-      <div className="score">{total}</div>
+      {(showTeamScores || showAnswerScores) && (
+        <div
+          className={`score-row${
+            showTeamScores && showAnswerScores
+              ? " with-teams"
+              : showTeamScores
+                ? " teams-only"
+                : ""
+          }`}
+        >
+          {showTeamScores && <TeamScore team={leftTeam} side="left" />}
+          {showAnswerScores && <div className="score">{total}</div>}
+          {showTeamScores && <TeamScore team={rightTeam} side="right" />}
+        </div>
+      )}
 
       <div className="board-container">
         <div className="board">
@@ -102,6 +136,7 @@ export function FeudAudienceView({
                 index={originalIndex}
                 answer={a}
                 revealed={!!a.revealed}
+                showAnswerScores={showAnswerScores}
               />
             );
           })}
