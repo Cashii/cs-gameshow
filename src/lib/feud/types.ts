@@ -3,6 +3,7 @@ export type FeudAnswer = {
   text: string;
   points: number;
   revealed: boolean;
+  awardedTo?: "left" | "right";
 };
 
 export type FeudRound = {
@@ -26,4 +27,6 @@ export type FeudGameState = {
   rightTeam: FeudTeam;
   showTeamScores: boolean;
   showAnswerScores: boolean;
+  /** Which team receives points when an answer is revealed. */
+  awardTeam: "left" | "right";
 };

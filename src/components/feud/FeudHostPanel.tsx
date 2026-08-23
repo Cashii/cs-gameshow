@@ -13,6 +13,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
+import { SPECTATOR_SCREEN_LABELS } from "@/lib/suite-state";
 import { useSound } from "@/lib/feud/useSound";
 import { clamp, uid } from "@/lib/utils";
 import type { FeudAnswer, FeudGameState, FeudRound } from "@/lib/feud/types";
@@ -89,19 +90,36 @@ export function FeudHostPanel() {
     });
   };
 
+  const creditTeam = (
+    all: FeudGameState,
+    side: "left" | "right",
+    delta: number,
+  ) => {
+    const team = side === "left" ? all.leftTeam : all.rightTeam;
+    team.score = Math.max(0, team.score + delta);
+  };
+
   const reveal = (id: string) =>
-    setRound((r) => {
+    setRound((r, all) => {
       const a = r.answers.find((x) => x.id === id);
       if (a && !a.revealed) {
         a.revealed = true;
+        a.awardedTo = all.awardTeam === "right" ? "right" : "left";
+        creditTeam(all, a.awardedTo, a.points || 0);
         sounds.correct();
       }
     });
 
   const hide = (id: string) =>
-    setRound((r) => {
+    setRound((r, all) => {
       const a = r.answers.find((x) => x.id === id);
-      if (a) a.revealed = false;
+      if (a && a.revealed) {
+        if (a.awardedTo) {
+          creditTeam(all, a.awardedTo, -(a.points || 0));
+        }
+        a.revealed = false;
+        a.awardedTo = undefined;
+      }
     });
 
   const addStrike = () => {
@@ -182,6 +200,7 @@ export function FeudHostPanel() {
         setRound((r) => {
           r.answers.forEach((a) => {
             a.revealed = false;
+            a.awardedTo = undefined;
           });
           r.strikes = 0;
         });
@@ -202,6 +221,7 @@ export function FeudHostPanel() {
           copy.rounds.forEach((r) => {
             r.answers.forEach((a) => {
               a.revealed = false;
+              a.awardedTo = undefined;
             });
             r.strikes = 0;
           });
@@ -252,12 +272,14 @@ export function FeudHostPanel() {
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <Select
             value={feud.currentRoundIndex.toString()}
-            onValueChange={(value) =>
+            onValueChange={(value) => {
+              const nextIndex = Number.parseInt(value, 10);
+              if (nextIndex === feud.currentRoundIndex) return;
               updateFeud((prev) => ({
                 ...prev,
-                currentRoundIndex: Number.parseInt(value, 10),
-              }))
-            }
+                currentRoundIndex: nextIndex,
+              }));
+            }}
             options={feud.rounds.map((r, i) => ({
               value: i.toString(),
               label: `${i + 1}. ${r.question?.slice(0, 40) || "(untitled)"}`,
@@ -344,80 +366,88 @@ export function FeudHostPanel() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 12,
+                gridTemplateColumns: "1fr 1px 1fr",
+                gap: 16,
+                alignItems: "start",
               }}
             >
-              {(["leftTeam", "rightTeam"] as const).map((key) => {
+              {(["leftTeam", "rightTeam"] as const).map((key, i) => {
                 const team = feud[key];
                 const label = key === "leftTeam" ? "Left" : "Right";
                 return (
-                  <div
-                    key={key}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 8,
-                      padding: 12,
-                      borderRadius: 8,
-                      border: "1px solid #3a3a3a",
-                      background: "#222",
-                    }}
-                  >
-                    <div>
-                      <label
+                  <div key={key} style={{ display: "contents" }}>
+                    {i === 1 && (
+                      <div
+                        aria-hidden
                         style={{
-                          display: "block",
-                          marginBottom: 4,
-                          fontSize: 11,
-                          fontWeight: 600,
-                          letterSpacing: "0.04em",
-                          textTransform: "uppercase",
-                          color: "#a3a3a3",
+                          width: 1,
+                          alignSelf: "stretch",
+                          background: "#3a3a3a",
                         }}
-                      >
-                        Name
-                      </label>
-                      <TextInput
-                        value={team.name}
-                        onChange={(v) =>
-                          updateFeud((prev) => ({
-                            ...prev,
-                            [key]: { ...prev[key], name: v },
-                          }))
-                        }
-                        placeholder={`${label} team`}
                       />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          display: "block",
-                          marginBottom: 4,
-                          fontSize: 11,
-                          fontWeight: 600,
-                          letterSpacing: "0.04em",
-                          textTransform: "uppercase",
-                          color: "#a3a3a3",
-                        }}
-                      >
-                        Score
-                      </label>
-                      <NumberInput
-                        value={team.score}
-                        min={0}
-                        max={99999}
-                        style={{ width: "100%" }}
-                        onChange={(v) =>
-                          updateFeud((prev) => ({
-                            ...prev,
-                            [key]: {
-                              ...prev[key],
-                              score: Math.max(0, Number(v) || 0),
-                            },
-                          }))
-                        }
-                      />
+                    )}
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                      }}
+                    >
+                      <div>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: 4,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            letterSpacing: "0.04em",
+                            textTransform: "uppercase",
+                            color: "#a3a3a3",
+                          }}
+                        >
+                          Name
+                        </label>
+                        <TextInput
+                          value={team.name}
+                          onChange={(v) =>
+                            updateFeud((prev) => ({
+                              ...prev,
+                              [key]: { ...prev[key], name: v },
+                            }))
+                          }
+                          placeholder={`${label} team`}
+                        />
+                      </div>
+                      <div>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: 4,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            letterSpacing: "0.04em",
+                            textTransform: "uppercase",
+                            color: "#a3a3a3",
+                          }}
+                        >
+                          Score
+                        </label>
+                        <NumberInput
+                          value={team.score}
+                          min={0}
+                          max={99999}
+                          style={{ width: "100%" }}
+                          onChange={(v) =>
+                            updateFeud((prev) => ({
+                              ...prev,
+                              [key]: {
+                                ...prev[key],
+                                score: Math.max(0, Number(v) || 0),
+                              },
+                            }))
+                          }
+                        />
+                      </div>
                     </div>
                   </div>
                 );
@@ -473,19 +503,69 @@ export function FeudHostPanel() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
+                gap: 12,
                 marginBottom: 8,
               }}
             >
               <div style={{ fontWeight: 600, fontSize: 14, color: "#e5e5e5" }}>
                 Answers
               </div>
-              <Tooltip content="Add Answer">
-                <IconButton
-                  label={<Plus size={16} />}
-                  onClick={addAnswer}
-                  style={{ marginRight: 0 }}
-                />
-              </Tooltip>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: "0.04em",
+                    textTransform: "uppercase",
+                    color: "#a3a3a3",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Award to
+                </span>
+                {(["left", "right"] as const).map((side) => {
+                  const selected = (feud.awardTeam ?? "left") === side;
+                  const name =
+                    side === "left"
+                      ? feud.leftTeam.name || "Left"
+                      : feud.rightTeam.name || "Right";
+                  return (
+                    <button
+                      key={side}
+                      type="button"
+                      onClick={() =>
+                        updateFeud((prev) => ({ ...prev, awardTeam: side }))
+                      }
+                      style={{
+                        height: 32,
+                        padding: "0 10px",
+                        borderRadius: 8,
+                        border: selected
+                          ? "1px solid #60a5fa"
+                          : "1px solid #3a3a3a",
+                        background: selected ? "#1e3a5f" : "#2a2a2a",
+                        color: selected ? "#e5e5e5" : "#a3a3a3",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        maxWidth: 140,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {name}
+                    </button>
+                  );
+                })}
+                <Tooltip content="Add Answer">
+                  <IconButton
+                    label={<Plus size={16} />}
+                    onClick={addAnswer}
+                    style={{ marginRight: 0 }}
+                  />
+                </Tooltip>
+              </div>
             </div>
             <div style={{ flex: 1, overflowY: "auto" }}>
               <div style={{ display: "grid", gap: 6 }}>
@@ -650,12 +730,14 @@ export function FeudHostPanel() {
               <p className="text-sm font-semibold text-white">Audience view</p>
               <p
                 className={`text-xs font-medium ${
-                  state.audienceCovered ? "text-amber-400" : "text-emerald-400"
+                  state.spectatorGame === "feud"
+                    ? "text-emerald-400"
+                    : "text-sky-400"
                 }`}
               >
-                {state.audienceCovered
-                  ? "Covered — safe to prepare"
-                  : "Live — changes are visible"}
+                {state.spectatorGame === "feud"
+                  ? "Live on spectator"
+                  : `Spectator is on ${SPECTATOR_SCREEN_LABELS[state.spectatorGame ?? state.activeGame]} — editing here stays off-air`}
               </p>
             </div>
           </div>

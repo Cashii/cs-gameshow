@@ -1,5 +1,5 @@
-import { AdminShell } from "@/components/admin/AdminShell";
+import { redirect } from "next/navigation";
 
-export default function AdminPage() {
-  return <AdminShell />;
+export default function AdminRedirectPage() {
+  redirect("/operator");
 }

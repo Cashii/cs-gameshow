@@ -4,9 +4,14 @@ export type LiveDrawerColor = {
   hex: string;
 };
 
+export type LiveDrawerToken = {
+  id: string;
+  number: string;
+  colorId: string;
+};
+
 export type LiveDrawerGameState = {
-  number: string | null;
-  colorId: string | null;
+  revealedTokens: LiveDrawerToken[];
   sequence: number;
   /** Scale relative to the default audience text size (1 = current default). */
   numberScale: number;
@@ -29,8 +34,7 @@ export const LIVE_DRAWER_COLORS: LiveDrawerColor[] = [
 
 export function createDefaultLiveDrawerState(): LiveDrawerGameState {
   return {
-    number: null,
-    colorId: null,
+    revealedTokens: [],
     sequence: 0,
     numberScale: DEFAULT_LIVE_DRAWER_NUMBER_SCALE,
   };
@@ -49,3 +53,5 @@ export function getLiveDrawerColor(
   if (!colorId) return null;
   return LIVE_DRAWER_COLORS.find((c) => c.id === colorId) ?? null;
 }
+
+export type PoolSummary = Record<string, number>;

@@ -6,42 +6,112 @@ import {
   clampLiveDrawerNumberScale,
   DEFAULT_LIVE_DRAWER_NUMBER_SCALE,
   type LiveDrawerGameState,
+  type LiveDrawerToken,
+  type PoolSummary,
 } from "@/lib/live-drawer/types";
 import {
   createDefaultTakeItState,
   type TakeItGameState,
 } from "@/lib/take-it-or-leave-it/types";
+import {
+  createEmptyPoll,
+  type PollState,
+} from "@/lib/poll/types";
+import {
+  createDefaultMessageBoardState,
+  type MessageBoardState,
+} from "@/lib/message-board/types";
 
-export type ActiveGame = "feud" | "wheel" | "liveDrawer" | "takeIt" | "idle";
+export type ActiveGame =
+  | "feud"
+  | "wheel"
+  | "liveDrawer"
+  | "takeIt"
+  | "idle"
+  | "poll"
+  | "messageBoard";
+export type SpectatorScreen = ActiveGame;
 
 export type SuiteState = {
+  /** Game the operator is currently editing / controlling. */
   activeGame: ActiveGame;
-  audienceCovered: boolean;
+  /** Screen shown on the spectator display (independent of activeGame). */
+  spectatorGame: SpectatorScreen;
+  spectatorCovered: boolean;
   feud: FeudGameState;
   wheel: WheelGameState;
   liveDrawer: LiveDrawerGameState;
   takeIt: TakeItGameState;
+  poll: PollState;
+  messageBoard: MessageBoardState;
+};
+
+export type EventSnapshot = SuiteState & {
+  revision: number;
+  poolSummary: PoolSummary;
+  poolTokens: LiveDrawerToken[];
+  calledTokens: LiveDrawerToken[];
 };
 
 type LegacySuiteState = Partial<Omit<SuiteState, "activeGame" | "liveDrawer">> & {
   activeGame?: ActiveGame | "deal" | "draw";
-  draw?: LiveDrawerGameState & { colors?: unknown };
-  liveDrawer?: LiveDrawerGameState & { colors?: unknown };
+  spectatorGame?: SpectatorScreen | "deal" | "draw";
+  audienceCovered?: boolean;
+  draw?: LegacyLiveDrawer & { colors?: unknown };
+  liveDrawer?: LegacyLiveDrawer & { colors?: unknown };
   deal?: TakeItGameState & { dealAccepted?: boolean | null };
+};
+
+function normalizeActiveGame(
+  raw: ActiveGame | "deal" | "draw" | undefined,
+  fallback: ActiveGame,
+): ActiveGame {
+  if (raw === "deal") return "takeIt";
+  if (raw === "draw") return "liveDrawer";
+  if (
+    raw === "idle" ||
+    raw === "feud" ||
+    raw === "wheel" ||
+    raw === "liveDrawer" ||
+    raw === "takeIt" ||
+    raw === "poll" ||
+    raw === "messageBoard"
+  ) {
+    return raw;
+  }
+  return fallback;
+}
+
+function normalizeSpectatorScreen(
+  raw: SpectatorScreen | "deal" | "draw" | undefined,
+  fallback: SpectatorScreen,
+): SpectatorScreen {
+  return normalizeActiveGame(raw, fallback);
+}
+
+type LegacyLiveDrawer = Partial<LiveDrawerGameState> & {
+  number?: string | null;
+  colorId?: string | null;
+  colors?: unknown;
 };
 
 export const SUITE_STORAGE_KEY = "cs_gameshow_suite_v1";
 export const SUITE_SYNC_CHANNEL = "cs_gameshow_sync";
 export const SUITE_FALLBACK_KEY = "cs_gameshow_last_state";
 
+export const EVENT_ID = "default";
+
 export function createDefaultSuiteState(): SuiteState {
   return {
     activeGame: "idle",
-    audienceCovered: true,
+    spectatorGame: "idle",
+    spectatorCovered: false,
     feud: createSampleFeudGame(),
     wheel: createDefaultWheelState(),
     liveDrawer: createDefaultLiveDrawerState(),
     takeIt: createDefaultTakeItState(),
+    poll: createEmptyPoll(),
+    messageBoard: createDefaultMessageBoardState(),
   };
 }
 
@@ -73,15 +143,56 @@ function normalizeLiveDrawerState(
 ): LiveDrawerGameState {
   const defaults = createDefaultLiveDrawerState();
   if (!raw) return defaults;
-  const { colors: _ignored, ...rest } = raw;
+
+  const { colors: _ignored, number, colorId, ...rest } = raw;
+
+  let revealedTokens = rest.revealedTokens;
+  if (!Array.isArray(revealedTokens) && number != null) {
+    revealedTokens = [
+      {
+        id: "legacy",
+        number: String(number),
+        colorId: colorId ?? "blue",
+      },
+    ];
+  }
+
   return {
     ...defaults,
     ...rest,
-    colorId: rest.colorId ?? null,
+    revealedTokens: Array.isArray(revealedTokens) ? revealedTokens : [],
     numberScale:
       typeof rest.numberScale === "number"
         ? clampLiveDrawerNumberScale(rest.numberScale)
         : DEFAULT_LIVE_DRAWER_NUMBER_SCALE,
+    sequence: typeof rest.sequence === "number" ? rest.sequence : 0,
+  };
+}
+
+function normalizePollState(raw: Partial<PollState> | undefined): PollState {
+  const defaults = createEmptyPoll();
+  if (!raw || typeof raw !== "object") return defaults;
+  return {
+    ...defaults,
+    ...raw,
+    choices: Array.isArray(raw.choices) && raw.choices.length >= 2
+      ? raw.choices.map((c, i) => ({
+          id: c.id ?? String.fromCharCode(97 + i),
+          text: c.text ?? `Option ${i + 1}`,
+          votes: typeof c.votes === "number" ? c.votes : 0,
+        }))
+      : defaults.choices,
+    status: raw.status ?? "idle",
+  };
+}
+
+function normalizeMessageBoardState(
+  raw: Partial<MessageBoardState> | undefined,
+): MessageBoardState {
+  const defaults = createDefaultMessageBoardState();
+  if (!raw || typeof raw !== "object") return defaults;
+  return {
+    text: typeof raw.text === "string" ? raw.text : defaults.text,
   };
 }
 
@@ -91,20 +202,24 @@ export function normalizeSuiteState(
   const defaults = createDefaultSuiteState();
   if (!raw || typeof raw !== "object") return defaults;
 
-  const activeGame: ActiveGame =
-    raw.activeGame === "deal"
-      ? "takeIt"
-      : raw.activeGame === "draw"
-        ? "liveDrawer"
-        : ((raw.activeGame as ActiveGame | undefined) ?? defaults.activeGame);
+  const activeGame = normalizeActiveGame(raw.activeGame, defaults.activeGame);
+  // Older events only had activeGame; keep spectator on that game until changed.
+  const spectatorGame = normalizeSpectatorScreen(
+    raw.spectatorGame,
+    activeGame,
+  );
 
   const { draw: _legacyDraw, ...rawWithoutDraw } = raw;
+
+  const spectatorCovered =
+    raw.spectatorCovered ?? raw.audienceCovered ?? defaults.spectatorCovered;
 
   return {
     ...defaults,
     ...rawWithoutDraw,
     activeGame,
-    audienceCovered: raw.audienceCovered ?? defaults.audienceCovered,
+    spectatorGame,
+    spectatorCovered,
     feud: {
       ...createSampleFeudGame(),
       ...raw.feud,
@@ -125,6 +240,7 @@ export function normalizeSuiteState(
       },
       showTeamScores: raw.feud?.showTeamScores ?? true,
       showAnswerScores: raw.feud?.showAnswerScores ?? true,
+      awardTeam: raw.feud?.awardTeam === "right" ? "right" : "left",
       rounds: raw.feud?.rounds?.length
         ? raw.feud.rounds
         : createSampleFeudGame().rounds,
@@ -137,6 +253,24 @@ export function normalizeSuiteState(
     },
     liveDrawer: normalizeLiveDrawerState(raw.liveDrawer ?? raw.draw),
     takeIt: normalizeTakeItState(raw.takeIt ?? raw.deal),
+    poll: normalizePollState(raw.poll),
+    messageBoard: normalizeMessageBoardState(raw.messageBoard),
+  };
+}
+
+export function suiteToSnapshot(
+  suite: SuiteState,
+  revision: number,
+  poolSummary: PoolSummary,
+  poolTokens: LiveDrawerToken[],
+  calledTokens: LiveDrawerToken[] = [],
+): EventSnapshot {
+  return {
+    ...suite,
+    revision,
+    poolSummary,
+    poolTokens,
+    calledTokens,
   };
 }
 
@@ -166,4 +300,24 @@ export const ACTIVE_GAME_LABELS: Record<ActiveGame, string> = {
   wheel: "Wheel of Riches",
   liveDrawer: "Live Drawer",
   takeIt: "Take It or Leave It",
+  poll: "Poll",
+  messageBoard: "Message Board",
 };
+
+export const SPECTATOR_SCREEN_LABELS: Record<SpectatorScreen, string> =
+  ACTIVE_GAME_LABELS;
+
+export const SPECTATOR_SCREENS: SpectatorScreen[] = [
+  "idle",
+  "feud",
+  "wheel",
+  "takeIt",
+  "liveDrawer",
+  "poll",
+  "messageBoard",
+];
+
+/** @deprecated use spectatorCovered */
+export function isSpectatorCovered(state: SuiteState): boolean {
+  return state.spectatorCovered;
+}

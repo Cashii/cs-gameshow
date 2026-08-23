@@ -1,5 +1,5 @@
-import { AudienceShell } from "@/components/audience/AudienceShell";
+import { redirect } from "next/navigation";
 
-export default function AudiencePage() {
-  return <AudienceShell />;
+export default function AudienceRedirectPage() {
+  redirect("/spectator");
 }

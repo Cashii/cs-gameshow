@@ -6,119 +6,447 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import {
   createDefaultSuiteState,
-  loadSuiteState,
-  normalizeSuiteState,
-  saveSuiteState,
-  SUITE_FALLBACK_KEY,
   type ActiveGame,
+  type EventSnapshot,
+  type SpectatorScreen,
   type SuiteState,
 } from "@/lib/suite-state";
-import { useBroadcastSync } from "@/lib/sync/useBroadcastSync";
+import { snapshotToSuite, useEventSync } from "@/lib/sync/useEventSync";
+import {
+  publishLocalSuite,
+  readLocalSuite,
+  useLocalSuiteSync,
+} from "@/lib/sync/useLocalSuiteSync";
 import type { FeudGameState, FeudRound } from "@/lib/feud/types";
 import type { WheelGameState } from "@/lib/wheel/types";
 import type { LiveDrawerGameState } from "@/lib/live-drawer/types";
+import type { PoolSummary, LiveDrawerToken } from "@/lib/live-drawer/types";
 import {
   createDefaultTakeItState,
   type TakeItGameState,
 } from "@/lib/take-it-or-leave-it/types";
+import type { PollState } from "@/lib/poll/types";
+import {
+  createDefaultMessageBoardState,
+  type MessageBoardState,
+} from "@/lib/message-board/types";
 
-function loadFallbackSuiteState(): SuiteState | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(SUITE_FALLBACK_KEY);
-    if (!raw) return null;
-    return normalizeSuiteState(JSON.parse(raw));
-  } catch {
-    return null;
-  }
-}
-
-function initialStateForRole(role: "admin" | "audience"): SuiteState {
-  if (typeof window === "undefined") return createDefaultSuiteState();
-  if (role === "admin") return loadSuiteState();
-  return loadFallbackSuiteState() ?? createDefaultSuiteState();
-}
+export type SuiteRole = "operator" | "spectator" | "hostess" | "player";
 
 type SuiteContextValue = {
+  role: SuiteRole;
   state: SuiteState;
+  snapshot: EventSnapshot | null;
+  poolSummary: PoolSummary;
+  poolTokens: LiveDrawerToken[];
+  calledTokens: LiveDrawerToken[];
+  revision: number;
+  connected: boolean;
   setState: React.Dispatch<React.SetStateAction<SuiteState>>;
   setActiveGame: (game: ActiveGame) => void;
-  setAudienceCovered: (covered: boolean) => void;
+  setSpectatorGame: (game: SpectatorScreen) => void;
+  setSpectatorCovered: (covered: boolean) => void;
   updateFeud: (updater: (feud: FeudGameState) => FeudGameState) => void;
   updateWheel: (updater: (wheel: WheelGameState) => WheelGameState) => void;
   updateLiveDrawer: (
     updater: (game: LiveDrawerGameState) => LiveDrawerGameState,
   ) => void;
   updateTakeIt: (updater: (game: TakeItGameState) => TakeItGameState) => void;
+  updatePoll: (updater: (poll: PollState) => PollState) => void;
+  updateMessageBoard: (
+    updater: (board: MessageBoardState) => MessageBoardState,
+  ) => void;
+  patchSuite: (patch: Partial<SuiteState>) => Promise<void>;
+  refreshSnapshot: () => Promise<void>;
+  applyServerSnapshot: (snapshot: EventSnapshot) => void;
   currentFeudRound: FeudRound | undefined;
 };
 
 const SuiteContext = createContext<SuiteContextValue | null>(null);
 
+function emptySnapshot(): EventSnapshot {
+  const suite = createDefaultSuiteState();
+  return {
+    ...suite,
+    revision: 0,
+    poolSummary: {},
+    poolTokens: [],
+    calledTokens: [],
+  };
+}
+
+function mergeSuiteIntoSnapshot(
+  prev: EventSnapshot,
+  suite: SuiteState,
+): EventSnapshot {
+  return {
+    ...prev,
+    ...suite,
+    poolSummary: prev.poolSummary,
+    poolTokens: prev.poolTokens,
+    calledTokens: prev.calledTokens,
+    revision: prev.revision,
+  };
+}
+
+/** Draw/reveal is written by the live-drawer API, not localStorage. Prefer the newer sequence, then more tokens. */
+function pickLiveDrawer(
+  a: LiveDrawerGameState,
+  b: LiveDrawerGameState,
+): LiveDrawerGameState {
+  if (a.sequence !== b.sequence) {
+    return a.sequence > b.sequence ? a : b;
+  }
+  if (a.revealedTokens.length !== b.revealedTokens.length) {
+    return a.revealedTokens.length > b.revealedTokens.length ? a : b;
+  }
+  return {
+    ...b,
+    numberScale: a.numberScale,
+  };
+}
+
+async function fetchSnapshot(): Promise<EventSnapshot> {
+  const res = await fetch("/api/event", { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to load event");
+  return (await res.json()) as EventSnapshot;
+}
+
 export function SuiteProvider({
   role,
   children,
+  syncEnabled = true,
 }: {
-  role: "admin" | "audience";
+  role: SuiteRole;
   children: ReactNode;
+  syncEnabled?: boolean;
 }) {
-  const [state, setState] = useState<SuiteState>(() =>
-    initialStateForRole(role),
+  const [snapshot, setSnapshot] = useState<EventSnapshot | null>(null);
+  const [connected, setConnected] = useState(false);
+  const snapshotRef = useRef<EventSnapshot | null>(null);
+  const confirmedRevisionRef = useRef(0);
+  const persistQueuedRef = useRef(false);
+  const persistInFlightRef = useRef(false);
+  const dirtyRef = useRef(false);
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastPersistedJsonRef = useRef<string | null>(null);
+  const lastLocalBroadcastAtRef = useRef(0);
+
+  const replaceSnapshot = useCallback((next: EventSnapshot) => {
+    snapshotRef.current = next;
+    setSnapshot(next);
+    setConnected(true);
+  }, []);
+
+  const rememberPersisted = useCallback((suite: SuiteState) => {
+    lastPersistedJsonRef.current = JSON.stringify(suite);
+  }, []);
+
+  const applyRemoteSnapshot = useCallback(
+    (next: EventSnapshot) => {
+      const local = snapshotRef.current;
+      if (next.revision < confirmedRevisionRef.current) return;
+
+      const recentlyBroadcast =
+        Date.now() - lastLocalBroadcastAtRef.current < 3000;
+
+      if (role === "spectator" && recentlyBroadcast && local) {
+        confirmedRevisionRef.current = Math.max(
+          confirmedRevisionRef.current,
+          next.revision,
+        );
+        replaceSnapshot({
+          ...local,
+          poolSummary: next.poolSummary,
+          poolTokens: next.poolTokens,
+          calledTokens: next.calledTokens ?? [],
+          poll: next.poll,
+          liveDrawer: pickLiveDrawer(local.liveDrawer, next.liveDrawer),
+          revision: next.revision,
+        });
+        setConnected(true);
+        return;
+      }
+
+      if (dirtyRef.current && local) {
+        confirmedRevisionRef.current = Math.max(
+          confirmedRevisionRef.current,
+          next.revision,
+        );
+        replaceSnapshot({
+          ...local,
+          poolSummary: next.poolSummary,
+          poolTokens: next.poolTokens,
+          calledTokens: next.calledTokens ?? [],
+          poll: next.poll,
+          liveDrawer: pickLiveDrawer(local.liveDrawer, next.liveDrawer),
+          revision: Math.max(local.revision, next.revision),
+        });
+        setConnected(true);
+        return;
+      }
+      if (next.revision <= confirmedRevisionRef.current) return;
+      confirmedRevisionRef.current = next.revision;
+      rememberPersisted(snapshotToSuite(next));
+      replaceSnapshot(next);
+    },
+    [rememberPersisted, replaceSnapshot, role],
+  );
+
+  useEventSync(applyRemoteSnapshot, syncEnabled);
+
+  const applyBroadcastSuite = useCallback(
+    (suite: SuiteState) => {
+      lastLocalBroadcastAtRef.current = Date.now();
+      const prev = snapshotRef.current ?? emptySnapshot();
+      replaceSnapshot(
+        mergeSuiteIntoSnapshot(prev, {
+          ...suite,
+          liveDrawer: pickLiveDrawer(prev.liveDrawer, suite.liveDrawer),
+        }),
+      );
+      setConnected(true);
+    },
+    [replaceSnapshot],
+  );
+
+  useLocalSuiteSync(
+    applyBroadcastSuite,
+    syncEnabled && role === "spectator",
   );
 
   useEffect(() => {
-    if (role !== "admin") return;
-    saveSuiteState(state);
-  }, [state, role]);
+    if (!syncEnabled) return;
+    fetchSnapshot()
+      .then((remote) => {
+        applyRemoteSnapshot(remote);
+        if (role !== "spectator") return;
+        const stored = readLocalSuite();
+        if (!stored) return;
+        const prev = snapshotRef.current ?? remote;
+        replaceSnapshot(
+          mergeSuiteIntoSnapshot(prev, {
+            ...stored,
+            liveDrawer: pickLiveDrawer(stored.liveDrawer, prev.liveDrawer),
+          }),
+        );
+      })
+      .catch(() => setConnected(false));
+  }, [applyRemoteSnapshot, replaceSnapshot, role, syncEnabled]);
 
-  useBroadcastSync(state, setState, role);
+  const persistLatest = useCallback(async () => {
+    if (role !== "operator") return;
+    persistQueuedRef.current = true;
+    if (persistInFlightRef.current) return;
+    persistInFlightRef.current = true;
 
-  const setActiveGame = useCallback((game: ActiveGame) => {
-    setState((prev) => ({ ...prev, activeGame: game }));
+    while (persistQueuedRef.current) {
+      persistQueuedRef.current = false;
+      const current = snapshotRef.current;
+      if (!current) break;
+      const suite = snapshotToSuite(current);
+      const json = JSON.stringify(suite);
+      if (json === lastPersistedJsonRef.current) {
+        dirtyRef.current = false;
+        continue;
+      }
+      try {
+        const res = await fetch("/api/event", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ suite }),
+        });
+        const data = (await res.json()) as { error?: string; revision?: number };
+        if (!res.ok) throw new Error(data.error ?? "Update failed");
+        lastPersistedJsonRef.current = json;
+        if (typeof data.revision === "number") {
+          confirmedRevisionRef.current = Math.max(
+            confirmedRevisionRef.current,
+            data.revision,
+          );
+          if (snapshotRef.current) {
+            snapshotRef.current = {
+              ...snapshotRef.current,
+              revision: data.revision,
+            };
+          }
+        }
+      } catch {
+        persistQueuedRef.current = false;
+        dirtyRef.current = false;
+        try {
+          const next = await fetchSnapshot();
+          confirmedRevisionRef.current = next.revision;
+          rememberPersisted(snapshotToSuite(next));
+          replaceSnapshot(next);
+        } catch {
+          // keep optimistic local state
+        }
+      }
+    }
+
+    persistInFlightRef.current = false;
+    if (!persistQueuedRef.current) dirtyRef.current = false;
+  }, [rememberPersisted, replaceSnapshot, role]);
+
+  const schedulePersist = useCallback(() => {
+    if (role !== "operator") return;
+    dirtyRef.current = true;
+    if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+    persistTimerRef.current = setTimeout(() => {
+      persistTimerRef.current = null;
+      void persistLatest();
+    }, 200);
+  }, [persistLatest, role]);
+
+  useEffect(() => {
+    return () => {
+      if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+    };
   }, []);
 
-  const setAudienceCovered = useCallback((covered: boolean) => {
-    setState((prev) => ({ ...prev, audienceCovered: covered }));
-  }, []);
+  const applyLocalSuite = useCallback(
+    (updater: (prev: SuiteState) => SuiteState) => {
+      const prev = snapshotRef.current ?? emptySnapshot();
+      const nextSuite = updater(snapshotToSuite(prev));
+      const next: EventSnapshot = {
+        ...prev,
+        ...nextSuite,
+      };
+      const prevJson = JSON.stringify(snapshotToSuite(prev));
+      const nextJson = JSON.stringify(nextSuite);
+      if (prevJson === nextJson) return;
+      replaceSnapshot(next);
+      if (role === "operator") {
+        lastLocalBroadcastAtRef.current = Date.now();
+        publishLocalSuite(nextSuite);
+      }
+      schedulePersist();
+    },
+    [replaceSnapshot, role, schedulePersist],
+  );
+
+  const state = useMemo(
+    () => (snapshot ? snapshotToSuite(snapshot) : createDefaultSuiteState()),
+    [snapshot],
+  );
+
+  const patchSuite = useCallback(
+    async (patch: Partial<SuiteState>) => {
+      applyLocalSuite((prev) => ({ ...prev, ...patch }));
+    },
+    [applyLocalSuite],
+  );
+
+  const setState = useCallback(
+    (updater: SuiteState | ((prev: SuiteState) => SuiteState)) => {
+      applyLocalSuite((prev) =>
+        typeof updater === "function" ? updater(prev) : updater,
+      );
+    },
+    [applyLocalSuite],
+  );
+
+  const setActiveGame = useCallback(
+    (game: ActiveGame) => {
+      applyLocalSuite((prev) => ({ ...prev, activeGame: game }));
+    },
+    [applyLocalSuite],
+  );
+
+  const setSpectatorGame = useCallback(
+    (game: SpectatorScreen) => {
+      applyLocalSuite((prev) => ({ ...prev, spectatorGame: game }));
+    },
+    [applyLocalSuite],
+  );
+
+  const setSpectatorCovered = useCallback(
+    (covered: boolean) => {
+      applyLocalSuite((prev) => ({ ...prev, spectatorCovered: covered }));
+    },
+    [applyLocalSuite],
+  );
 
   const updateFeud = useCallback(
     (updater: (feud: FeudGameState) => FeudGameState) => {
-      setState((prev) => ({ ...prev, feud: updater(prev.feud) }));
+      applyLocalSuite((prev) => ({ ...prev, feud: updater(prev.feud) }));
     },
-    [],
+    [applyLocalSuite],
   );
 
   const updateWheel = useCallback(
     (updater: (wheel: WheelGameState) => WheelGameState) => {
-      setState((prev) => ({ ...prev, wheel: updater(prev.wheel) }));
+      applyLocalSuite((prev) => ({ ...prev, wheel: updater(prev.wheel) }));
     },
-    [],
+    [applyLocalSuite],
   );
 
   const updateLiveDrawer = useCallback(
     (updater: (game: LiveDrawerGameState) => LiveDrawerGameState) => {
-      setState((prev) => ({
+      applyLocalSuite((prev) => ({
         ...prev,
         liveDrawer: updater(prev.liveDrawer),
       }));
     },
-    [],
+    [applyLocalSuite],
   );
 
   const updateTakeIt = useCallback(
     (updater: (game: TakeItGameState) => TakeItGameState) => {
-      setState((prev) => ({
+      applyLocalSuite((prev) => ({
         ...prev,
         takeIt: updater(prev.takeIt ?? createDefaultTakeItState()),
       }));
     },
-    [],
+    [applyLocalSuite],
   );
+
+  const updatePoll = useCallback(
+    (updater: (poll: PollState) => PollState) => {
+      applyLocalSuite((prev) => ({ ...prev, poll: updater(prev.poll) }));
+    },
+    [applyLocalSuite],
+  );
+
+  const updateMessageBoard = useCallback(
+    (updater: (board: MessageBoardState) => MessageBoardState) => {
+      applyLocalSuite((prev) => ({
+        ...prev,
+        messageBoard: updater(
+          prev.messageBoard ?? createDefaultMessageBoardState(),
+        ),
+      }));
+    },
+    [applyLocalSuite],
+  );
+
+  const applyServerSnapshot = useCallback(
+    (next: EventSnapshot) => {
+      confirmedRevisionRef.current = Math.max(
+        confirmedRevisionRef.current,
+        next.revision,
+      );
+      rememberPersisted(snapshotToSuite(next));
+      replaceSnapshot(next);
+      if (role === "operator") {
+        lastLocalBroadcastAtRef.current = Date.now();
+        publishLocalSuite(snapshotToSuite(next));
+      }
+    },
+    [rememberPersisted, replaceSnapshot, role],
+  );
+
+  const refreshSnapshot = useCallback(async () => {
+    const next = await fetchSnapshot();
+    applyServerSnapshot(next);
+  }, [applyServerSnapshot]);
 
   const currentFeudRound = useMemo(
     () => state.feud.rounds[state.feud.currentRoundIndex],
@@ -127,24 +455,47 @@ export function SuiteProvider({
 
   const value = useMemo(
     () => ({
+      role,
       state,
+      snapshot,
+      poolSummary: snapshot?.poolSummary ?? {},
+      poolTokens: snapshot?.poolTokens ?? [],
+      calledTokens: snapshot?.calledTokens ?? [],
+      revision: snapshot?.revision ?? 0,
+      connected,
       setState,
       setActiveGame,
-      setAudienceCovered,
+      setSpectatorGame,
+      setSpectatorCovered,
       updateFeud,
       updateWheel,
       updateLiveDrawer,
       updateTakeIt,
+      updatePoll,
+      updateMessageBoard,
+      patchSuite,
+      refreshSnapshot,
+      applyServerSnapshot,
       currentFeudRound,
     }),
     [
+      role,
       state,
+      snapshot,
+      connected,
+      setState,
       setActiveGame,
-      setAudienceCovered,
+      setSpectatorGame,
+      setSpectatorCovered,
       updateFeud,
       updateWheel,
       updateLiveDrawer,
       updateTakeIt,
+      updatePoll,
+      updateMessageBoard,
+      patchSuite,
+      refreshSnapshot,
+      applyServerSnapshot,
       currentFeudRound,
     ],
   );
@@ -158,4 +509,14 @@ export function useSuite() {
   const ctx = useContext(SuiteContext);
   if (!ctx) throw new Error("useSuite must be used within SuiteProvider");
   return ctx;
+}
+
+export function useEventSnapshot() {
+  const { snapshot, poolSummary, poolTokens, revision } = useSuite();
+  return {
+    snapshot: snapshot ?? emptySnapshot(),
+    poolSummary,
+    poolTokens,
+    revision,
+  };
 }
