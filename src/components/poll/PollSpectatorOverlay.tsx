@@ -66,14 +66,10 @@ export function PollSpectatorOverlay({
       </ul>
 
       {live && (
-        <p className="mt-3 shrink-0 text-center text-sm tracking-wide text-neutral-400 uppercase sm:text-base">
-          Voting open
-        </p>
+        <div className="mx-auto mt-4 min-h-0 w-full min-w-0 flex-1">
+          <PlayerVoteQr />
+        </div>
       )}
-
-      <div className="mx-auto mt-4 min-h-0 w-full min-w-0 flex-1">
-        <PlayerVoteQr />
-      </div>
     </div>
   );
 }

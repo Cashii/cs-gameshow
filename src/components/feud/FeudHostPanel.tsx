@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   Trash2,
@@ -22,6 +22,16 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { Select } from "@/components/ui/Select";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FeudAudienceView } from "./FeudAudienceView";
+
+const ghostIconButtonStyle: CSSProperties = {
+  marginRight: 0,
+  height: 36,
+  width: 36,
+  padding: 0,
+  border: "none",
+  background: "transparent",
+  color: "#a3a3a3",
+};
 
 export function FeudHostPanel() {
   const { state, updateFeud, currentFeudRound } = useSuite();
@@ -260,59 +270,8 @@ export function FeudHostPanel() {
 
       <div
         style={{
-          padding: "16px 24px",
-          flexShrink: 0,
-          background: "#1f1f1f",
-          borderBottom: "1px solid #3a3a3a",
-        }}
-      >
-        <div style={{ fontWeight: 600, fontSize: 14, color: "#e5e5e5", marginBottom: 8 }}>
-          Round
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <Select
-            value={feud.currentRoundIndex.toString()}
-            onValueChange={(value) => {
-              const nextIndex = Number.parseInt(value, 10);
-              if (nextIndex === feud.currentRoundIndex) return;
-              updateFeud((prev) => ({
-                ...prev,
-                currentRoundIndex: nextIndex,
-              }));
-            }}
-            options={feud.rounds.map((r, i) => ({
-              value: i.toString(),
-              label: `${i + 1}. ${r.question?.slice(0, 40) || "(untitled)"}`,
-            }))}
-          />
-          <Tooltip content="Add Round">
-            <IconButton label={<Plus size={16} />} onClick={openAddRound} />
-          </Tooltip>
-          <Tooltip content="Edit Question">
-            <IconButton label={<Pencil size={16} />} onClick={openEditQuestion} />
-          </Tooltip>
-          <Tooltip
-            delayDuration={0}
-            content={
-              feud.showHeader
-                ? "Hides the question on the audience display"
-                : "Shows the question on the audience display"
-            }
-          >
-            <IconButton
-              label={feud.showHeader ? <Eye size={16} /> : <EyeOff size={16} />}
-              onClick={() =>
-                updateFeud((prev) => ({ ...prev, showHeader: !prev.showHeader }))
-              }
-            />
-          </Tooltip>
-        </div>
-      </div>
-
-      <div
-        style={{
           display: "grid",
-          gridTemplateColumns: "minmax(320px, 500px) 1fr",
+          gridTemplateColumns: "480px minmax(0, 1fr)",
           flex: 1,
           minHeight: 0,
           overflow: "hidden",
@@ -324,6 +283,7 @@ export function FeudHostPanel() {
             background: "#1a1a1a",
             display: "flex",
             flexDirection: "column",
+            minWidth: 0,
             minHeight: 0,
             overflow: "hidden",
           }}
@@ -342,7 +302,7 @@ export function FeudHostPanel() {
                 marginBottom: 12,
               }}
             >
-              <div style={{ fontWeight: 600, fontSize: 14, color: "#e5e5e5" }}>
+              <div style={{ fontWeight: 600, fontSize: 16, color: "#e5e5e5" }}>
                 Teams
               </div>
               <Tooltip
@@ -360,6 +320,7 @@ export function FeudHostPanel() {
                       showTeamScores: !prev.showTeamScores,
                     }))
                   }
+                  style={{ marginRight: 0 }}
                 />
               </Tooltip>
             </div>
@@ -461,7 +422,7 @@ export function FeudHostPanel() {
               borderBottom: "1px solid #3a3a3a",
             }}
           >
-            <div style={{ fontWeight: 600, fontSize: 14, color: "#e5e5e5", marginBottom: 8 }}>
+            <div style={{ fontWeight: 600, fontSize: 16, color: "#e5e5e5", marginBottom: 8 }}>
               Strikes
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -478,11 +439,16 @@ export function FeudHostPanel() {
                 ))}
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <IconButton label="Add Strike" onClick={addStrike} />
+                <IconButton
+                  label="Add Strike"
+                  onClick={addStrike}
+                  style={{ marginRight: 0 }}
+                />
                 <IconButton
                   label="Remove Strike"
                   onClick={removeStrike}
                   disabled={!round.strikes}
+                  style={{ marginRight: 0 }}
                 />
               </div>
             </div>
@@ -498,17 +464,26 @@ export function FeudHostPanel() {
               overflow: "hidden",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-                marginBottom: 8,
-              }}
-            >
-              <div style={{ fontWeight: 600, fontSize: 14, color: "#e5e5e5" }}>
-                Answers
+            <div style={{ marginBottom: 8 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  marginBottom: 8,
+                }}
+              >
+                <div style={{ fontWeight: 600, fontSize: 16, color: "#e5e5e5" }}>
+                  Answers
+                </div>
+                <Tooltip content="Add Answer">
+                  <IconButton
+                    label={<Plus size={16} />}
+                    onClick={addAnswer}
+                    style={{ marginRight: 0 }}
+                  />
+                </Tooltip>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span
@@ -541,9 +516,15 @@ export function FeudHostPanel() {
                         padding: "0 10px",
                         borderRadius: 8,
                         border: selected
-                          ? "1px solid #60a5fa"
+                          ? side === "left"
+                            ? "1px solid #fb7185"
+                            : "1px solid #60a5fa"
                           : "1px solid #3a3a3a",
-                        background: selected ? "#1e3a5f" : "#2a2a2a",
+                        background: selected
+                          ? side === "left"
+                            ? "#3f1d27"
+                            : "#1e3a5f"
+                          : "#2a2a2a",
                         color: selected ? "#e5e5e5" : "#a3a3a3",
                         fontSize: 12,
                         fontWeight: 600,
@@ -558,17 +539,17 @@ export function FeudHostPanel() {
                     </button>
                   );
                 })}
-                <Tooltip content="Add Answer">
-                  <IconButton
-                    label={<Plus size={16} />}
-                    onClick={addAnswer}
-                    style={{ marginRight: 0 }}
-                  />
-                </Tooltip>
               </div>
             </div>
-            <div style={{ flex: 1, overflowY: "auto" }}>
-              <div style={{ display: "grid", gap: 6 }}>
+            <div
+              style={{
+                flex: 1,
+                minWidth: 0,
+                overflowX: "hidden",
+                overflowY: "auto",
+              }}
+            >
+              <div style={{ display: "grid", gap: 2, minWidth: 0 }}>
                 {round.answers.map((a, index) => (
                   <div
                     key={a.id}
@@ -583,66 +564,80 @@ export function FeudHostPanel() {
                       setDragAnswerId(null);
                     }}
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "32px 32px minmax(0, 1fr) 72px auto",
-                      gap: 8,
+                      display: "flex",
                       alignItems: "center",
-                      padding: "6px 8px",
-                      borderRadius: 8,
-                      background: a.revealed ? "#1a3a2a" : "#1f1f1f",
-                      border: `1px solid ${
-                        dragAnswerId === a.id
-                          ? "#60a5fa"
-                          : a.revealed
-                            ? "#4a8a6a"
-                            : "#3a3a3a"
-                      }`,
+                      gap: 6,
+                      width: "100%",
+                      minWidth: 0,
+                      maxWidth: "100%",
+                      boxSizing: "border-box",
+                      padding: "1px 0",
+                      borderLeft: a.revealed
+                        ? `3px solid ${
+                            a.awardedTo === "right" ? "#60a5fa" : "#fb7185"
+                          }`
+                        : "3px solid transparent",
                       opacity: dragAnswerId === a.id ? 0.7 : 1,
+                      outline:
+                        dragAnswerId === a.id ? "1px solid #60a5fa" : undefined,
+                      outlineOffset: 1,
                     }}
                   >
-                    <button
-                      type="button"
-                      draggable
-                      aria-label={`Reorder answer ${index + 1}`}
-                      title="Drag to reorder"
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData("text/plain", a.id);
-                        e.dataTransfer.effectAllowed = "move";
-                        setDragAnswerId(a.id);
-                      }}
-                      onDragEnd={() => setDragAnswerId(null)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        height: 36,
-                        width: 32,
-                        borderRadius: 8,
-                        border: "1px solid #3a3a3a",
-                        background: "#2a2a2a",
-                        color: "#a3a3a3",
-                        cursor: "grab",
-                        padding: 0,
-                      }}
-                    >
-                      <GripVertical size={16} />
-                    </button>
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center",
-                        height: 36,
-                        width: 32,
-                        borderRadius: 8,
-                        border: "1px solid #3a3a3a",
-                        background: "#2a2a2a",
-                        fontWeight: 600,
-                        fontSize: 14,
-                        color: "#e5e5e5",
+                        gap: 4,
+                        flexShrink: 0,
                       }}
                     >
-                      {index + 1}
+                      <button
+                        type="button"
+                        draggable
+                        aria-label={`Reorder answer ${index + 1}`}
+                        title="Drag to reorder"
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", a.id);
+                          e.dataTransfer.effectAllowed = "move";
+                          setDragAnswerId(a.id);
+                        }}
+                        onDragEnd={() => setDragAnswerId(null)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          height: 36,
+                          width: 14,
+                          border: "none",
+                          background: "transparent",
+                          color: "#a3a3a3",
+                          cursor: "grab",
+                          padding: 0,
+                          margin: 0,
+                        }}
+                      >
+                        <GripVertical size={14} />
+                      </button>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 20,
+                          height: 36,
+                          fontWeight: 600,
+                          fontSize: 16,
+                          lineHeight: 1,
+                          color: a.revealed
+                            ? a.awardedTo === "right"
+                              ? "#93c5fd"
+                              : "#fda4af"
+                            : "#a3a3a3",
+                          textAlign: "center",
+                        }}
+                      >
+                        {index + 1}
+                      </div>
                     </div>
                     <TextInput
                       value={a.text}
@@ -653,11 +648,20 @@ export function FeudHostPanel() {
                         })
                       }
                       placeholder="Answer text"
+                      style={{ width: 0, flex: "1 1 0%", minWidth: 0 }}
                     />
                     <NumberInput
                       value={a.points}
                       disabled={!feud.showAnswerScores}
-                      style={{ width: "100%" }}
+                      className="no-spin"
+                      style={{
+                        flexShrink: 0,
+                        width: 56,
+                        minWidth: 56,
+                        textAlign: "center",
+                        padding: 0,
+                        appearance: "textfield",
+                      }}
                       onChange={(v) =>
                         setRound((r) => {
                           const aa = r.answers.find((x) => x.id === a.id);
@@ -665,43 +669,51 @@ export function FeudHostPanel() {
                         })
                       }
                     />
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      {!a.revealed ? (
-                        <IconButton
-                          label="Reveal"
-                          onClick={() => reveal(a.id)}
-                          style={{
-                            marginRight: 0,
-                            height: 36,
-                            padding: "0 12px",
-                            fontSize: 12,
-                          }}
-                        />
-                      ) : (
-                        <IconButton
-                          label="Hide"
-                          onClick={() => hide(a.id)}
-                          style={{
-                            marginRight: 0,
-                            height: 36,
-                            padding: "0 12px",
-                            fontSize: 12,
-                          }}
-                        />
-                      )}
-                      <Tooltip content="Delete Answer">
-                        <IconButton
-                          label={<Trash2 size={14} />}
-                          onClick={() => removeAnswer(a.id)}
-                          style={{
-                            marginRight: 0,
-                            height: 36,
-                            width: 36,
-                            padding: 0,
-                          }}
-                        />
-                      </Tooltip>
-                    </div>
+                    {!a.revealed ? (
+                      <IconButton
+                        label="Reveal"
+                        onClick={() => reveal(a.id)}
+                        style={{
+                          marginRight: 0,
+                          height: 36,
+                          width: 80,
+                          minWidth: 80,
+                          padding: 0,
+                          fontWeight: 400,
+                          flexShrink: 0,
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    ) : (
+                      <IconButton
+                        label="Hide"
+                        onClick={() => hide(a.id)}
+                        style={{
+                          marginRight: 0,
+                          height: 36,
+                          width: 80,
+                          minWidth: 80,
+                          padding: 0,
+                          fontWeight: 400,
+                          flexShrink: 0,
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    )}
+                    <Tooltip content="Delete Answer">
+                      <IconButton
+                        label={<Trash2 size={16} />}
+                        onClick={() => removeAnswer(a.id)}
+                        style={{
+                          marginRight: 0,
+                          height: 36,
+                          width: 36,
+                          padding: 0,
+                          flexShrink: 0,
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </Tooltip>
                   </div>
                 ))}
                 {round.answers.length === 0 && (
@@ -725,9 +737,69 @@ export function FeudHostPanel() {
             padding: 20,
           }}
         >
+          <div
+            className="mb-3 shrink-0"
+            style={{ display: "flex", alignItems: "center", gap: 8 }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Select
+                aria-label="Question"
+                value={feud.currentRoundIndex.toString()}
+                onValueChange={(value) => {
+                  const nextIndex = Number.parseInt(value, 10);
+                  if (nextIndex === feud.currentRoundIndex) return;
+                  updateFeud((prev) => ({
+                    ...prev,
+                    currentRoundIndex: nextIndex,
+                  }));
+                }}
+                options={feud.rounds.map((r, i) => ({
+                  value: i.toString(),
+                  label: `${i + 1}. ${r.question?.slice(0, 40) || "(untitled)"}`,
+                }))}
+              />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+              <Tooltip content="Add Round">
+                <IconButton
+                  className="hover:bg-neutral-800 hover:text-white"
+                  label={<Plus size={18} />}
+                  onClick={openAddRound}
+                  style={ghostIconButtonStyle}
+                />
+              </Tooltip>
+              <Tooltip content="Edit Question">
+                <IconButton
+                  className="hover:bg-neutral-800 hover:text-white"
+                  label={<Pencil size={18} />}
+                  onClick={openEditQuestion}
+                  style={ghostIconButtonStyle}
+                />
+              </Tooltip>
+              <Tooltip
+                delayDuration={0}
+                content={
+                  feud.showHeader
+                    ? "Hides the question on the audience display"
+                    : "Shows the question on the audience display"
+                }
+              >
+                <IconButton
+                  className="hover:bg-neutral-800 hover:text-white"
+                  label={feud.showHeader ? <Eye size={18} /> : <EyeOff size={18} />}
+                  onClick={() =>
+                    updateFeud((prev) => ({ ...prev, showHeader: !prev.showHeader }))
+                  }
+                  style={ghostIconButtonStyle}
+                />
+              </Tooltip>
+            </div>
+          </div>
           <div className="mb-3 shrink-0">
             <div>
-              <p className="text-sm font-semibold text-white">Audience view</p>
+              <p className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                Audience view
+              </p>
               <p
                 className={`text-xs font-medium ${
                   state.spectatorGame === "feud"

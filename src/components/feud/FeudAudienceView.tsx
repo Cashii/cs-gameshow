@@ -17,15 +17,66 @@ const LIGHTBULBS = Array.from(
   }),
 );
 
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function useAnimatedScore(value: number, duration = 700) {
+  const [display, setDisplay] = useState(value);
+  const [bump, setBump] = useState(false);
+  const prevRef = useRef(value);
+
+  useEffect(() => {
+    const from = prevRef.current;
+    prevRef.current = value;
+    if (from === value) return;
+
+    if (prefersReducedMotion()) {
+      setDisplay(value);
+      return;
+    }
+
+    setBump(true);
+    const start = performance.now();
+    let frame = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - (1 - t) ** 3;
+      setDisplay(Math.round(from + (value - from) * eased));
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    const bumpTimer = window.setTimeout(() => setBump(false), 560);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(bumpTimer);
+    };
+  }, [value, duration]);
+
+  return { display, bump };
+}
+
 function TeamScore({
   team,
   side,
 }: Readonly<{ team: FeudTeam; side: "left" | "right" }>) {
+  const { display, bump } = useAnimatedScore(team.score);
   return (
     <div className={`team-score team-score-${side}`}>
-      <div className="team-score-name">{team.name || (side === "left" ? "Left" : "Right")}</div>
-      <div className="team-score-value">{team.score}</div>
+      <div className="team-score-name">
+        {team.name || (side === "left" ? "Left" : "Right")}
+      </div>
+      <div className={`team-score-value${bump ? " score-bump" : ""}`}>
+        {display}
+      </div>
     </div>
+  );
+}
+
+function RoundScore({ value }: Readonly<{ value: number }>) {
+  const { display, bump } = useAnimatedScore(value);
+  return (
+    <div className={`score${bump ? " score-bump" : ""}`}>{display}</div>
   );
 }
 
@@ -121,7 +172,7 @@ export function FeudAudienceView({
           }`}
         >
           {showTeamScores && <TeamScore team={leftTeam} side="left" />}
-          {showAnswerScores && <div className="score">{total}</div>}
+          {showAnswerScores && <RoundScore value={total} />}
           {showTeamScores && <TeamScore team={rightTeam} side="right" />}
         </div>
       )}

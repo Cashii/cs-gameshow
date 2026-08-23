@@ -28,8 +28,8 @@ export const IconButton = React.forwardRef<
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontSize: 14,
-        fontWeight: 500,
+        fontSize: 16,
+        fontWeight: 400,
         ...style,
       }}
     >
@@ -46,6 +46,7 @@ export function NumberInput({
   max = 200,
   disabled = false,
   style,
+  className,
 }: Readonly<{
   value: number;
   onChange: (v: number) => void;
@@ -53,6 +54,7 @@ export function NumberInput({
   max?: number;
   disabled?: boolean;
   style?: React.CSSProperties;
+  className?: string;
 }>) {
   return (
     <input
@@ -61,6 +63,7 @@ export function NumberInput({
       min={min}
       max={max}
       disabled={disabled}
+      className={className}
       onChange={(e) =>
         onChange(
           Math.max(min, Math.min(max, Number.parseInt(e.target.value || "0", 10))),

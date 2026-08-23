@@ -193,6 +193,28 @@ function normalizePollState(raw: Partial<PollState> | undefined): PollState {
         }))
       : defaults.choices,
     status: raw.status ?? "idle",
+    voteLog: Array.isArray(raw.voteLog)
+      ? raw.voteLog
+          .filter(
+            (entry) =>
+              !!entry &&
+              typeof entry.id === "string" &&
+              typeof entry.at === "string" &&
+              typeof entry.choiceId === "string" &&
+              typeof entry.choiceText === "string" &&
+              typeof entry.voterLabel === "string",
+          )
+          .map((entry) => ({
+            id: entry.id,
+            at: entry.at,
+            choiceId: entry.choiceId,
+            choiceText: entry.choiceText,
+            voterLabel: entry.voterLabel,
+            deviceCode:
+              typeof entry.deviceCode === "string" ? entry.deviceCode : "",
+            platform: typeof entry.platform === "string" ? entry.platform : "",
+          }))
+      : [],
   };
 }
 

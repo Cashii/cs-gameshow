@@ -8,6 +8,7 @@ export function PlayerPollOverlay({
   checkingVote,
   loading,
   message,
+  playerCode,
   onVote,
 }: {
   poll: PollState;
@@ -15,6 +16,7 @@ export function PlayerPollOverlay({
   checkingVote: boolean;
   loading: boolean;
   message: string;
+  playerCode: string;
   onVote: (choiceId: string) => void;
 }) {
   const question = poll.question.trim() || "Question?";
@@ -23,8 +25,9 @@ export function PlayerPollOverlay({
   const canVote = poll.status === "open" && !voted && !checkingVote;
 
   return (
-    <div className="flex h-full w-full items-center justify-center overflow-auto bg-neutral-950 px-4 py-8">
-      <div className="w-full max-w-lg">
+    <div className="flex h-full w-full flex-col overflow-auto bg-neutral-950 px-4 py-8">
+      <div className="mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col">
+        <div className="flex flex-1 flex-col items-center justify-center text-center">
         <p className="text-sm font-semibold tracking-[0.2em] text-sky-400 uppercase">
           {poll.status === "open"
             ? voted
@@ -37,30 +40,30 @@ export function PlayerPollOverlay({
         </h1>
 
         {checkingVote && poll.status === "open" ? (
-          <p className="mt-8 text-center text-neutral-400">Loading…</p>
+          <p className="mt-8 text-neutral-400">Loading…</p>
         ) : canVote ? (
-          <div className="mt-8 space-y-3">
+          <div className="mt-8 w-full space-y-3">
             {poll.choices.map((choice) => (
               <button
                 key={choice.id}
                 type="button"
                 disabled={loading}
                 onClick={() => onVote(choice.id)}
-                className="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-4 text-left text-lg font-semibold text-white hover:border-sky-500 hover:bg-neutral-800 disabled:opacity-50"
+                className="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-4 text-center text-lg font-semibold text-white hover:border-sky-500 hover:bg-neutral-800 disabled:opacity-50"
               >
                 {choice.text}
               </button>
             ))}
           </div>
         ) : poll.status === "open" && voted ? (
-          <p className="mt-8 text-center text-lg text-emerald-400">
+          <p className="mt-8 text-lg text-emerald-400">
             Thanks — your vote is in.
           </p>
         ) : (
-          <ul className="mt-8 space-y-3">
+          <ul className="mt-8 w-full space-y-3">
             {poll.choices.map((choice) => (
               <li key={choice.id}>
-                <div className="flex items-center justify-between gap-4 text-white">
+                <div className="flex items-center justify-center gap-4 text-white">
                   <span>{choice.text}</span>
                   {showResults && (
                     <span className="font-bold tabular-nums">
@@ -74,7 +77,7 @@ export function PlayerPollOverlay({
                 {showResults && (
                   <div className="mt-1 h-2 overflow-hidden rounded-full bg-white/10">
                     <div
-                      className="h-full rounded-full bg-sky-500 transition-all duration-500"
+                      className="mx-auto h-full rounded-full bg-sky-500 transition-all duration-500"
                       style={{
                         width: `${
                           total > 0
@@ -91,6 +94,13 @@ export function PlayerPollOverlay({
         )}
 
         {message && <p className="mt-4 text-sm text-red-400">{message}</p>}
+        </div>
+
+        {playerCode ? (
+          <p className="mt-auto pt-10 text-center text-sm tracking-widest text-neutral-500">
+            {playerCode}
+          </p>
+        ) : null}
       </div>
     </div>
   );

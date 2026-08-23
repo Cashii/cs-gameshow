@@ -4,11 +4,22 @@ export type PollChoice = {
   votes: number;
 };
 
+export type PollVoteLogEntry = {
+  id: string;
+  at: string;
+  choiceId: string;
+  choiceText: string;
+  voterLabel: string;
+  deviceCode: string;
+  platform: string;
+};
+
 export type PollState = {
   id: string;
   question: string;
   choices: PollChoice[];
   status: "idle" | "open" | "closed" | "results";
+  voteLog: PollVoteLogEntry[];
 };
 
 export function createDefaultPollState(): PollState {
@@ -20,9 +31,11 @@ export function createDefaultPollState(): PollState {
       { id: "b", text: "Option B", votes: 0 },
     ],
     status: "idle",
+    voteLog: [],
   };
 }
 
 export function createEmptyPoll(): PollState {
   return createDefaultPollState();
 }
+

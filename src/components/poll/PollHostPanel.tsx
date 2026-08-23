@@ -1,8 +1,18 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSuite } from "@/lib/suite-provider";
+
+function formatVoteTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
 
 export function PollHostPanel() {
   const { state, refreshSnapshot } = useSuite();
@@ -42,14 +52,6 @@ export function PollHostPanel() {
       text,
     }));
 
-  const handleSetup = () => {
-    void runAction({
-      action: "setup",
-      question,
-      choices: choicePayload(),
-    });
-  };
-
   const handleOpen = () => {
     void runAction({
       action: "open",
@@ -69,6 +71,15 @@ export function PollHostPanel() {
           : "Idle";
 
   const votingOpen = poll.status === "open";
+  const voteLog = poll.voteLog ?? [];
+
+  useEffect(() => {
+    if (!votingOpen) return;
+    const id = window.setInterval(() => {
+      void refreshSnapshot();
+    }, 400);
+    return () => window.clearInterval(id);
+  }, [votingOpen, refreshSnapshot]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -107,14 +118,6 @@ export function PollHostPanel() {
           <button
             type="button"
             disabled={loading}
-            onClick={() => runAction({ action: "results" })}
-            className="inline-flex h-10 items-center rounded-md bg-sky-600 px-4 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-50"
-          >
-            Show results
-          </button>
-          <button
-            type="button"
-            disabled={loading}
             onClick={() => runAction({ action: "clear" })}
             className="inline-flex h-10 items-center rounded-md border border-neutral-500 bg-neutral-600 px-4 text-sm font-semibold text-white hover:bg-neutral-500 disabled:opacity-50"
           >
@@ -128,7 +131,7 @@ export function PollHostPanel() {
         <div>
           <h3 className="text-lg font-bold text-white">Poll Control</h3>
           <p className="text-sm text-neutral-400">
-            Edit the question, then save. Set Spectator screen to Poll to put
+            Edit the question, then open voting. Set Spectator screen to Poll to put
             live results on the projector.
           </p>
         </div>
@@ -202,14 +205,6 @@ export function PollHostPanel() {
                 <Plus size={16} />
                 Add choice
               </button>
-              <button
-                type="button"
-                onClick={handleSetup}
-                disabled={loading || !question.trim()}
-                className="rounded-lg bg-neutral-100 px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-white disabled:opacity-40"
-              >
-                Save question &amp; choices
-              </button>
             </div>
           </div>
         </div>
@@ -231,6 +226,39 @@ export function PollHostPanel() {
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {poll.status !== "idle" && (
+            <div>
+              <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                Vote log
+              </span>
+              {voteLog.length === 0 ? (
+                <p className="mt-1.5 text-sm text-neutral-500">
+                  No votes yet.
+                </p>
+              ) : (
+                <ul className="mt-1.5 max-h-80 space-y-1 overflow-auto text-sm">
+                  {voteLog.map((entry) => (
+                    <li
+                      key={entry.id}
+                      className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-2 text-neutral-400"
+                    >
+                      <span className="tabular-nums text-neutral-500">
+                        {formatVoteTime(entry.at)}
+                      </span>
+                      <span className="min-w-0 truncate">
+                        <span className="font-medium text-neutral-200">
+                          {entry.deviceCode || entry.voterLabel}
+                        </span>
+                        <span className="text-neutral-500"> · </span>
+                        <span>{entry.choiceText}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
         </div>

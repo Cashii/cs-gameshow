@@ -16,6 +16,8 @@ export async function POST(request: Request) {
     pollId?: string;
     choiceId?: string;
     deviceId?: string;
+    displayName?: string;
+    userAgent?: string;
   };
 
   if (body.action === "vote") {
@@ -27,6 +29,8 @@ export async function POST(request: Request) {
         body.pollId,
         deviceId.trim(),
         body.choiceId,
+        body.displayName,
+        body.userAgent,
       );
       return json(snapshot);
     } catch (e) {
@@ -53,6 +57,7 @@ export async function POST(request: Request) {
             votes: 0,
           })),
           status: "idle",
+          voteLog: [],
         }));
         return json(snapshot);
       }
@@ -63,7 +68,7 @@ export async function POST(request: Request) {
         if (event.poll?.id) await resetPollVotes(event.poll.id);
         const snapshot = await updatePoll((prev) => {
           const hasIncoming = incomingChoices.length >= 2;
-          const nextId = prev.id || crypto.randomUUID();
+          const nextId = crypto.randomUUID();
           return {
             id: nextId,
             question:
@@ -76,6 +81,7 @@ export async function POST(request: Request) {
                 }))
               : prev.choices.map((c) => ({ ...c, votes: 0 })),
             status: "open" as const,
+            voteLog: [],
           };
         });
         return json(snapshot);

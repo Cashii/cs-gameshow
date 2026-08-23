@@ -5,7 +5,7 @@ import { SuiteProvider, useSuite } from "@/lib/suite-provider";
 import type { SpectatorScreen } from "@/lib/suite-state";
 import { ActiveGameBoard } from "@/components/suite/ActiveGameBoard";
 import { PollSpectatorOverlay } from "@/components/poll/PollSpectatorOverlay";
-import { PlayerVoteQr } from "@/components/poll/PlayerVoteQr";
+import { PollWaitingScreen } from "@/components/poll/PollWaitingScreen";
 
 function SpectatorContent() {
   const { state, currentFeudRound } = useSuite();
@@ -57,19 +57,7 @@ function SpectatorContent() {
       >
         {showPoll ? (
           state.poll.status === "idle" ? (
-            <div className="flex h-full min-h-0 w-full flex-col items-center bg-neutral-950 px-8 py-8 text-center">
-              <div className="shrink-0">
-                <p className="text-sm font-semibold tracking-[0.28em] text-sky-400 uppercase">
-                  Poll
-                </p>
-                <p className="mt-3 text-2xl text-neutral-400 sm:text-4xl">
-                  Waiting for the operator to open a poll
-                </p>
-              </div>
-              <div className="mt-8 min-h-0 w-full flex-1">
-                <PlayerVoteQr />
-              </div>
-            </div>
+            <PollWaitingScreen />
           ) : (
             <PollSpectatorOverlay poll={state.poll} />
           )

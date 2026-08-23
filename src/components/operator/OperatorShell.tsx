@@ -3,7 +3,6 @@
 import {
   BarChart3,
   Briefcase,
-  ChevronDown,
   ChevronRight,
   CircleDollarSign,
   Download,
@@ -14,6 +13,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Presentation,
+  Settings,
   Smartphone,
   Ticket,
   Upload,
@@ -21,7 +21,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SuiteProvider, useSuite } from "@/lib/suite-provider";
 import {
   ACTIVE_GAME_LABELS,
@@ -44,6 +44,7 @@ import { MessageBoardHostPanel } from "@/components/message-board/MessageBoardHo
 import { DerbyHostPanel } from "@/components/derby/DerbyHostPanel";
 import { PinSettingsPanel } from "@/components/operator/PinSettingsPanel";
 import { PinGate } from "@/components/auth/PinGate";
+import { Select } from "@/components/ui/Select";
 
 const NAV_TOP: ActiveGame[] = ["idle"];
 const NAV_GAMES: ActiveGame[] = ["feud", "wheel", "takeIt", "derby"];
@@ -93,8 +94,8 @@ function NavItem({
       onClick={() => onSelect(game)}
       title={collapsed ? label : undefined}
       aria-label={label}
-      className={`flex w-full items-center rounded-lg py-3 text-left text-sm font-semibold transition-colors ${
-        collapsed ? "justify-center px-2" : "gap-3 px-3"
+      className={`flex w-full items-center rounded-md py-2 text-left text-base font-normal transition-colors ${
+        collapsed ? "justify-center px-2" : "gap-2.5 px-2.5"
       } ${
         active
           ? "bg-blue-600 text-white shadow-sm"
@@ -102,7 +103,7 @@ function NavItem({
       }`}
     >
       <span className="relative shrink-0">
-        <Icon size={19} aria-hidden />
+        <Icon size={18} strokeWidth={1.5} aria-hidden />
         {live && (
           <span
             className={`absolute -top-0.5 -right-0.5 h-2 w-2 animate-pulse rounded-full ${
@@ -137,14 +138,25 @@ function OperatorContent() {
     state,
     setActiveGame,
     setSpectatorGame,
-    connected,
   } = useSuite();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showPinSettings, setShowPinSettings] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const loadInputRef = useRef<HTMLInputElement>(null);
+  const settingsRef = useRef<HTMLDivElement>(null);
   const spectatorGame = state.spectatorGame ?? state.activeGame;
   const pollLive = state.poll.status === "open";
+
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!settingsRef.current?.contains(event.target as Node)) {
+        setSettingsOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [settingsOpen]);
 
   const openSpectator = () => {
     window.open(
@@ -204,43 +216,36 @@ function OperatorContent() {
     <div className="flex h-screen overflow-hidden bg-neutral-950 text-neutral-100">
       <aside
         className={`flex shrink-0 flex-col border-r border-neutral-800 bg-neutral-900 transition-[width] duration-200 ${
-          sidebarCollapsed ? "w-16" : "w-64"
+          sidebarCollapsed ? "w-12" : "w-52"
         }`}
       >
         <div
-          className={`flex min-h-20 items-center border-b border-neutral-800 ${
+          className={`flex min-h-16 items-center border-b border-neutral-800 ${
             sidebarCollapsed
-              ? "justify-center px-3"
-              : "justify-between gap-3 px-5"
+              ? "justify-center px-1.5"
+              : "justify-between gap-2 px-3 py-2"
           }`}
         >
           {!sidebarCollapsed && (
-            <div className="min-w-0">
-              <p className="font-gameshow truncate text-xl font-bold tracking-wide text-white">
-                Cash&apos;s Gameshow
-              </p>
-              <p
-                className={`text-xs ${connected ? "text-emerald-400" : "text-amber-400"}`}
-              >
-                {connected ? "Connected" : "Connecting…"}
-              </p>
-            </div>
+            <p className="font-gameshow min-w-0 truncate text-xl font-bold leading-tight tracking-wide text-white">
+              Cash&apos;s Gameshow
+            </p>
           )}
           <button
             type="button"
             onClick={() => setSidebarCollapsed((c) => !c)}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
             aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {sidebarCollapsed ? (
-              <PanelLeftOpen size={20} aria-hidden />
+              <PanelLeftOpen size={16} strokeWidth={1.5} aria-hidden />
             ) : (
-              <PanelLeftClose size={20} aria-hidden />
+              <PanelLeftClose size={16} strokeWidth={1.5} aria-hidden />
             )}
           </button>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1 overflow-auto p-3">
+        <nav className="flex flex-1 flex-col gap-0.5 overflow-auto p-2">
           {NAV_TOP.map((game) => (
             <NavItem
               key={game}
@@ -257,11 +262,11 @@ function OperatorContent() {
               ["Tools", NAV_TOOLS],
             ] as const
           ).map(([label, items]) => (
-            <div key={label} className="mt-3 flex flex-col gap-1">
+            <div key={label} className="mt-2 flex flex-col gap-0.5">
               {sidebarCollapsed ? (
-                <div className="mx-2 my-1 border-t border-neutral-800" />
+                <div className="mx-1.5 my-1 border-t border-neutral-800" />
               ) : (
-                <p className="px-3 pb-1 text-[10px] font-semibold tracking-wide text-neutral-500 uppercase">
+                <p className="px-2 pb-0.5 text-[10px] font-semibold tracking-wide text-neutral-500 uppercase">
                   {label}
                 </p>
               )}
@@ -279,120 +284,52 @@ function OperatorContent() {
           ))}
         </nav>
 
-        <div className="space-y-2 border-t border-neutral-800 p-3">
+        <div className="space-y-2 border-t border-neutral-800 p-2">
           {!sidebarCollapsed && (
             <label className="block">
-              <span className="mb-1.5 block text-[10px] font-semibold tracking-wide text-neutral-500 uppercase">
+              <span className="mb-1 block px-0.5 text-[10px] font-semibold tracking-wide text-neutral-500 uppercase">
                 Spectator screen
               </span>
-              <select
+              <Select
+                aria-label="Spectator screen"
                 value={spectatorGame}
-                onChange={(e) =>
-                  setSpectatorGame(e.target.value as SpectatorScreen)
+                onValueChange={(value) =>
+                  setSpectatorGame(value as SpectatorScreen)
                 }
-                className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-sm font-semibold text-white focus:border-sky-500 focus:outline-none"
-              >
-                {SPECTATOR_SCREENS.map((screen) => (
-                  <option key={screen} value={screen}>
-                    {SPECTATOR_SCREEN_LABELS[screen]}
-                    {screen === "idle" ? " (standby)" : ""}
-                  </option>
-                ))}
-              </select>
+                options={SPECTATOR_SCREENS.map((screen) => ({
+                  value: screen,
+                  label:
+                    screen === "idle"
+                      ? `${SPECTATOR_SCREEN_LABELS[screen]} (standby)`
+                      : SPECTATOR_SCREEN_LABELS[screen],
+                }))}
+              />
             </label>
           )}
           {sidebarCollapsed && (
-            <select
-              value={spectatorGame}
-              onChange={(e) =>
-                setSpectatorGame(e.target.value as SpectatorScreen)
-              }
-              title={`Spectator: ${SPECTATOR_SCREEN_LABELS[spectatorGame]}`}
+            <Select
               aria-label="Spectator screen"
-              className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-1 py-2 text-center text-xs font-semibold text-white"
-            >
-              {SPECTATOR_SCREENS.map((screen) => (
-                <option key={screen} value={screen}>
-                  {SPECTATOR_SCREEN_LABELS[screen]}
-                </option>
-              ))}
-            </select>
+              value={spectatorGame}
+              onValueChange={(value) =>
+                setSpectatorGame(value as SpectatorScreen)
+              }
+              options={SPECTATOR_SCREENS.map((screen) => ({
+                value: screen,
+                label: SPECTATOR_SCREEN_LABELS[screen],
+              }))}
+            />
           )}
           <button
             type="button"
             onClick={openSpectator}
             title={sidebarCollapsed ? "Open Spectator" : undefined}
-            className={`inline-flex w-full items-center justify-center rounded-lg bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-500 ${
-              sidebarCollapsed ? "px-2" : "gap-2 px-4"
+            className={`inline-flex w-full items-center justify-center rounded-md bg-blue-600 py-2 text-base font-normal text-white hover:bg-blue-500 ${
+              sidebarCollapsed ? "px-2" : "gap-2.5 px-2.5"
             }`}
           >
-            <Presentation size={17} className="shrink-0" />
+            <Presentation size={18} strokeWidth={1.5} className="shrink-0" />
             {!sidebarCollapsed && "Open Spectator"}
           </button>
-          <button
-            type="button"
-            onClick={() => setMoreOpen((open) => !open)}
-            aria-expanded={moreOpen}
-            aria-controls="operator-more-actions"
-            title={sidebarCollapsed ? "More" : undefined}
-            className={`inline-flex w-full items-center rounded-lg border border-neutral-700 py-2.5 text-sm font-semibold text-neutral-300 hover:bg-neutral-800 ${
-              sidebarCollapsed ? "justify-center px-2" : "justify-between gap-2 px-4"
-            }`}
-          >
-            {sidebarCollapsed ? (
-              <ChevronDown
-                size={17}
-                className={`shrink-0 transition-transform ${moreOpen ? "rotate-180" : ""}`}
-                aria-hidden
-              />
-            ) : (
-              <>
-                <span>More</span>
-                <ChevronDown
-                  size={16}
-                  className={`shrink-0 transition-transform ${moreOpen ? "rotate-180" : ""}`}
-                  aria-hidden
-                />
-              </>
-            )}
-          </button>
-          {moreOpen && (
-            <div id="operator-more-actions" className="space-y-2">
-              <button
-                type="button"
-                onClick={openHostess}
-                title={sidebarCollapsed ? "Open Hostess" : undefined}
-                className={`inline-flex w-full items-center justify-center rounded-lg border border-violet-500/50 bg-violet-600/20 py-2.5 text-sm font-semibold text-violet-100 hover:bg-violet-600/35 ${
-                  sidebarCollapsed ? "px-2" : "gap-2 px-4"
-                }`}
-              >
-                <UserRound size={17} className="shrink-0" />
-                {!sidebarCollapsed && "Open Hostess"}
-              </button>
-              <button
-                type="button"
-                onClick={openPlayer}
-                title={sidebarCollapsed ? "Open Player" : undefined}
-                className={`inline-flex w-full items-center justify-center rounded-lg border border-emerald-500/50 bg-emerald-600/20 py-2.5 text-sm font-semibold text-emerald-100 hover:bg-emerald-600/35 ${
-                  sidebarCollapsed ? "px-2" : "gap-2 px-4"
-                }`}
-              >
-                <Smartphone size={17} className="shrink-0" />
-                {!sidebarCollapsed && "Open Player"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowPinSettings(true)}
-                title={sidebarCollapsed ? "PIN Settings" : undefined}
-                className={`inline-flex w-full items-center justify-center rounded-lg border border-neutral-700 py-2 text-xs font-semibold text-neutral-300 hover:bg-neutral-800 ${
-                  sidebarCollapsed ? "px-2" : "gap-2"
-                }`}
-              >
-                <KeyRound size={15} className="shrink-0" />
-                {!sidebarCollapsed && "PIN Settings"}
-              </button>
-            </div>
-          )}
           <div
             className={`flex w-full ${
               sidebarCollapsed ? "flex-col gap-1.5" : "gap-1.5"
@@ -401,23 +338,78 @@ function OperatorContent() {
             <button
               type="button"
               onClick={saveSuiteJson}
-              className={`inline-flex items-center justify-center rounded-md border border-neutral-600 bg-neutral-800 text-xs font-semibold text-neutral-200 hover:bg-neutral-700 ${
-                sidebarCollapsed ? "h-9 w-full px-2" : "h-9 flex-1 gap-1.5 px-2"
+              className={`inline-flex items-center justify-center rounded-md border border-neutral-600 bg-neutral-800 text-base font-normal text-neutral-200 hover:bg-neutral-700 ${
+                sidebarCollapsed ? "h-10 w-full px-2" : "h-10 flex-1 gap-2 px-2"
               }`}
             >
-              <Download size={14} className="shrink-0" />
+              <Download size={16} strokeWidth={1.5} className="shrink-0" />
               {!sidebarCollapsed && "Save"}
             </button>
             <button
               type="button"
               onClick={() => loadInputRef.current?.click()}
-              className={`inline-flex items-center justify-center rounded-md border border-neutral-600 bg-neutral-800 text-xs font-semibold text-neutral-200 hover:bg-neutral-700 ${
-                sidebarCollapsed ? "h-9 w-full px-2" : "h-9 flex-1 gap-1.5 px-2"
+              className={`inline-flex items-center justify-center rounded-md border border-neutral-600 bg-neutral-800 text-base font-normal text-neutral-200 hover:bg-neutral-700 ${
+                sidebarCollapsed ? "h-10 w-full px-2" : "h-10 flex-1 gap-2 px-2"
               }`}
             >
-              <Upload size={14} className="shrink-0" />
+              <Upload size={16} strokeWidth={1.5} className="shrink-0" />
               {!sidebarCollapsed && "Load"}
             </button>
+            <div ref={settingsRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setSettingsOpen((open) => !open)}
+                aria-expanded={settingsOpen}
+                aria-haspopup="menu"
+                title="Settings"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-neutral-600 bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
+              >
+                <Settings size={18} strokeWidth={1.5} aria-hidden />
+              </button>
+              {settingsOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 bottom-full z-50 mb-1.5 min-w-48 rounded-lg border border-neutral-700 bg-neutral-900 p-1 shadow-xl"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      openHostess();
+                      setSettingsOpen(false);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-violet-100 hover:bg-violet-600/30"
+                  >
+                    <UserRound size={16} className="shrink-0" />
+                    Open Hostess
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      openPlayer();
+                      setSettingsOpen(false);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-emerald-100 hover:bg-emerald-600/30"
+                  >
+                    <Smartphone size={16} className="shrink-0" />
+                    Open Player
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setShowPinSettings(true);
+                      setSettingsOpen(false);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-neutral-200 hover:bg-neutral-800"
+                  >
+                    <KeyRound size={16} className="shrink-0" />
+                    PIN Settings
+                  </button>
+                </div>
+              )}
+            </div>
             <input
               ref={loadInputRef}
               type="file"

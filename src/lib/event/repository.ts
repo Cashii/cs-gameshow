@@ -4,7 +4,7 @@ import { hashPin } from "@/lib/auth/session";
 import { publishSnapshot } from "@/lib/event/pubsub"; // live event fan-out
 import { sampleTokensByColor } from "@/lib/live-drawer/draw";
 import type { LiveDrawerToken, PoolSummary } from "@/lib/live-drawer/types";
-import { createEmptyPoll, type PollState } from "@/lib/poll/types";
+import { createEmptyPoll, type PollState, type PollVoteLogEntry } from "@/lib/poll/types";
 import {
   createDefaultSuiteState,
   EVENT_ID,
@@ -50,6 +50,8 @@ export type VoteDoc = {
   pollId: string;
   deviceId: string;
   playerSessionId?: string;
+  displayName?: string;
+  userAgent?: string;
   choiceId: string;
   createdAt: Date;
 };
@@ -81,6 +83,9 @@ export async function ensureIndexes(): Promise<void> {
   );
   await votesCol(db).then((c) =>
     c.createIndex({ pollId: 1, deviceId: 1 }, { unique: true }),
+  );
+  await votesCol(db).then((c) =>
+    c.createIndex({ pollId: 1, createdAt: -1 }),
   );
   indexesReady = true;
 }
@@ -120,6 +125,89 @@ async function loadPool(): Promise<{
   return { summary, tokens, called };
 }
 
+function deviceCodeFromId(deviceId: string): string {
+  return deviceId.replace(/[^a-zA-Z0-9]/g, "").slice(-4).toUpperCase();
+}
+
+function platformFromUserAgent(ua?: string): string {
+  if (!ua) return "";
+  if (/iPhone|iPad|iPod/i.test(ua)) return "iPhone";
+  if (/Android/i.test(ua)) return "Android";
+  if (/Macintosh/i.test(ua)) return "Mac";
+  if (/Windows/i.test(ua)) return "Windows";
+  if (/CrOS/i.test(ua)) return "Chromebook";
+  return "Web";
+}
+
+function voterLabelFromDevice(deviceId: string, displayName?: string): string {
+  if (displayName?.trim()) return displayName.trim().slice(0, 40);
+  const tail = deviceCodeFromId(deviceId);
+  return tail ? `Player ${tail}` : "Player";
+}
+
+export async function getPollVoteLog(
+  pollId: string,
+  choices: { id: string; text: string }[],
+): Promise<PollVoteLogEntry[]> {
+  if (!pollId) return [];
+  const db = await getDb();
+  const docs = await votesCol(db).then((c) =>
+    c.find({ pollId }).sort({ createdAt: -1 }).limit(250).toArray(),
+  );
+  const labels = new Map(choices.map((choice) => [choice.id, choice.text]));
+  return docs.map((doc) => ({
+    id: doc._id.toString(),
+    at: doc.createdAt.toISOString(),
+    choiceId: doc.choiceId,
+    choiceText: labels.get(doc.choiceId) ?? doc.choiceId,
+    voterLabel: voterLabelFromDevice(doc.deviceId, doc.displayName),
+    deviceCode: deviceCodeFromId(doc.deviceId),
+    platform: platformFromUserAgent(doc.userAgent),
+  }));
+}
+
+async function hydratePollVoteLog(
+  snapshot: EventSnapshot,
+): Promise<EventSnapshot> {
+  const poll = snapshot.poll;
+  if (!poll?.id || poll.status === "idle") {
+    return { ...snapshot, poll: { ...poll, voteLog: [] } };
+  }
+  const voteLog = await getPollVoteLog(poll.id, poll.choices);
+  return { ...snapshot, poll: { ...poll, voteLog } };
+}
+
+async function applyVoteCountsToPoll(poll: PollState): Promise<PollState> {
+  if (!poll.id || poll.status === "idle") {
+    return { ...poll, voteLog: [] };
+  }
+  const db = await getDb();
+  const counts = await votesCol(db).then((c) =>
+    c
+      .aggregate<{ _id: string; count: number }>([
+        { $match: { pollId: poll.id } },
+        { $group: { _id: "$choiceId", count: { $sum: 1 } } },
+      ])
+      .toArray(),
+  );
+  const countMap = new Map(counts.map((row) => [row._id, row.count]));
+  return {
+    ...poll,
+    voteLog: [],
+    choices: poll.choices.map((choice) => ({
+      ...choice,
+      votes: countMap.get(choice.id) ?? 0,
+    })),
+  };
+}
+
+function suiteForPersist(next: SuiteState): SuiteState {
+  return {
+    ...next,
+    poll: { ...next.poll, voteLog: [] },
+  };
+}
+
 function eventDocToSnapshot(
   doc: EventDoc,
   pool: {
@@ -141,9 +229,13 @@ function eventDocToSnapshot(
 async function persistSuite(next: SuiteState): Promise<EventSnapshot> {
   const db = await getDb();
   const col = await eventsCol(db);
+  const toSave = suiteForPersist({
+    ...next,
+    poll: await applyVoteCountsToPoll(next.poll),
+  });
   const doc = await col.findOneAndUpdate(
     { _id: EVENT_ID },
-    { $set: next, $inc: { revision: 1 } },
+    { $set: toSave, $inc: { revision: 1 } },
     { returnDocument: "after" },
   );
   if (!doc) {
@@ -151,7 +243,7 @@ async function persistSuite(next: SuiteState): Promise<EventSnapshot> {
     return persistSuite(next);
   }
   const pool = await loadPool();
-  const snapshot = eventDocToSnapshot(doc, pool);
+  const snapshot = await hydratePollVoteLog(eventDocToSnapshot(doc, pool));
   publishSnapshot(snapshot);
   return snapshot;
 }
@@ -169,7 +261,7 @@ async function bumpAndPublish(invalidatePool = false): Promise<EventSnapshot> {
     return bumpAndPublish(false);
   }
   const pool = await loadPool();
-  const snapshot = eventDocToSnapshot(doc, pool);
+  const snapshot = await hydratePollVoteLog(eventDocToSnapshot(doc, pool));
   publishSnapshot(snapshot);
   return snapshot;
 }
@@ -226,7 +318,7 @@ export async function buildSnapshot(
 ): Promise<EventSnapshot> {
   const event = await ensureEvent();
   const pool = await loadPool();
-  const snapshot = eventDocToSnapshot(event, pool);
+  const snapshot = await hydratePollVoteLog(eventDocToSnapshot(event, pool));
   if (includePoolTokens) return snapshot;
   return { ...snapshot, poolTokens: [] };
 }
@@ -508,6 +600,8 @@ export async function castVote(
   pollId: string,
   deviceId: string,
   choiceId: string,
+  displayName?: string,
+  userAgent?: string,
 ): Promise<EventSnapshot> {
   const db = await getDb();
   const event = await ensureEvent();
@@ -529,6 +623,8 @@ export async function castVote(
         pollId,
         deviceId,
         choiceId,
+        displayName: displayName?.trim().slice(0, 40) || undefined,
+        userAgent: userAgent?.trim().slice(0, 180) || undefined,
         createdAt: new Date(),
       }),
     );

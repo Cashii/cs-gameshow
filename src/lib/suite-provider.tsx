@@ -161,20 +161,22 @@ export function SuiteProvider({
       const recentlyBroadcast =
         Date.now() - lastLocalBroadcastAtRef.current < 3000;
 
+      const mergeLivePoll = (base: EventSnapshot): EventSnapshot => ({
+        ...base,
+        poolSummary: next.poolSummary,
+        poolTokens: next.poolTokens,
+        calledTokens: next.calledTokens ?? [],
+        poll: next.poll,
+        liveDrawer: pickLiveDrawer(base.liveDrawer, next.liveDrawer),
+        revision: Math.max(base.revision, next.revision),
+      });
+
       if (role === "spectator" && recentlyBroadcast && local) {
         confirmedRevisionRef.current = Math.max(
           confirmedRevisionRef.current,
           next.revision,
         );
-        replaceSnapshot({
-          ...local,
-          poolSummary: next.poolSummary,
-          poolTokens: next.poolTokens,
-          calledTokens: next.calledTokens ?? [],
-          poll: next.poll,
-          liveDrawer: pickLiveDrawer(local.liveDrawer, next.liveDrawer),
-          revision: next.revision,
-        });
+        replaceSnapshot(mergeLivePoll(local));
         setConnected(true);
         return;
       }
@@ -184,19 +186,17 @@ export function SuiteProvider({
           confirmedRevisionRef.current,
           next.revision,
         );
-        replaceSnapshot({
-          ...local,
-          poolSummary: next.poolSummary,
-          poolTokens: next.poolTokens,
-          calledTokens: next.calledTokens ?? [],
-          poll: next.poll,
-          liveDrawer: pickLiveDrawer(local.liveDrawer, next.liveDrawer),
-          revision: Math.max(local.revision, next.revision),
-        });
+        replaceSnapshot(mergeLivePoll(local));
         setConnected(true);
         return;
       }
-      if (next.revision <= confirmedRevisionRef.current) return;
+      if (next.revision <= confirmedRevisionRef.current) {
+        if ((role === "operator" || role === "player") && local) {
+          replaceSnapshot({ ...local, poll: next.poll });
+          setConnected(true);
+        }
+        return;
+      }
       confirmedRevisionRef.current = next.revision;
       rememberPersisted(snapshotToSuite(next));
       replaceSnapshot(next);
