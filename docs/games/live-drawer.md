@@ -18,4 +18,4 @@ Red, blue, green, yellow, purple, orange, pink, teal — same presets as physica
 
 ## Operator corrections
 
-The operator can add or remove tokens from the pool (e.g. fix hostess entry errors).
+The operator can add or remove tokens from the pool (e.g. fix hostess entry errors), or **Clear pool** from the pool summary to delete every remaining pool token. That action asks for confirmation and does not touch called numbers or the spectator display.

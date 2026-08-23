@@ -388,6 +388,14 @@ export async function removeToken(
   return true;
 }
 
+export async function clearPool(): Promise<EventSnapshot> {
+  const db = await getDb();
+  await tokensCol(db).then((c) =>
+    c.deleteMany({ eventId: EVENT_ID, status: "pool" }),
+  );
+  return bumpAndPublish(true);
+}
+
 export async function drawTokens(options: {
   colorCounts?: { colorId: string; count: number }[];
   tokenIds?: string[];

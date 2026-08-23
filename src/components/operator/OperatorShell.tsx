@@ -3,11 +3,13 @@
 import {
   BarChart3,
   Briefcase,
+  ChevronDown,
   ChevronRight,
   CircleDollarSign,
   Download,
   Flag,
   Home,
+  KeyRound,
   Megaphone,
   PanelLeftClose,
   PanelLeftOpen,
@@ -72,19 +74,25 @@ function NavItem({
   game,
   active,
   collapsed,
+  live,
   onSelect,
 }: Readonly<{
   game: ActiveGame;
   active: boolean;
   collapsed: boolean;
+  live?: boolean;
   onSelect: (game: ActiveGame) => void;
 }>) {
   const Icon = GAME_ICONS[game];
+  const label = live
+    ? `${ACTIVE_GAME_LABELS[game]} (live)`
+    : ACTIVE_GAME_LABELS[game];
   return (
     <button
       type="button"
       onClick={() => onSelect(game)}
-      title={collapsed ? ACTIVE_GAME_LABELS[game] : undefined}
+      title={collapsed ? label : undefined}
+      aria-label={label}
       className={`flex w-full items-center rounded-lg py-3 text-left text-sm font-semibold transition-colors ${
         collapsed ? "justify-center px-2" : "gap-3 px-3"
       } ${
@@ -93,8 +101,33 @@ function NavItem({
           : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
       }`}
     >
-      <Icon size={19} className="shrink-0" aria-hidden />
-      {!collapsed && ACTIVE_GAME_LABELS[game]}
+      <span className="relative shrink-0">
+        <Icon size={19} aria-hidden />
+        {live && (
+          <span
+            className={`absolute -top-0.5 -right-0.5 h-2 w-2 animate-pulse rounded-full ${
+              active ? "bg-emerald-300" : "bg-emerald-400"
+            } ring-2 ${active ? "ring-blue-600" : "ring-neutral-900"}`}
+            aria-hidden
+          />
+        )}
+      </span>
+      {!collapsed && (
+        <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+          <span className="truncate">{ACTIVE_GAME_LABELS[game]}</span>
+          {live && (
+            <span
+              className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase ${
+                active
+                  ? "bg-white/20 text-white"
+                  : "bg-emerald-500/15 text-emerald-400"
+              }`}
+            >
+              Live
+            </span>
+          )}
+        </span>
+      )}
     </button>
   );
 }
@@ -108,8 +141,10 @@ function OperatorContent() {
   } = useSuite();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showPinSettings, setShowPinSettings] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const loadInputRef = useRef<HTMLInputElement>(null);
   const spectatorGame = state.spectatorGame ?? state.activeGame;
+  const pollLive = state.poll.status === "open";
 
   const openSpectator = () => {
     window.open(
@@ -212,6 +247,7 @@ function OperatorContent() {
               game={game}
               active={state.activeGame === game}
               collapsed={sidebarCollapsed}
+              live={game === "poll" && pollLive}
               onSelect={setActiveGame}
             />
           ))}
@@ -235,6 +271,7 @@ function OperatorContent() {
                   game={game}
                   active={state.activeGame === game}
                   collapsed={sidebarCollapsed}
+                  live={game === "poll" && pollLive}
                   onSelect={setActiveGame}
                 />
               ))}
@@ -294,36 +331,68 @@ function OperatorContent() {
           </button>
           <button
             type="button"
-            onClick={openHostess}
-            title={sidebarCollapsed ? "Open Hostess" : undefined}
-            className={`inline-flex w-full items-center justify-center rounded-lg border border-violet-500/50 bg-violet-600/20 py-2.5 text-sm font-semibold text-violet-100 hover:bg-violet-600/35 ${
-              sidebarCollapsed ? "px-2" : "gap-2 px-4"
+            onClick={() => setMoreOpen((open) => !open)}
+            aria-expanded={moreOpen}
+            aria-controls="operator-more-actions"
+            title={sidebarCollapsed ? "More" : undefined}
+            className={`inline-flex w-full items-center rounded-lg border border-neutral-700 py-2.5 text-sm font-semibold text-neutral-300 hover:bg-neutral-800 ${
+              sidebarCollapsed ? "justify-center px-2" : "justify-between gap-2 px-4"
             }`}
           >
-            <UserRound size={17} className="shrink-0" />
-            {!sidebarCollapsed && "Open Hostess"}
+            {sidebarCollapsed ? (
+              <ChevronDown
+                size={17}
+                className={`shrink-0 transition-transform ${moreOpen ? "rotate-180" : ""}`}
+                aria-hidden
+              />
+            ) : (
+              <>
+                <span>More</span>
+                <ChevronDown
+                  size={16}
+                  className={`shrink-0 transition-transform ${moreOpen ? "rotate-180" : ""}`}
+                  aria-hidden
+                />
+              </>
+            )}
           </button>
-          <button
-            type="button"
-            onClick={openPlayer}
-            title={sidebarCollapsed ? "Open Player" : undefined}
-            className={`inline-flex w-full items-center justify-center rounded-lg border border-emerald-500/50 bg-emerald-600/20 py-2.5 text-sm font-semibold text-emerald-100 hover:bg-emerald-600/35 ${
-              sidebarCollapsed ? "px-2" : "gap-2 px-4"
-            }`}
-          >
-            <Smartphone size={17} className="shrink-0" />
-            {!sidebarCollapsed && "Open Player"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowPinSettings(true)}
-            title={sidebarCollapsed ? "PIN Settings" : undefined}
-            className={`w-full rounded-lg border border-neutral-700 py-2 text-xs font-semibold text-neutral-300 hover:bg-neutral-800 ${
-              sidebarCollapsed ? "px-2" : ""
-            }`}
-          >
-            {sidebarCollapsed ? "PIN" : "PIN Settings"}
-          </button>
+          {moreOpen && (
+            <div id="operator-more-actions" className="space-y-2">
+              <button
+                type="button"
+                onClick={openHostess}
+                title={sidebarCollapsed ? "Open Hostess" : undefined}
+                className={`inline-flex w-full items-center justify-center rounded-lg border border-violet-500/50 bg-violet-600/20 py-2.5 text-sm font-semibold text-violet-100 hover:bg-violet-600/35 ${
+                  sidebarCollapsed ? "px-2" : "gap-2 px-4"
+                }`}
+              >
+                <UserRound size={17} className="shrink-0" />
+                {!sidebarCollapsed && "Open Hostess"}
+              </button>
+              <button
+                type="button"
+                onClick={openPlayer}
+                title={sidebarCollapsed ? "Open Player" : undefined}
+                className={`inline-flex w-full items-center justify-center rounded-lg border border-emerald-500/50 bg-emerald-600/20 py-2.5 text-sm font-semibold text-emerald-100 hover:bg-emerald-600/35 ${
+                  sidebarCollapsed ? "px-2" : "gap-2 px-4"
+                }`}
+              >
+                <Smartphone size={17} className="shrink-0" />
+                {!sidebarCollapsed && "Open Player"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowPinSettings(true)}
+                title={sidebarCollapsed ? "PIN Settings" : undefined}
+                className={`inline-flex w-full items-center justify-center rounded-lg border border-neutral-700 py-2 text-xs font-semibold text-neutral-300 hover:bg-neutral-800 ${
+                  sidebarCollapsed ? "px-2" : "gap-2"
+                }`}
+              >
+                <KeyRound size={15} className="shrink-0" />
+                {!sidebarCollapsed && "PIN Settings"}
+              </button>
+            </div>
+          )}
           <div
             className={`flex w-full ${
               sidebarCollapsed ? "flex-col gap-1.5" : "gap-1.5"
@@ -426,8 +495,13 @@ function OperatorContent() {
                       <span className="mb-8 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-blue-600/15 text-blue-400 group-hover:bg-blue-600 group-hover:text-white">
                         <Icon size={28} aria-hidden />
                       </span>
-                      <span className="text-xl font-bold text-white">
+                      <span className="flex items-center gap-2 text-xl font-bold text-white">
                         {ACTIVE_GAME_LABELS[game]}
+                        {game === "poll" && pollLive && (
+                          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-400 uppercase">
+                            Live
+                          </span>
+                        )}
                       </span>
                       <span className="mt-2 flex-1 text-sm leading-relaxed text-neutral-400">
                         {GAME_DESCRIPTIONS[game]}

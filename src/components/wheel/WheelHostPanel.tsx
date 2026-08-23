@@ -45,6 +45,100 @@ function formatBoardSummary(
   );
 }
 
+const PHRASE_ROW_CLASS =
+  "grid w-full grid-cols-[repeat(auto-fill,1.2em)] justify-start gap-y-1";
+const PHRASE_CELL_CLASS =
+  "flex h-[1.35em] w-[1.2em] items-center justify-center font-mono text-xl leading-none font-semibold select-none sm:text-2xl";
+
+function letterTextClass(matchHover: boolean, alreadyRevealed: boolean): string {
+  if (matchHover) return "text-amber-400";
+  if (alreadyRevealed) return "text-emerald-300";
+  return "text-white";
+}
+
+function PhraseRevealRow({
+  phrase,
+  revealedLetters,
+  revealedAll,
+  onRevealLetter,
+}: {
+  phrase: string;
+  revealedLetters: string[];
+  revealedAll: boolean;
+  onRevealLetter: (letter: string) => void;
+}) {
+  const [hoveredLetter, setHoveredLetter] = useState<string | null>(null);
+  const revealed = new Set(revealedLetters.map((l) => l.toUpperCase()));
+  const displayChars = [...formatSpacedPhrase(phrase, (upper) => upper)];
+  const summaryChars = [
+    ...formatBoardSummary(phrase, revealedLetters, revealedAll),
+  ];
+
+  return (
+    <>
+      <p
+        className={PHRASE_ROW_CLASS}
+        onMouseLeave={() => setHoveredLetter(null)}
+      >
+        {displayChars.map((char, index) => {
+          if (char === " ") {
+            return (
+              <span key={`s-${index}`} className={PHRASE_CELL_CLASS} aria-hidden>
+                {"\u00a0"}
+              </span>
+            );
+          }
+
+          if (!/[A-Z]/.test(char)) {
+            return (
+              <span
+                key={`p-${index}`}
+                className={`${PHRASE_CELL_CLASS} text-white`}
+              >
+                {char}
+              </span>
+            );
+          }
+
+          const alreadyRevealed = revealedAll || revealed.has(char);
+          const matchHover = hoveredLetter === char;
+          return (
+            <button
+              key={`l-${index}`}
+              type="button"
+              onMouseEnter={() => setHoveredLetter(char)}
+              onFocus={() => setHoveredLetter(char)}
+              onClick={() => {
+                if (!alreadyRevealed) onRevealLetter(char);
+              }}
+              aria-label={
+                alreadyRevealed
+                  ? `${char}, already revealed`
+                  : `Reveal all ${char}s`
+              }
+              className={`${PHRASE_CELL_CLASS} appearance-none border-0 bg-transparent ${
+                alreadyRevealed ? "cursor-default" : "cursor-pointer"
+              } ${letterTextClass(matchHover, alreadyRevealed)}`}
+            >
+              {char}
+            </button>
+          );
+        })}
+      </p>
+      <p className="mt-4 mb-2 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+        Board summary
+      </p>
+      <p className={`${PHRASE_ROW_CLASS} text-emerald-300`} aria-live="polite">
+        {summaryChars.map((char, index) => (
+          <span key={`b-${index}`} className={`${PHRASE_CELL_CLASS} text-emerald-300`}>
+            {char === " " ? "\u00a0" : char}
+          </span>
+        ))}
+      </p>
+    </>
+  );
+}
+
 export function WheelHostPanel() {
   const { state, updateWheel } = useSuite();
   const wheel = state.wheel;
@@ -75,17 +169,6 @@ export function WheelHostPanel() {
 
   const isLetterRevealed = (letter: string) =>
     wheel.revealedLetters.includes(letter) || wheel.revealedAll;
-
-  const boardSummary = wheel.phrase
-    ? formatBoardSummary(
-        wheel.phrase,
-        wheel.revealedLetters,
-        wheel.revealedAll,
-      )
-    : "";
-  const spacedPhrase = wheel.phrase
-    ? formatSpacedPhrase(wheel.phrase, (upper) => upper)
-    : "";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -204,18 +287,12 @@ export function WheelHostPanel() {
                       <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                         Current phrase
                       </p>
-                      <p className="font-mono text-xl font-semibold tracking-[0.18em] break-words text-white sm:text-2xl">
-                        {spacedPhrase}
-                      </p>
-                      <p className="mt-4 mb-2 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                        Board summary
-                      </p>
-                      <p
-                        className="font-mono text-xl font-semibold tracking-[0.18em] break-words text-emerald-300 sm:text-2xl"
-                        aria-live="polite"
-                      >
-                        {boardSummary || "—"}
-                      </p>
+                      <PhraseRevealRow
+                        phrase={wheel.phrase}
+                        revealedLetters={wheel.revealedLetters}
+                        revealedAll={wheel.revealedAll}
+                        onRevealLetter={handleRevealLetter}
+                      />
                     </div>
                   </>
                 ) : (

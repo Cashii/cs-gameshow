@@ -70,6 +70,7 @@ PINs stored as SHA-256 hashes on the event document. Session cookie: HMAC-signed
 - `POST /api/auth/login` / `POST /api/auth/logout` / `GET /api/auth/session`
 - `POST /api/tokens` — add token(s)
 - `DELETE /api/tokens/[id]` — remove pool token
+- `DELETE /api/tokens` — operator: delete every remaining pool token
 - `POST /api/live-drawer/draw` — random or specific draw
 - `POST /api/live-drawer/clear` — hide spectator reveal
 - `POST /api/live-drawer/undo` — return last batch to pool

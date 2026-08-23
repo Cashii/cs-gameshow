@@ -11,6 +11,7 @@ import {
   validateColorDrawRequests,
 } from "@/lib/live-drawer/draw";
 import { Toast, useToast } from "@/components/ui/Toast";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { EventSnapshot } from "@/lib/suite-state";
 
 export function LiveDrawerHostPanel() {
@@ -24,6 +25,7 @@ export function LiveDrawerHostPanel() {
   const [addNumber, setAddNumber] = useState("");
   const [addColorId, setAddColorId] = useState<string | null>("blue");
   const [listTab, setListTab] = useState<"pool" | "called">("pool");
+  const [clearPoolOpen, setClearPoolOpen] = useState(false);
 
   useEffect(() => {
     setColorCounts((prev) => {
@@ -195,6 +197,32 @@ export function LiveDrawerHostPanel() {
     }
   };
 
+  const handleClearPool = async () => {
+    const count = poolTokens.length;
+    setLoading(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/tokens", { method: "DELETE" });
+      const data = (await res.json()) as {
+        error?: string;
+        snapshot?: EventSnapshot;
+      };
+      if (!res.ok) throw new Error(data.error ?? "Failed to clear pool");
+      setSelectedIds(new Set());
+      if (data.snapshot) applyServerSnapshot(data.snapshot);
+      else await refreshSnapshot();
+      const summary = `Cleared ${count} token${count === 1 ? "" : "s"} from the pool`;
+      setMessage(summary);
+      showToast(summary);
+    } catch (e) {
+      const text = e instanceof Error ? e.message : "Failed";
+      setMessage(text);
+      showToast(text);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleRemove = async (token: {
     id: string;
     number: string;
@@ -242,7 +270,17 @@ export function LiveDrawerHostPanel() {
       <div className="grid w-full grid-cols-1 gap-6 p-6 xl:grid-cols-[320px_minmax(0,1fr)]">
         <div className="space-y-4">
           <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-5">
-            <h2 className="text-lg font-bold text-white">Pool summary</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-lg font-bold text-white">Pool summary</h2>
+              <button
+                type="button"
+                disabled={loading || poolTokens.length === 0}
+                onClick={() => setClearPoolOpen(true)}
+                className="shrink-0 rounded-md border border-red-500/40 px-3 py-1.5 text-sm font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-40"
+              >
+                Clear pool
+              </button>
+            </div>
             <ul className="mt-4 grid grid-cols-4 gap-3">
               {LIVE_DRAWER_COLORS.map((c) => (
                 <li key={c.id} className="flex justify-center">
@@ -544,6 +582,17 @@ export function LiveDrawerHostPanel() {
           )}
         </div>
       </div>
+      <ConfirmDialog
+        open={clearPoolOpen}
+        onOpenChange={setClearPoolOpen}
+        title="Clear entire pool?"
+        message={`This permanently removes all ${poolTokens.length} token${poolTokens.length === 1 ? "" : "s"} from the pool. Called numbers and the spectator display are not affected.\n\nThis cannot be undone.`}
+        confirmLabel="Clear pool"
+        variant="danger"
+        onConfirm={() => {
+          void handleClearPool();
+        }}
+      />
     </>
   );
 }

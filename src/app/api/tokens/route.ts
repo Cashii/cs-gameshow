@@ -1,5 +1,4 @@
-import { addTokens } from "@/lib/event/repository";
-import { buildSnapshot } from "@/lib/event/repository";
+import { addTokens, buildSnapshot, clearPool } from "@/lib/event/repository";
 import { error, isErrorResponse, json, requireRole } from "@/lib/api/helpers";
 
 export const dynamic = "force-dynamic";
@@ -18,5 +17,17 @@ export async function POST(request: Request) {
     return json({ ...result, snapshot });
   } catch (e) {
     return error(e instanceof Error ? e.message : "Failed to add tokens", 500);
+  }
+}
+
+export async function DELETE() {
+  const session = await requireRole("operator");
+  if (isErrorResponse(session)) return session;
+
+  try {
+    const snapshot = await clearPool();
+    return json({ ok: true, snapshot });
+  } catch (e) {
+    return error(e instanceof Error ? e.message : "Failed to clear pool", 500);
   }
 }
