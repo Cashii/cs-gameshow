@@ -1,68 +1,69 @@
 import type { DerbyRacer } from "@/lib/derby/types";
 
 export function DerbyCar({ racer }: Readonly<{ racer: DerbyRacer }>) {
-  const id = racer.id;
   return (
     <svg
       className="derby-car-svg"
-      viewBox="0 0 200 78"
+      viewBox="0 0 168 148"
       aria-hidden
       focusable="false"
     >
-      <defs>
-        <linearGradient id={`${id}-body`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#fff" stopOpacity="0.35" />
-          <stop offset="38%" stopColor={racer.hex} />
-          <stop offset="100%" stopColor={racer.hexDark} />
-        </linearGradient>
-        <linearGradient id={`${id}-glass`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#e2e8f0" />
-          <stop offset="100%" stopColor="#0f172a" />
-        </linearGradient>
-      </defs>
-      <g className="derby-car-streaks">
-        <rect x="2" y="28" width="36" height="3" rx="1.5" />
-        <rect x="8" y="36" width="28" height="2.5" rx="1.2" />
-        <rect x="4" y="43" width="32" height="2.5" rx="1.2" />
-      </g>
-      <ellipse className="derby-car-shadow" cx="108" cy="70" rx="62" ry="6" />
-      <g className="derby-wheel-spin derby-wheel-spin--rear">
-        <circle cx="52" cy="58" r="13" fill="#09090b" />
-        <circle cx="52" cy="58" r="8" fill="#3f3f46" />
-        <path d="M52 50 L52 66 M44 58 L60 58" stroke="#d4d4d8" strokeWidth="2" />
-      </g>
-      <g className="derby-wheel-spin derby-wheel-spin--front">
-        <circle cx="150" cy="58" r="13" fill="#09090b" />
-        <circle cx="150" cy="58" r="8" fill="#3f3f46" />
+      <rect
+        className="derby-stick"
+        x="78"
+        y="78"
+        width="12"
+        height="64"
+        rx="2"
+        fill="#e8c47a"
+        stroke="#6b4423"
+        strokeWidth="2.5"
+      />
+      <rect x="80" y="80" width="3" height="60" rx="1" fill="#f8e4b0" />
+
+      <g>
+        <ellipse cx="44" cy="78" rx="22" ry="22" fill="#1c1917" />
+        <ellipse cx="44" cy="78" rx="13" ry="13" fill="#f5f0e6" />
+        <ellipse cx="44" cy="78" rx="5" ry="5" fill="#1c1917" />
+
+        <ellipse cx="124" cy="78" rx="22" ry="22" fill="#1c1917" />
+        <ellipse cx="124" cy="78" rx="13" ry="13" fill="#f5f0e6" />
+        <ellipse cx="124" cy="78" rx="5" ry="5" fill="#1c1917" />
+
         <path
-          d="M150 50 L150 66 M142 58 L158 58"
-          stroke="#d4d4d8"
-          strokeWidth="2"
+          d="M28 70 C30 42 52 24 84 22 L108 22 C128 22 142 34 154 52 L160 62 C162 68 156 72 148 72 L30 72 C24 72 24 70 28 70 Z"
+          fill={racer.hex}
+          stroke="#1c1917"
+          strokeWidth="5"
+          strokeLinejoin="round"
         />
+        <path
+          d="M86 24 L108 24 C120 24 130 32 136 44 L88 44 C86 34 86 26 86 24 Z"
+          fill="#f8f1d8"
+          stroke="#1c1917"
+          strokeWidth="3.5"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M24 58 L36 58 L38 70 L22 70 Z"
+          fill={racer.hexDark}
+          stroke="#1c1917"
+          strokeWidth="3"
+          strokeLinejoin="round"
+        />
+        <circle cx="92" cy="58" r="14" fill="#f8f1d8" stroke="#1c1917" strokeWidth="3.5" />
+        <text
+          x="92"
+          y="64"
+          textAnchor="middle"
+          fill="#1c1917"
+          fontSize="18"
+          fontWeight="800"
+          fontFamily="Oswald, Impact, sans-serif"
+        >
+          {racer.number}
+        </text>
       </g>
-      <path
-        d="M38 52 C42 36 58 24 86 22 L118 22 C136 22 148 28 166 40 L184 46 C190 47 192 52 186 55 L40 55 Z"
-        fill={`url(#${id}-body)`}
-      />
-      <path
-        d="M90 22 L116 22 C124 22 132 26 138 34 L96 34 C92 28 90 24 90 22 Z"
-        fill={`url(#${id}-glass)`}
-      />
-      <path d="M34 44 L44 44 L46 52 L32 52 Z" fill={racer.hexDark} />
-      <path d="M170 34 L186 34 L186 46 L168 42 Z" fill={racer.hexDark} />
-      <rect x="176" y="38" width="8" height="5" rx="1" fill="#fde68a" />
-      <rect x="36" y="46" width="6" height="5" rx="1" fill="#f97316" />
-      <text
-        x="108"
-        y="50"
-        textAnchor="middle"
-        fill="#fff"
-        fontSize="18"
-        fontWeight="700"
-        fontFamily="Oswald, Impact, sans-serif"
-      >
-        {racer.number}
-      </text>
     </svg>
   );
 }
