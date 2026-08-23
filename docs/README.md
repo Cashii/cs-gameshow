@@ -19,6 +19,7 @@ Legacy routes `/admin` and `/audience` redirect to `/operator` and `/spectator`.
 - [Wheel of Riches](games/wheel-of-riches.md)
 - [Live Drawer](games/live-drawer.md)
 - [Take It or Leave It](games/take-it-or-leave-it.md)
+- [Derby](games/derby.md)
 - [Message Board](games/message-board.md)
 
 ## Setup

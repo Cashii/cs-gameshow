@@ -6,6 +6,7 @@ import {
   ChevronRight,
   CircleDollarSign,
   Download,
+  Flag,
   Home,
   Megaphone,
   PanelLeftClose,
@@ -38,11 +39,12 @@ import { FeudHeaderSettings } from "@/components/feud/FeudHeaderSettings";
 import { TakeItOrLeaveItHostPanel } from "@/components/take-it-or-leave-it/TakeItOrLeaveItHostPanel";
 import { PollHostPanel } from "@/components/poll/PollHostPanel";
 import { MessageBoardHostPanel } from "@/components/message-board/MessageBoardHostPanel";
+import { DerbyHostPanel } from "@/components/derby/DerbyHostPanel";
 import { PinSettingsPanel } from "@/components/operator/PinSettingsPanel";
 import { PinGate } from "@/components/auth/PinGate";
 
 const NAV_TOP: ActiveGame[] = ["idle"];
-const NAV_GAMES: ActiveGame[] = ["feud", "wheel", "takeIt"];
+const NAV_GAMES: ActiveGame[] = ["feud", "wheel", "takeIt", "derby"];
 const NAV_TOOLS: ActiveGame[] = ["liveDrawer", "poll", "messageBoard"];
 
 const GAME_ICONS: Record<ActiveGame, LucideIcon> = {
@@ -51,6 +53,7 @@ const GAME_ICONS: Record<ActiveGame, LucideIcon> = {
   wheel: CircleDollarSign,
   liveDrawer: Ticket,
   takeIt: Briefcase,
+  derby: Flag,
   poll: BarChart3,
   messageBoard: Megaphone,
 };
@@ -60,6 +63,7 @@ const GAME_DESCRIPTIONS: Record<Exclude<ActiveGame, "idle">, string> = {
   wheel: "Set a phrase and reveal letters on the spectator board.",
   liveDrawer: "Draw colored tokens from the pool for the spectator display.",
   takeIt: "Open nine cases, take banker offers, and decide take it or leave it.",
+  derby: "Pick a winner and run a 30-second four-car race on the spectator screen.",
   poll: "Ask a question, open voting on player phones, and show live results.",
   messageBoard: "Put a text announcement on the spectator screen.",
 };
@@ -405,6 +409,7 @@ function OperatorContent() {
                     "feud",
                     "wheel",
                     "takeIt",
+                    "derby",
                     "liveDrawer",
                     "poll",
                     "messageBoard",
@@ -447,6 +452,11 @@ function OperatorContent() {
           {state.activeGame === "takeIt" && (
             <div className="min-h-0 flex-1 overflow-auto">
               <TakeItOrLeaveItHostPanel />
+            </div>
+          )}
+          {state.activeGame === "derby" && (
+            <div className="min-h-0 flex-1 overflow-auto">
+              <DerbyHostPanel />
             </div>
           )}
           {state.activeGame === "poll" && <PollHostPanel />}

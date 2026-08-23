@@ -36,6 +36,10 @@ import {
   createDefaultMessageBoardState,
   type MessageBoardState,
 } from "@/lib/message-board/types";
+import {
+  createDefaultDerbyState,
+  type DerbyGameState,
+} from "@/lib/derby/types";
 
 export type SuiteRole = "operator" | "spectator" | "hostess" | "player";
 
@@ -62,6 +66,7 @@ type SuiteContextValue = {
   updateMessageBoard: (
     updater: (board: MessageBoardState) => MessageBoardState,
   ) => void;
+  updateDerby: (updater: (game: DerbyGameState) => DerbyGameState) => void;
   patchSuite: (patch: Partial<SuiteState>) => Promise<void>;
   refreshSnapshot: () => Promise<void>;
   applyServerSnapshot: (snapshot: EventSnapshot) => void;
@@ -427,6 +432,16 @@ export function SuiteProvider({
     [applyLocalSuite],
   );
 
+  const updateDerby = useCallback(
+    (updater: (game: DerbyGameState) => DerbyGameState) => {
+      applyLocalSuite((prev) => ({
+        ...prev,
+        derby: updater(prev.derby ?? createDefaultDerbyState()),
+      }));
+    },
+    [applyLocalSuite],
+  );
+
   const applyServerSnapshot = useCallback(
     (next: EventSnapshot) => {
       confirmedRevisionRef.current = Math.max(
@@ -473,6 +488,7 @@ export function SuiteProvider({
       updateTakeIt,
       updatePoll,
       updateMessageBoard,
+      updateDerby,
       patchSuite,
       refreshSnapshot,
       applyServerSnapshot,
@@ -493,6 +509,7 @@ export function SuiteProvider({
       updateTakeIt,
       updatePoll,
       updateMessageBoard,
+      updateDerby,
       patchSuite,
       refreshSnapshot,
       applyServerSnapshot,

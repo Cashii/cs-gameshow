@@ -8,6 +8,7 @@ import { WheelAudienceView } from "@/components/wheel/WheelAudienceView";
 import { LiveDrawerReveal } from "@/components/live-drawer/LiveDrawerReveal";
 import { TakeItOrLeaveItAudienceView } from "@/components/take-it-or-leave-it/TakeItOrLeaveItAudienceView";
 import { MessageBoardAudienceView } from "@/components/message-board/MessageBoardAudienceView";
+import { DerbyAudienceView } from "@/components/derby/DerbyAudienceView";
 
 export const standbyScreen = (
   <div className="flex h-full w-full flex-col items-center justify-center bg-neutral-950 text-center">
@@ -82,6 +83,12 @@ export function ActiveGameBoard({
         <MessageBoardAudienceView
           board={state.messageBoard ?? { text: "" }}
         />
+      </div>
+    );
+  } else if (activeGame === "derby") {
+    content = (
+      <div className="h-full w-full overflow-hidden">
+        <DerbyAudienceView game={state.derby} />
       </div>
     );
   } else {

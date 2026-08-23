@@ -21,6 +21,12 @@ import {
   createDefaultMessageBoardState,
   type MessageBoardState,
 } from "@/lib/message-board/types";
+import {
+  createDefaultDerbyState,
+  isDerbyRacerId,
+  type DerbyGameState,
+  type DerbyPhase,
+} from "@/lib/derby/types";
 
 export type ActiveGame =
   | "feud"
@@ -29,7 +35,8 @@ export type ActiveGame =
   | "takeIt"
   | "idle"
   | "poll"
-  | "messageBoard";
+  | "messageBoard"
+  | "derby";
 export type SpectatorScreen = ActiveGame;
 
 export type SuiteState = {
@@ -44,6 +51,7 @@ export type SuiteState = {
   takeIt: TakeItGameState;
   poll: PollState;
   messageBoard: MessageBoardState;
+  derby: DerbyGameState;
 };
 
 export type EventSnapshot = SuiteState & {
@@ -75,7 +83,8 @@ function normalizeActiveGame(
     raw === "liveDrawer" ||
     raw === "takeIt" ||
     raw === "poll" ||
-    raw === "messageBoard"
+    raw === "messageBoard" ||
+    raw === "derby"
   ) {
     return raw;
   }
@@ -112,6 +121,7 @@ export function createDefaultSuiteState(): SuiteState {
     takeIt: createDefaultTakeItState(),
     poll: createEmptyPoll(),
     messageBoard: createDefaultMessageBoardState(),
+    derby: createDefaultDerbyState(),
   };
 }
 
@@ -196,6 +206,45 @@ function normalizeMessageBoardState(
   };
 }
 
+const DERBY_PHASES = new Set<DerbyPhase>(["idle", "racing", "finished"]);
+
+function normalizeDerbyState(
+  raw: Partial<DerbyGameState> | undefined,
+): DerbyGameState {
+  const defaults = createDefaultDerbyState();
+  if (!raw || typeof raw !== "object") return defaults;
+
+  const winnerId = isDerbyRacerId(raw.winnerId) ? raw.winnerId : null;
+  let phase: DerbyPhase = DERBY_PHASES.has(raw.phase as DerbyPhase)
+    ? (raw.phase as DerbyPhase)
+    : defaults.phase;
+  const startedAt =
+    typeof raw.startedAt === "number" && Number.isFinite(raw.startedAt)
+      ? raw.startedAt
+      : null;
+  if (phase === "racing" && (!winnerId || startedAt == null)) {
+    phase = "idle";
+  }
+
+  return {
+    phase,
+    winnerId,
+    raceId: typeof raw.raceId === "string" ? raw.raceId : null,
+    startedAt,
+    durationMs:
+      typeof raw.durationMs === "number" && raw.durationMs > 0
+        ? raw.durationMs
+        : defaults.durationMs,
+    seed: typeof raw.seed === "number" && Number.isFinite(raw.seed)
+      ? raw.seed
+      : defaults.seed,
+    sequence:
+      typeof raw.sequence === "number" && Number.isFinite(raw.sequence)
+        ? raw.sequence
+        : defaults.sequence,
+  };
+}
+
 export function normalizeSuiteState(
   raw: LegacySuiteState | null | undefined,
 ): SuiteState {
@@ -255,6 +304,7 @@ export function normalizeSuiteState(
     takeIt: normalizeTakeItState(raw.takeIt ?? raw.deal),
     poll: normalizePollState(raw.poll),
     messageBoard: normalizeMessageBoardState(raw.messageBoard),
+    derby: normalizeDerbyState(raw.derby),
   };
 }
 
@@ -302,6 +352,7 @@ export const ACTIVE_GAME_LABELS: Record<ActiveGame, string> = {
   takeIt: "Take It or Leave It",
   poll: "Poll",
   messageBoard: "Message Board",
+  derby: "Derby",
 };
 
 export const SPECTATOR_SCREEN_LABELS: Record<SpectatorScreen, string> =
@@ -312,6 +363,7 @@ export const SPECTATOR_SCREENS: SpectatorScreen[] = [
   "feud",
   "wheel",
   "takeIt",
+  "derby",
   "liveDrawer",
   "poll",
   "messageBoard",
