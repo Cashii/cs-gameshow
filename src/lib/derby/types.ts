@@ -18,7 +18,7 @@ export const DERBY_RACERS: DerbyRacer[] = [
   { id: "yellow", name: "Yellow", number: 4, hex: "#eab308", hexDark: "#a16207" },
 ];
 
-export const DERBY_DURATION_MS = 30_000;
+export const DERBY_DURATION_MS = 20_000;
 
 export type DerbyGameState = {
   phase: DerbyPhase;

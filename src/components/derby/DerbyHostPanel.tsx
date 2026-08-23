@@ -87,7 +87,7 @@ export function DerbyHostPanel() {
         <div>
           <h2 className="text-lg font-bold text-white">Derby</h2>
           <p className="mt-1 text-sm text-neutral-400">
-            Pick the winner, then start a 30-second race on the spectator
+            Pick the winner, then start a 20-second race on the spectator
             screen. The audience should not see the pick until the finish.
           </p>
         </div>

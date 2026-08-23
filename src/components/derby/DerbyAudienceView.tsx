@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createDefaultDerbyState,
   DERBY_RACERS,
@@ -9,14 +9,8 @@ import {
   type DerbyRacerId,
 } from "@/lib/derby/types";
 import { createRaceSampler, raceProgress } from "@/lib/derby/race";
+import { DerbyCar } from "@/components/derby/DerbyCar";
 import "@/styles/derby-audience.css";
-
-function formatClock(ms: number): string {
-  const totalSec = Math.max(0, Math.ceil(ms / 1000));
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
 
 function prefersReducedMotion(): boolean {
   return (
@@ -25,6 +19,11 @@ function prefersReducedMotion(): boolean {
   );
 }
 
+const IDLE_FRAME = {
+  positions: { red: 0, blue: 0, green: 0, yellow: 0 },
+  speeds: { red: 0, blue: 0, green: 0, yellow: 0 },
+};
+
 export function DerbyAudienceView({
   game: gameProp,
 }: Readonly<{ game: DerbyGameState }>) {
@@ -32,7 +31,6 @@ export function DerbyAudienceView({
   const carRefs = useRef<Partial<Record<DerbyRacerId, HTMLDivElement | null>>>(
     {},
   );
-  const clockRef = useRef<HTMLDivElement | null>(null);
   const [showWinner, setShowWinner] = useState(false);
 
   const sampler = useMemo(() => {
@@ -42,25 +40,15 @@ export function DerbyAudienceView({
 
   useEffect(() => {
     const apply = (t: number) => {
-      const positions = sampler
-        ? sampler(t)
-        : { red: 0, blue: 0, green: 0, yellow: 0 };
+      const frame = sampler ? sampler(t) : IDLE_FRAME;
       for (const racer of DERBY_RACERS) {
         const el = carRefs.current[racer.id];
-        if (el) {
-          el.style.setProperty(
-            "--derby-progress",
-            String(positions[racer.id]),
-          );
-        }
-      }
-      if (clockRef.current) {
-        if (game.phase === "idle") {
-          clockRef.current.textContent = formatClock(game.durationMs);
-        } else {
-          const remaining = Math.max(0, (1 - t) * game.durationMs);
-          clockRef.current.textContent = formatClock(remaining);
-        }
+        if (!el) continue;
+        el.style.setProperty(
+          "--derby-progress",
+          String(frame.positions[racer.id]),
+        );
+        el.style.setProperty("--derby-speed", String(frame.speeds[racer.id]));
       }
     };
 
@@ -104,20 +92,19 @@ export function DerbyAudienceView({
 
   const winner =
     showWinner && game.winnerId ? getDerbyRacer(game.winnerId) : null;
+  const racing = game.phase === "racing" && !showWinner;
 
   return (
     <div
-      className={`derby-audience${game.phase === "racing" && !showWinner ? " is-racing" : ""}`}
+      className={`derby-audience${racing ? " is-racing" : ""}${winner ? " is-finished" : ""}`}
     >
       <header className="derby-chrome">
         <h1 className="derby-title">Derby</h1>
-        <div ref={clockRef} className="derby-clock" aria-live="off">
-          {formatClock(game.durationMs)}
-        </div>
       </header>
 
       <div className="derby-track-wrap">
         <div className="derby-track">
+          <div className="derby-track-scroll" aria-hidden />
           <div className="derby-start" aria-hidden />
           <div className="derby-finish" aria-hidden />
           {DERBY_RACERS.map((racer) => (
@@ -128,19 +115,8 @@ export function DerbyAudienceView({
                   carRefs.current[racer.id] = el;
                 }}
                 className="derby-car"
-                style={
-                  {
-                    "--derby-color": racer.hex,
-                    "--derby-color-dark": racer.hexDark,
-                  } as CSSProperties
-                }
               >
-                <div className="derby-car-body" />
-                <div className="derby-car-cabin" />
-                <div className="derby-car-spoiler" />
-                <span className="derby-car-num">{racer.number}</span>
-                <div className="derby-wheel derby-wheel--front" />
-                <div className="derby-wheel derby-wheel--rear" />
+                <DerbyCar racer={racer} />
               </div>
             </div>
           ))}

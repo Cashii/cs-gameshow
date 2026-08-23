@@ -63,7 +63,7 @@ const GAME_DESCRIPTIONS: Record<Exclude<ActiveGame, "idle">, string> = {
   wheel: "Set a phrase and reveal letters on the spectator board.",
   liveDrawer: "Draw colored tokens from the pool for the spectator display.",
   takeIt: "Open nine cases, take banker offers, and decide take it or leave it.",
-  derby: "Pick a winner and run a 30-second four-car race on the spectator screen.",
+  derby: "Pick a winner and run a 20-second four-car race on the spectator screen.",
   poll: "Ask a question, open voting on player phones, and show live results.",
   messageBoard: "Put a text announcement on the spectator screen.",
 };

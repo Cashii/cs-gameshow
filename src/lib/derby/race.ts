@@ -8,6 +8,11 @@ export { DERBY_DURATION_MS };
 
 export type DerbyPositions = Record<DerbyRacerId, number>;
 
+export type DerbyFrame = {
+  positions: DerbyPositions;
+  speeds: DerbyPositions;
+};
+
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   if (a === 0) a = 1;
@@ -49,125 +54,176 @@ function zeros(): DerbyPositions {
   };
 }
 
-function packAtBeat(
-  t: number,
-  order: DerbyRacerId[],
-  rand: () => number,
-): DerbyPositions {
-  const pack = t * 0.84;
-  const positions = zeros();
-  order.forEach((id, rank) => {
-    const gap = 0.03 + rand() * 0.02;
-    const jitter = (rand() - 0.5) * 0.018;
-    positions[id] = Math.min(0.9, Math.max(0, pack - rank * gap + jitter));
-  });
-  return positions;
+function clamp01(n: number): number {
+  return Math.min(1, Math.max(0, n));
 }
 
-const BEATS = [0, 0.12, 0.26, 0.4, 0.54, 0.68, 0.82, 0.9, 1];
+const STEPS = 300;
+const SURGE_START = 0.84;
 
-type Wobble = {
-  a1: number;
-  f1: number;
-  p1: number;
-  a2: number;
-  f2: number;
-  p2: number;
+type BoostWindow = {
+  start: number;
+  end: number;
+  leader: DerbyRacerId;
 };
 
+function leaderAt(windows: BoostWindow[], t: number): DerbyRacerId | null {
+  for (const window of windows) {
+    if (t >= window.start && t < window.end) return window.leader;
+  }
+  return null;
+}
+
+function previousLeader(windows: BoostWindow[], t: number): DerbyRacerId | null {
+  for (let i = 0; i < windows.length; i += 1) {
+    const window = windows[i]!;
+    if (t >= window.start && t < window.end) {
+      return i === 0 ? null : windows[i - 1]!.leader;
+    }
+  }
+  return null;
+}
+
+function sampleTable(table: DerbyPositions[], t: number): DerbyPositions {
+  const scaled = t * STEPS;
+  const i = Math.min(STEPS - 1, Math.max(0, Math.floor(scaled)));
+  const frac = scaled - i;
+  const a = table[i]!;
+  const b = table[i + 1] ?? a;
+  const out = zeros();
+  for (const id of DERBY_RACER_IDS) {
+    out[id] = lerp(a[id], b[id], frac);
+  }
+  return out;
+}
+
 /**
- * Deterministic progress curves. At t=1 the winner is at 1 and the field
- * is packed just behind. Mid-race lead changes come from seeded beats.
+ * Speeds stay positive so cars never reverse. Overtakes happen when one
+ * car surges and the others keep rolling forward at a slower clip.
  */
 export function createRaceSampler(
   winnerId: DerbyRacerId,
   seed: number,
-): (t: number) => DerbyPositions {
+): (t: number) => DerbyFrame {
   const rand = mulberry32(seed);
-  const frames: { t: number; pos: DerbyPositions }[] = [];
-  let prevLeader: DerbyRacerId | null = null;
+  const others = shuffle(
+    DERBY_RACER_IDS.filter((id) => id !== winnerId),
+    rand,
+  );
 
-  for (const beat of BEATS) {
-    if (beat === 0) {
-      frames.push({ t: 0, pos: zeros() });
-      continue;
+  const windows: BoostWindow[] = [];
+  let prev: DerbyRacerId | null = null;
+  const cuts = [0, 0.09, 0.2, 0.34, 0.48, 0.62, 0.74, SURGE_START];
+  for (let i = 0; i < cuts.length - 1; i += 1) {
+    let pool = shuffle([...DERBY_RACER_IDS], rand);
+    if (prev && pool.length > 1) {
+      pool = pool.filter((id) => id !== prev);
     }
-
-    if (beat === 1) {
-      const others = shuffle(
-        DERBY_RACER_IDS.filter((id) => id !== winnerId),
-        rand,
-      );
-      const finishes = [0.955, 0.918, 0.882];
-      const pos = zeros();
-      pos[winnerId] = 1;
-      others.forEach((id, i) => {
-        pos[id] = finishes[i]! + (rand() - 0.5) * 0.01;
-      });
-      frames.push({ t: 1, pos });
-      continue;
-    }
-
-    let order = shuffle([...DERBY_RACER_IDS], rand);
-    if (beat === 0.9) {
-      const slot = rand() < 0.5 ? 1 : rand() < 0.6 ? 2 : 0;
-      order = order.filter((id) => id !== winnerId);
-      order.splice(slot, 0, winnerId);
-    } else if (prevLeader && order[0] === prevLeader && rand() < 0.8) {
-      const swapWith = 1 + Math.floor(rand() * 3);
-      const lead = order[0]!;
-      order[0] = order[swapWith]!;
-      order[swapWith] = lead;
-    }
-    prevLeader = order[0] ?? null;
-    frames.push({ t: beat, pos: packAtBeat(beat, order, rand) });
+    const leader = pool[0] ?? winnerId;
+    windows.push({ start: cuts[i]!, end: cuts[i + 1]!, leader });
+    prev = leader;
   }
 
-  const wobble = Object.fromEntries(
-    DERBY_RACER_IDS.map((id) => [
-      id,
-      {
-        a1: 0.01 + rand() * 0.01,
-        f1: 5 + rand() * 4,
-        p1: rand() * Math.PI * 2,
-        a2: 0.005 + rand() * 0.006,
-        f2: 11 + rand() * 6,
-        p2: rand() * Math.PI * 2,
-      } satisfies Wobble,
-    ]),
-  ) as Record<DerbyRacerId, Wobble>;
+  const cruise = zeros();
+  const pulseAmp = zeros();
+  const pulseFreq = zeros();
+  const pulsePhase = zeros();
+  for (const id of DERBY_RACER_IDS) {
+    cruise[id] = 0.46 + rand() * 0.08;
+    pulseAmp[id] = 0.03 + rand() * 0.025;
+    pulseFreq[id] = 1.6 + rand() * 1.4;
+    pulsePhase[id] = rand() * Math.PI * 2;
+  }
 
-  return (tRaw: number): DerbyPositions => {
-    const t = Math.min(1, Math.max(0, tRaw));
-    if (t <= 0) return zeros();
+  const speedAt = (id: DerbyRacerId, t: number): number => {
+    const pulse =
+      0.5 +
+      0.5 * Math.sin(t * pulseFreq[id] * Math.PI * 2 + pulsePhase[id]);
+    let speed = cruise[id] + pulseAmp[id] * pulse;
 
-    let i = 1;
-    while (i < frames.length && frames[i]!.t < t) i += 1;
-    const next = frames[i]!;
-    const prev = frames[i - 1]!;
-    const span = next.t - prev.t || 1;
-    const local = smootherstep((t - prev.t) / span);
-    const damp = 1 - smootherstep((t - 0.88) / 0.12);
+    if (t < 0.07) speed += 0.5;
 
-    const out = zeros();
-    for (const id of DERBY_RACER_IDS) {
-      let p = lerp(prev.pos[id], next.pos[id], local);
-      const w = wobble[id];
-      p +=
-        damp *
-        (w.a1 * Math.sin(t * w.f1 * Math.PI * 2 + w.p1) +
-          w.a2 * Math.sin(t * w.f2 * Math.PI * 2 + w.p2));
-      out[id] = Math.min(t >= 1 ? 1 : 0.97, Math.max(0, p));
+    if (t < SURGE_START) {
+      const leader = leaderAt(windows, t);
+      const passed = previousLeader(windows, t);
+      if (id === leader) speed = 1.22;
+      else if (id === passed) speed *= 0.58;
+      else speed *= 0.76;
+    } else {
+      speed = id === winnerId ? 1.62 : 0.34 + 0.1 * pulse;
     }
 
-    if (t >= 1) {
-      out[winnerId] = 1;
+    if (id === winnerId) speed = Math.max(speed, 0.52);
+    return Math.max(0.24, speed);
+  };
+
+  const posTable: DerbyPositions[] = [zeros()];
+  const speedTable: DerbyPositions[] = [zeros()];
+  const acc = zeros();
+  const dt = 1 / STEPS;
+
+  for (let i = 1; i <= STEPS; i += 1) {
+    const t = i / STEPS;
+    const speeds = zeros();
+    for (const id of DERBY_RACER_IDS) {
+      speeds[id] = speedAt(id, t);
+      acc[id] += speeds[id] * dt;
+    }
+    posTable.push({ ...acc });
+    speedTable.push(speeds);
+  }
+
+  const surgeIndex = Math.round(SURGE_START * STEPS);
+  const atSurge = posTable[surgeIndex]!;
+  const packLead = Math.max(...DERBY_RACER_IDS.map((id) => atSurge[id]));
+  const scale = packLead > 0 ? 0.8 / packLead : 1;
+  for (const row of posTable) {
+    for (const id of DERBY_RACER_IDS) {
+      row[id] *= scale;
+    }
+  }
+
+  const scaledSurge = posTable[surgeIndex]!;
+  const finish = zeros();
+  finish[winnerId] = 1;
+  others.forEach((id, i) => {
+    const packed = 0.955 - i * 0.028;
+    finish[id] = Math.max(scaledSurge[id] + 0.04, packed);
+    finish[id] = Math.min(0.968, finish[id]);
+  });
+
+  return (tRaw: number): DerbyFrame => {
+    const t = Math.min(1, Math.max(0, tRaw));
+    if (t <= 0) {
+      return { positions: zeros(), speeds: zeros() };
+    }
+
+    const rawSpeed = sampleTable(speedTable, t);
+    const positions = zeros();
+    const speeds = zeros();
+
+    if (t < SURGE_START) {
+      const integrated = sampleTable(posTable, t);
       for (const id of DERBY_RACER_IDS) {
-        if (id !== winnerId) out[id] = Math.min(out[id], 0.97);
+        positions[id] = integrated[id];
+        speeds[id] = clamp01(rawSpeed[id] / 1.62);
+      }
+    } else {
+      const blend = smootherstep((t - SURGE_START) / (1 - SURGE_START));
+      for (const id of DERBY_RACER_IDS) {
+        positions[id] = lerp(scaledSurge[id], finish[id], blend);
+        speeds[id] =
+          t >= 1 ? 0 : clamp01((finish[id] - scaledSurge[id]) / 0.16 / 1.2);
+      }
+      if (t >= 1) {
+        positions[winnerId] = 1;
+        for (const id of DERBY_RACER_IDS) {
+          if (id !== winnerId) positions[id] = Math.min(positions[id], 0.97);
+        }
       }
     }
 
-    return out;
+    return { positions, speeds };
   };
 }
 
