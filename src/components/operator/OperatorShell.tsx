@@ -12,6 +12,8 @@ import {
   Megaphone,
   PanelLeftClose,
   PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
   Presentation,
   Settings,
   Smartphone,
@@ -44,7 +46,6 @@ import { MessageBoardHostPanel } from "@/components/message-board/MessageBoardHo
 import { DerbyHostPanel } from "@/components/derby/DerbyHostPanel";
 import { PinSettingsPanel } from "@/components/operator/PinSettingsPanel";
 import { PinGate } from "@/components/auth/PinGate";
-import { Select } from "@/components/ui/Select";
 
 const NAV_TOP: ActiveGame[] = ["idle"];
 const NAV_GAMES: ActiveGame[] = ["feud", "wheel", "takeIt", "derby"];
@@ -133,6 +134,50 @@ function NavItem({
   );
 }
 
+function SpectatorNavItem({
+  screen,
+  active,
+  collapsed,
+  onSelect,
+}: Readonly<{
+  screen: SpectatorScreen;
+  active: boolean;
+  collapsed: boolean;
+  onSelect: (screen: SpectatorScreen) => void;
+}>) {
+  const Icon = GAME_ICONS[screen];
+  const label =
+    screen === "idle" ? "Standby" : SPECTATOR_SCREEN_LABELS[screen];
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(screen)}
+      aria-label={label}
+      aria-current={active ? "true" : undefined}
+      className={`flex w-full rounded-md text-left text-base font-normal transition-colors ${
+        collapsed
+          ? "flex-col items-center justify-center gap-1 px-1 py-2"
+          : "items-center gap-2.5 px-2.5 py-2"
+      } ${
+        active
+          ? "bg-blue-600 text-white shadow-sm"
+          : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
+      }`}
+    >
+      <Icon size={18} strokeWidth={1.5} className="shrink-0" aria-hidden />
+      <span
+        className={
+          collapsed
+            ? "w-full text-center text-[9px] leading-tight font-medium"
+            : "truncate"
+        }
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
+
 function OperatorContent() {
   const {
     state,
@@ -140,6 +185,8 @@ function OperatorContent() {
     setSpectatorGame,
   } = useSuite();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [spectatorSidebarCollapsed, setSpectatorSidebarCollapsed] =
+    useState(false);
   const [showPinSettings, setShowPinSettings] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const loadInputRef = useRef<HTMLInputElement>(null);
@@ -284,144 +331,109 @@ function OperatorContent() {
           ))}
         </nav>
 
-        <div className="space-y-2 border-t border-neutral-800 p-2">
-          {!sidebarCollapsed && (
-            <label className="block">
-              <span className="mb-1 block px-0.5 text-[10px] font-semibold tracking-wide text-neutral-500 uppercase">
-                Spectator screen
-              </span>
-              <Select
-                aria-label="Spectator screen"
-                value={spectatorGame}
-                onValueChange={(value) =>
-                  setSpectatorGame(value as SpectatorScreen)
-                }
-                options={SPECTATOR_SCREENS.map((screen) => ({
-                  value: screen,
-                  label:
-                    screen === "idle"
-                      ? `${SPECTATOR_SCREEN_LABELS[screen]} (standby)`
-                      : SPECTATOR_SCREEN_LABELS[screen],
-                }))}
-              />
-            </label>
-          )}
-          {sidebarCollapsed && (
-            <Select
-              aria-label="Spectator screen"
-              value={spectatorGame}
-              onValueChange={(value) =>
-                setSpectatorGame(value as SpectatorScreen)
-              }
-              options={SPECTATOR_SCREENS.map((screen) => ({
-                value: screen,
-                label: SPECTATOR_SCREEN_LABELS[screen],
-              }))}
-            />
-          )}
-          <button
-            type="button"
-            onClick={openSpectator}
-            title={sidebarCollapsed ? "Open Spectator" : undefined}
-            className={`inline-flex w-full items-center justify-center rounded-md bg-blue-600 py-2 text-base font-normal text-white hover:bg-blue-500 ${
-              sidebarCollapsed ? "px-2" : "gap-2.5 px-2.5"
-            }`}
-          >
-            <Presentation size={18} strokeWidth={1.5} className="shrink-0" />
-            {!sidebarCollapsed && "Open Spectator"}
-          </button>
-          <div
-            className={`flex w-full ${
-              sidebarCollapsed ? "flex-col gap-1.5" : "gap-1.5"
-            }`}
-          >
+        <div className="border-t border-neutral-800 p-2">
+          <div ref={settingsRef} className="relative">
             <button
               type="button"
-              onClick={saveSuiteJson}
-              className={`inline-flex items-center justify-center rounded-md border border-neutral-600 bg-neutral-800 text-base font-normal text-neutral-200 hover:bg-neutral-700 ${
-                sidebarCollapsed ? "h-10 w-full px-2" : "h-10 flex-1 gap-2 px-2"
+              onClick={() => setSettingsOpen((open) => !open)}
+              aria-expanded={settingsOpen}
+              aria-haspopup="menu"
+              aria-label="Settings"
+              title={sidebarCollapsed ? "Settings" : undefined}
+              className={`flex w-full items-center rounded-md py-2 text-left text-base font-normal transition-colors ${
+                sidebarCollapsed ? "justify-center px-2" : "gap-2.5 px-2.5"
+              } ${
+                settingsOpen
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
               }`}
             >
-              <Download size={16} strokeWidth={1.5} className="shrink-0" />
-              {!sidebarCollapsed && "Save"}
+              <Settings size={18} strokeWidth={1.5} className="shrink-0" aria-hidden />
+              {!sidebarCollapsed && <span className="truncate">Settings</span>}
             </button>
-            <button
-              type="button"
-              onClick={() => loadInputRef.current?.click()}
-              className={`inline-flex items-center justify-center rounded-md border border-neutral-600 bg-neutral-800 text-base font-normal text-neutral-200 hover:bg-neutral-700 ${
-                sidebarCollapsed ? "h-10 w-full px-2" : "h-10 flex-1 gap-2 px-2"
-              }`}
-            >
-              <Upload size={16} strokeWidth={1.5} className="shrink-0" />
-              {!sidebarCollapsed && "Load"}
-            </button>
-            <div ref={settingsRef} className="relative">
-              <button
-                type="button"
-                onClick={() => setSettingsOpen((open) => !open)}
-                aria-expanded={settingsOpen}
-                aria-haspopup="menu"
-                title="Settings"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-neutral-600 bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
+            {settingsOpen && (
+              <div
+                role="menu"
+                className={`absolute z-50 min-w-48 rounded-lg border border-neutral-700 bg-neutral-900 p-1 shadow-xl ${
+                  sidebarCollapsed
+                    ? "bottom-0 left-full ml-1.5"
+                    : "right-0 bottom-full mb-1.5 w-full"
+                }`}
               >
-                <Settings size={18} strokeWidth={1.5} aria-hidden />
-              </button>
-              {settingsOpen && (
-                <div
-                  role="menu"
-                  className="absolute right-0 bottom-full z-50 mb-1.5 min-w-48 rounded-lg border border-neutral-700 bg-neutral-900 p-1 shadow-xl"
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    saveSuiteJson();
+                    setSettingsOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-neutral-200 hover:bg-neutral-800"
                 >
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      openHostess();
-                      setSettingsOpen(false);
-                    }}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-violet-100 hover:bg-violet-600/30"
-                  >
-                    <UserRound size={16} className="shrink-0" />
-                    Open Hostess
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      openPlayer();
-                      setSettingsOpen(false);
-                    }}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-emerald-100 hover:bg-emerald-600/30"
-                  >
-                    <Smartphone size={16} className="shrink-0" />
-                    Open Player
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setShowPinSettings(true);
-                      setSettingsOpen(false);
-                    }}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-neutral-200 hover:bg-neutral-800"
-                  >
-                    <KeyRound size={16} className="shrink-0" />
-                    PIN Settings
-                  </button>
-                </div>
-              )}
-            </div>
-            <input
-              ref={loadInputRef}
-              type="file"
-              accept="application/json,.json"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) loadSuiteJson(file);
-                e.target.value = "";
-              }}
-            />
+                  <Download size={16} className="shrink-0" />
+                  Save
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    loadInputRef.current?.click();
+                    setSettingsOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-neutral-200 hover:bg-neutral-800"
+                >
+                  <Upload size={16} className="shrink-0" />
+                  Load
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    openHostess();
+                    setSettingsOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-violet-100 hover:bg-violet-600/30"
+                >
+                  <UserRound size={16} className="shrink-0" />
+                  Open Hostess
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    openPlayer();
+                    setSettingsOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-emerald-100 hover:bg-emerald-600/30"
+                >
+                  <Smartphone size={16} className="shrink-0" />
+                  Open Player
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setShowPinSettings(true);
+                    setSettingsOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-neutral-200 hover:bg-neutral-800"
+                >
+                  <KeyRound size={16} className="shrink-0" />
+                  PIN Settings
+                </button>
+              </div>
+            )}
           </div>
+          <input
+            ref={loadInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) loadSuiteJson(file);
+              e.target.value = "";
+            }}
+          />
         </div>
       </aside>
 
@@ -533,6 +545,77 @@ function OperatorContent() {
           )}
         </main>
       </div>
+
+      <aside
+        className={`flex shrink-0 flex-col border-l border-neutral-800 bg-neutral-900 transition-[width] duration-200 ${
+          spectatorSidebarCollapsed ? "w-20" : "w-52"
+        }`}
+      >
+        <div
+          className={`flex min-h-16 items-center border-b border-neutral-800 ${
+            spectatorSidebarCollapsed
+              ? "justify-center px-1.5"
+              : "justify-between gap-2 px-3 py-2"
+          }`}
+        >
+          {!spectatorSidebarCollapsed && (
+            <p className="min-w-0 truncate text-[10px] font-semibold tracking-wide text-neutral-500 uppercase">
+              Spectator
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => setSpectatorSidebarCollapsed((c) => !c)}
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
+            aria-label={
+              spectatorSidebarCollapsed
+                ? "Expand spectator sidebar"
+                : "Collapse spectator sidebar"
+            }
+          >
+            {spectatorSidebarCollapsed ? (
+              <PanelRightOpen size={16} strokeWidth={1.5} aria-hidden />
+            ) : (
+              <PanelRightClose size={16} strokeWidth={1.5} aria-hidden />
+            )}
+          </button>
+        </div>
+
+        <nav className="flex flex-1 flex-col gap-0.5 overflow-auto p-2">
+          {SPECTATOR_SCREENS.map((screen) => (
+            <SpectatorNavItem
+              key={screen}
+              screen={screen}
+              active={spectatorGame === screen}
+              collapsed={spectatorSidebarCollapsed}
+              onSelect={setSpectatorGame}
+            />
+          ))}
+        </nav>
+
+        <div className="border-t border-neutral-800 p-2">
+          <button
+            type="button"
+            onClick={openSpectator}
+            className={`inline-flex w-full rounded-md bg-blue-600 font-normal text-white hover:bg-blue-500 ${
+              spectatorSidebarCollapsed
+                ? "flex-col items-center justify-center gap-1 px-1 py-2"
+                : "items-center justify-center gap-2.5 px-2.5 py-2 text-base"
+            }`}
+          >
+            <Presentation size={18} strokeWidth={1.5} className="shrink-0" />
+            <span
+              className={
+                spectatorSidebarCollapsed
+                  ? "w-full text-center text-[9px] leading-tight font-medium"
+                  : undefined
+              }
+            >
+              Open Spectator
+            </span>
+          </button>
+        </div>
+      </aside>
     </div>
   );
 }
