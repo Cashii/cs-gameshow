@@ -13,7 +13,6 @@ import {
   GripVertical,
 } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
-import { SPECTATOR_SCREEN_LABELS } from "@/lib/suite-state";
 import { useSound } from "@/lib/feud/useSound";
 import { clamp, uid } from "@/lib/utils";
 import type { FeudAnswer, FeudGameState, FeudRound } from "@/lib/feud/types";
@@ -793,24 +792,6 @@ export function FeudHostPanel() {
                   style={ghostIconButtonStyle}
                 />
               </Tooltip>
-            </div>
-          </div>
-          <div className="mb-3 shrink-0">
-            <div>
-              <p className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                Audience view
-              </p>
-              <p
-                className={`text-xs font-medium ${
-                  state.spectatorGame === "feud"
-                    ? "text-emerald-400"
-                    : "text-sky-400"
-                }`}
-              >
-                {state.spectatorGame === "feud"
-                  ? "Live on spectator"
-                  : `Spectator is on ${SPECTATOR_SCREEN_LABELS[state.spectatorGame ?? state.activeGame]} — editing here stays off-air`}
-              </p>
             </div>
           </div>
           <div

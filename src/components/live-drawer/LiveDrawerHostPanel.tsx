@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { MoreHorizontal } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSuite } from "@/lib/suite-provider";
 import {
   LIVE_DRAWER_COLORS,
@@ -14,9 +15,45 @@ import { Toast, useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { EventSnapshot } from "@/lib/suite-state";
 
+function snapshotWithoutToken(
+  snapshot: EventSnapshot,
+  tokenId: string,
+): EventSnapshot {
+  const inPool = snapshot.poolTokens.some((token) => token.id === tokenId);
+  const removed =
+    snapshot.poolTokens.find((token) => token.id === tokenId) ??
+    snapshot.calledTokens.find((token) => token.id === tokenId);
+  const poolSummary = { ...snapshot.poolSummary };
+  if (inPool && removed) {
+    poolSummary[removed.colorId] = Math.max(
+      0,
+      (poolSummary[removed.colorId] ?? 1) - 1,
+    );
+  }
+  return {
+    ...snapshot,
+    poolTokens: snapshot.poolTokens.filter((token) => token.id !== tokenId),
+    calledTokens: snapshot.calledTokens.filter((token) => token.id !== tokenId),
+    poolSummary,
+    liveDrawer: {
+      ...snapshot.liveDrawer,
+      revealedTokens: snapshot.liveDrawer.revealedTokens.filter(
+        (token) => token.id !== tokenId,
+      ),
+    },
+  };
+}
+
 export function LiveDrawerHostPanel() {
-  const { state, poolSummary, poolTokens, calledTokens, refreshSnapshot, applyServerSnapshot } =
-    useSuite();
+  const {
+    state,
+    snapshot,
+    poolSummary,
+    poolTokens,
+    calledTokens,
+    refreshSnapshot,
+    applyServerSnapshot,
+  } = useSuite();
   const { toastMessage, showToast } = useToast();
   const [colorCounts, setColorCounts] = useState<Record<string, number>>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -26,6 +63,19 @@ export function LiveDrawerHostPanel() {
   const [addColorId, setAddColorId] = useState<string | null>("blue");
   const [listTab, setListTab] = useState<"pool" | "called">("pool");
   const [clearPoolOpen, setClearPoolOpen] = useState(false);
+  const [poolMenuOpen, setPoolMenuOpen] = useState(false);
+  const poolMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!poolMenuOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!poolMenuRef.current?.contains(event.target as Node)) {
+        setPoolMenuOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [poolMenuOpen]);
 
   useEffect(() => {
     setColorCounts((prev) => {
@@ -228,7 +278,16 @@ export function LiveDrawerHostPanel() {
     number: string;
     colorId: string;
   }) => {
-    setLoading(true);
+    const previous = snapshot;
+    if (previous) {
+      applyServerSnapshot(snapshotWithoutToken(previous, token.id));
+    }
+    setSelectedIds((prev) => {
+      if (!prev.has(token.id)) return prev;
+      const next = new Set(prev);
+      next.delete(token.id);
+      return next;
+    });
     try {
       const params = new URLSearchParams({
         number: token.number,
@@ -238,15 +297,18 @@ export function LiveDrawerHostPanel() {
         `/api/tokens/${encodeURIComponent(token.id)}?${params}`,
         { method: "DELETE" },
       );
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as {
+        error?: string;
+        snapshot?: EventSnapshot;
+      };
       if (!res.ok) throw new Error(data.error ?? "Failed");
-      await refreshSnapshot();
+      if (data.snapshot) applyServerSnapshot(data.snapshot);
+      else await refreshSnapshot();
     } catch (e) {
+      if (previous) applyServerSnapshot(previous);
       const text = e instanceof Error ? e.message : "Failed";
       setMessage(text);
       showToast(text);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -272,14 +334,37 @@ export function LiveDrawerHostPanel() {
           <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-5">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-bold text-white">Pool summary</h2>
-              <button
-                type="button"
-                disabled={loading || poolTokens.length === 0}
-                onClick={() => setClearPoolOpen(true)}
-                className="shrink-0 rounded-md border border-red-500/40 px-3 py-1.5 text-sm font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-40"
-              >
-                Clear pool
-              </button>
+              <div ref={poolMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setPoolMenuOpen((open) => !open)}
+                  aria-expanded={poolMenuOpen}
+                  aria-haspopup="menu"
+                  aria-label="Pool actions"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                >
+                  <MoreHorizontal size={18} strokeWidth={1.5} aria-hidden />
+                </button>
+                {poolMenuOpen && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 z-50 mt-1 min-w-40 rounded-lg border border-neutral-700 bg-neutral-900 p-1 shadow-xl"
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      disabled={loading || poolTokens.length === 0}
+                      onClick={() => {
+                        setPoolMenuOpen(false);
+                        setClearPoolOpen(true);
+                      }}
+                      className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm font-semibold text-red-400 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Clear pool
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
             <ul className="mt-4 grid grid-cols-4 gap-3">
               {LIVE_DRAWER_COLORS.map((c) => (
@@ -482,13 +567,7 @@ export function LiveDrawerHostPanel() {
               ) : (
                 <div className="space-y-4">
                   {calledRows.map(({ color, tokens }) => (
-                    <div key={color.id}>
-                      <p
-                        className="mb-1.5 text-xs font-semibold tracking-wide uppercase"
-                        style={{ color: color.hex }}
-                      >
-                        {color.name}
-                      </p>
+                    <div key={color.id} aria-label={color.name}>
                       <ul className="flex flex-wrap items-start gap-x-4 gap-y-3">
                         {tokens.map((t) => (
                           <li
@@ -525,13 +604,7 @@ export function LiveDrawerHostPanel() {
             ) : (
               <div className="space-y-4">
                 {poolRows.map(({ color, tokens }) => (
-                  <div key={color.id}>
-                    <p
-                      className="mb-1.5 text-xs font-semibold tracking-wide uppercase"
-                      style={{ color: color.hex }}
-                    >
-                      {color.name}
-                    </p>
+                  <div key={color.id} aria-label={color.name}>
                     <ul className="flex flex-wrap items-start gap-x-4 gap-y-3">
                       {tokens.map((t) => {
                         const selected = selectedIds.has(t.id);
