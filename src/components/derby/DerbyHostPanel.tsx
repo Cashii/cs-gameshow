@@ -127,7 +127,7 @@ export function DerbyHostPanel() {
                     {racer.name}
                   </span>
                   <span className="text-xs text-neutral-500">
-                    Car {racer.number}
+                    Horse {racer.number}
                   </span>
                 </button>
               );

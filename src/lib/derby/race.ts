@@ -98,8 +98,8 @@ function sampleTable(table: DerbyPositions[], t: number): DerbyPositions {
 }
 
 /**
- * Speeds stay positive so cars never reverse. Overtakes happen when one
- * car surges and the others keep rolling forward at a slower clip.
+ * Speeds stay positive so horses never reverse. Overtakes happen when one
+ * horse surges and the others keep rolling forward at a slower clip.
  */
 export function createRaceSampler(
   winnerId: DerbyRacerId,

@@ -9,7 +9,7 @@ import {
   type DerbyRacerId,
 } from "@/lib/derby/types";
 import { createRaceSampler, raceProgress } from "@/lib/derby/race";
-import { DerbyCar } from "@/components/derby/DerbyCar";
+import { DerbyHorse } from "@/components/derby/DerbyHorse";
 import "@/styles/derby-audience.css";
 
 function prefersReducedMotion(): boolean {
@@ -28,9 +28,9 @@ export function DerbyAudienceView({
   game: gameProp,
 }: Readonly<{ game: DerbyGameState }>) {
   const game = gameProp ?? createDefaultDerbyState();
-  const carRefs = useRef<Partial<Record<DerbyRacerId, HTMLDivElement | null>>>(
-    {},
-  );
+  const horseRefs = useRef<
+    Partial<Record<DerbyRacerId, HTMLDivElement | null>>
+  >({});
   const [showWinner, setShowWinner] = useState(false);
 
   const sampler = useMemo(() => {
@@ -42,13 +42,13 @@ export function DerbyAudienceView({
     const apply = (t: number, hopping: boolean) => {
       const frame = sampler ? sampler(t) : IDLE_FRAME;
       for (const racer of DERBY_RACERS) {
-        const el = carRefs.current[racer.id];
+        const el = horseRefs.current[racer.id];
         if (!el) continue;
         el.style.setProperty(
           "--derby-progress",
           String(frame.positions[racer.id]),
         );
-        const hops = 18;
+        const hops = 22;
         const hop = hopping
           ? Math.max(0, Math.sin(frame.positions[racer.id] * hops * Math.PI))
           : 0;
@@ -103,7 +103,7 @@ export function DerbyAudienceView({
       className={`derby-audience${racing ? " is-racing" : ""}${winner ? " is-finished" : ""}`}
     >
       <header className="derby-chrome">
-        <h1 className="derby-title">Derby</h1>
+        <h1 className="derby-title">Kentucky Derby</h1>
       </header>
 
       <div className="derby-track-wrap">
@@ -121,11 +121,11 @@ export function DerbyAudienceView({
               <div className="derby-lane-slot" aria-hidden />
               <div
                 ref={(el) => {
-                  carRefs.current[racer.id] = el;
+                  horseRefs.current[racer.id] = el;
                 }}
-                className="derby-car"
+                className="derby-horse"
               >
-                <DerbyCar racer={racer} />
+                <DerbyHorse racer={racer} />
               </div>
             </div>
           ))}

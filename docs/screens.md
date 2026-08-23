@@ -14,7 +14,7 @@ Controls all games and Poll from the left nav. Spectator cover/live and which sc
 **Who:** Projector / large display  
 **PIN:** None
 
-Read-only. Shows the operator-selected spectator screen when live (a game, standby, or poll). Polls no longer take over automatically — pick **Poll** in the Spectator screen dropdown to put results on the projector. **Derby** is the four-car race; the operator picks the winner off-air, then starts a 20-second animation.
+Read-only. Shows the operator-selected spectator screen when live (a game, standby, or poll). Polls no longer take over automatically — pick **Poll** in the Spectator screen dropdown to put results on the projector. **Derby** is the four-horse carnival race; the operator picks the winner off-air, then starts a 20-second animation.
 
 ## Hostess
 

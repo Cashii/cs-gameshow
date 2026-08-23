@@ -1,5 +1,5 @@
 .derby-audience {
-  --derby-car-w: 8.6rem;
+  --derby-horse-w: 10.4rem;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -37,9 +37,9 @@
 .derby-title {
   margin: 0;
   padding: 0.28rem 1.4rem 0.38rem;
-  font-size: clamp(1.7rem, 4vw, 3.1rem);
+  font-size: clamp(1.35rem, 3.4vw, 2.6rem);
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #7f1d1d;
   background: #fde68a;
@@ -171,27 +171,47 @@
   box-shadow: 3px 3px 0 #1c1917;
 }
 
-.derby-car {
+.derby-horse {
   --derby-progress: 0;
   --derby-hop: 0;
   position: absolute;
-  left: calc(0.2rem + var(--derby-progress) * (100% - var(--derby-car-w) - 1.6rem));
+  left: calc(0.2rem + var(--derby-progress) * (100% - var(--derby-horse-w) - 1.6rem));
   bottom: 0.05rem;
-  width: var(--derby-car-w);
-  height: 7.4rem;
+  width: var(--derby-horse-w);
+  height: 7.6rem;
   z-index: 5;
   transform-origin: 50% 92%;
   transform:
-    translateY(calc(var(--derby-hop) * -1.25rem))
-    rotate(calc((var(--derby-hop) - 0.25) * -7deg));
+    translateY(calc(var(--derby-hop) * -0.85rem))
+    rotate(calc((var(--derby-hop) - 0.35) * -5deg));
   will-change: left, transform;
   filter: drop-shadow(4px 6px 0 rgba(28, 25, 23, 0.28));
 }
 
-.derby-car-svg {
+.derby-horse-svg {
   width: 100%;
   height: 100%;
   overflow: visible;
+}
+
+.derby-leg {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+}
+
+.derby-audience.is-racing .derby-leg-back,
+.derby-audience.is-racing .derby-leg-back-far {
+  animation: derby-gallop-back 0.28s ease-in-out infinite;
+}
+
+.derby-audience.is-racing .derby-leg-front,
+.derby-audience.is-racing .derby-leg-front-far {
+  animation: derby-gallop-front 0.28s ease-in-out infinite;
+}
+
+.derby-audience.is-racing .derby-leg-back-far,
+.derby-audience.is-racing .derby-leg-front-far {
+  animation-delay: 0.14s;
 }
 
 .derby-winner-banner {
@@ -219,6 +239,26 @@
   }
 }
 
+@keyframes derby-gallop-back {
+  0%,
+  100% {
+    transform: rotate(12deg);
+  }
+  50% {
+    transform: rotate(-18deg);
+  }
+}
+
+@keyframes derby-gallop-front {
+  0%,
+  100% {
+    transform: rotate(-14deg);
+  }
+  50% {
+    transform: rotate(16deg);
+  }
+}
+
 @keyframes derby-banner-in {
   from {
     opacity: 0;
@@ -236,7 +276,14 @@
     animation: none;
   }
 
-  .derby-car {
+  .derby-horse {
     transform: none;
+  }
+
+  .derby-audience.is-racing .derby-leg-back,
+  .derby-audience.is-racing .derby-leg-back-far,
+  .derby-audience.is-racing .derby-leg-front,
+  .derby-audience.is-racing .derby-leg-front-far {
+    animation: none;
   }
 }
