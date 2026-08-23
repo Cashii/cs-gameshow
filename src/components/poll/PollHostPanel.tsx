@@ -165,9 +165,6 @@ export function PollHostPanel() {
             <div className="mt-1.5 space-y-2">
               {choices.map((choice, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <span className="w-6 shrink-0 text-center text-sm font-semibold text-neutral-500">
-                    {i + 1}
-                  </span>
                   <input
                     value={choice}
                     onChange={(e) => {

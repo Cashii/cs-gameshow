@@ -57,14 +57,16 @@ function SpectatorContent() {
       >
         {showPoll ? (
           state.poll.status === "idle" ? (
-            <div className="relative flex h-full w-full flex-col items-center justify-center bg-neutral-950 pb-80 text-center">
-              <p className="text-sm font-semibold tracking-[0.28em] text-sky-400 uppercase">
-                Poll
-              </p>
-              <p className="mt-3 text-2xl text-neutral-400">
-                Waiting for the operator to open a poll
-              </p>
-              <div className="absolute inset-x-0 bottom-8 flex justify-center">
+            <div className="flex h-full min-h-0 w-full flex-col items-center bg-neutral-950 px-8 py-8 text-center">
+              <div className="shrink-0">
+                <p className="text-sm font-semibold tracking-[0.28em] text-sky-400 uppercase">
+                  Poll
+                </p>
+                <p className="mt-3 text-2xl text-neutral-400 sm:text-4xl">
+                  Waiting for the operator to open a poll
+                </p>
+              </div>
+              <div className="mt-8 min-h-0 w-full flex-1">
                 <PlayerVoteQr />
               </div>
             </div>
