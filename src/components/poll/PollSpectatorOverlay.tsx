@@ -29,7 +29,7 @@ export function PollSpectatorOverlay({
         </h1>
       </div>
 
-      <ul className="mx-auto mt-6 w-full max-w-6xl shrink-0 space-y-6">
+      <ul className="mx-auto mt-6 max-h-[50%] w-full max-w-6xl shrink-0 space-y-6 overflow-auto">
         {poll.choices.map((choice) => {
           const pct = total > 0 ? Math.round((choice.votes / total) * 100) : 0;
           return (
