@@ -321,6 +321,7 @@ export function normalizeSuiteState(
       ...raw.wheel,
       zoom: typeof raw.wheel?.zoom === "number" ? raw.wheel.zoom : 1,
       showLetterLegend: raw.wheel?.showLetterLegend ?? true,
+      topic: typeof raw.wheel?.topic === "string" ? raw.wheel.topic : "",
     },
     liveDrawer: normalizeLiveDrawerState(raw.liveDrawer ?? raw.draw),
     takeIt: normalizeTakeItState(raw.takeIt ?? raw.deal),

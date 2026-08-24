@@ -107,9 +107,12 @@ export function WheelAudienceView({
       <div
         className={`relative z-10 flex h-full w-full items-center justify-center p-4 sm:p-6 board-stage${
           wheel.showLetterLegend ? " has-letter-legend" : ""
-        }`}
+        }${wheel.topic.trim() ? " has-topic" : ""}`}
         style={{ overflow: "hidden" }}
       >
+        {wheel.topic.trim() ? (
+          <p className="topic-banner">{wheel.topic.trim()}</p>
+        ) : null}
         <LetterBoard
           phrase={wheel.phrase}
           revealedLetters={wheel.revealedLetters}

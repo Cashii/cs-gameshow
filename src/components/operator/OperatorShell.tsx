@@ -12,8 +12,6 @@ import {
   Megaphone,
   PanelLeftClose,
   PanelLeftOpen,
-  PanelRightClose,
-  PanelRightOpen,
   Presentation,
   Settings,
   Smartphone,
@@ -137,12 +135,10 @@ function NavItem({
 function SpectatorNavItem({
   screen,
   active,
-  collapsed,
   onSelect,
 }: Readonly<{
   screen: SpectatorScreen;
   active: boolean;
-  collapsed: boolean;
   onSelect: (screen: SpectatorScreen) => void;
 }>) {
   const Icon = GAME_ICONS[screen];
@@ -154,24 +150,14 @@ function SpectatorNavItem({
       onClick={() => onSelect(screen)}
       aria-label={label}
       aria-current={active ? "true" : undefined}
-      className={`flex w-full rounded-md text-left text-base font-normal transition-colors ${
-        collapsed
-          ? "flex-col items-center justify-center gap-1 px-1 py-2"
-          : "items-center gap-2.5 px-2.5 py-2"
-      } ${
+      className={`flex w-full flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-left font-normal transition-colors ${
         active
           ? "bg-blue-600 text-white shadow-sm"
           : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
       }`}
     >
       <Icon size={18} strokeWidth={1.5} className="shrink-0" aria-hidden />
-      <span
-        className={
-          collapsed
-            ? "w-full text-center text-[9px] leading-tight font-medium"
-            : "truncate"
-        }
-      >
+      <span className="w-full text-center text-[9px] leading-tight font-medium">
         {label}
       </span>
     </button>
@@ -185,8 +171,6 @@ function OperatorContent() {
     setSpectatorGame,
   } = useSuite();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [spectatorSidebarCollapsed, setSpectatorSidebarCollapsed] =
-    useState(false);
   const [showPinSettings, setShowPinSettings] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const loadInputRef = useRef<HTMLInputElement>(null);
@@ -546,48 +530,13 @@ function OperatorContent() {
         </main>
       </div>
 
-      <aside
-        className={`flex shrink-0 flex-col border-l border-neutral-800 bg-neutral-900 transition-[width] duration-200 ${
-          spectatorSidebarCollapsed ? "w-20" : "w-52"
-        }`}
-      >
-        <div
-          className={`flex min-h-16 items-center border-b border-neutral-800 ${
-            spectatorSidebarCollapsed
-              ? "justify-center px-1.5"
-              : "justify-between gap-2 px-3 py-2"
-          }`}
-        >
-          {!spectatorSidebarCollapsed && (
-            <p className="min-w-0 truncate text-[10px] font-semibold tracking-wide text-neutral-500 uppercase">
-              Spectator
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={() => setSpectatorSidebarCollapsed((c) => !c)}
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
-            aria-label={
-              spectatorSidebarCollapsed
-                ? "Expand spectator sidebar"
-                : "Collapse spectator sidebar"
-            }
-          >
-            {spectatorSidebarCollapsed ? (
-              <PanelRightOpen size={16} strokeWidth={1.5} aria-hidden />
-            ) : (
-              <PanelRightClose size={16} strokeWidth={1.5} aria-hidden />
-            )}
-          </button>
-        </div>
-
+      <aside className="flex w-20 shrink-0 flex-col border-l border-neutral-800 bg-neutral-900">
         <nav className="flex flex-1 flex-col gap-0.5 overflow-auto p-2">
           {SPECTATOR_SCREENS.map((screen) => (
             <SpectatorNavItem
               key={screen}
               screen={screen}
               active={spectatorGame === screen}
-              collapsed={spectatorSidebarCollapsed}
               onSelect={setSpectatorGame}
             />
           ))}
@@ -597,20 +546,10 @@ function OperatorContent() {
           <button
             type="button"
             onClick={openSpectator}
-            className={`inline-flex w-full rounded-md bg-blue-600 font-normal text-white hover:bg-blue-500 ${
-              spectatorSidebarCollapsed
-                ? "flex-col items-center justify-center gap-1 px-1 py-2"
-                : "items-center justify-center gap-2.5 px-2.5 py-2 text-base"
-            }`}
+            className="inline-flex w-full flex-col items-center justify-center gap-1 rounded-md bg-blue-600 px-1 py-2 font-normal text-white hover:bg-blue-500"
           >
             <Presentation size={18} strokeWidth={1.5} className="shrink-0" />
-            <span
-              className={
-                spectatorSidebarCollapsed
-                  ? "w-full text-center text-[9px] leading-tight font-medium"
-                  : undefined
-              }
-            >
+            <span className="w-full text-center text-[9px] leading-tight font-medium">
               Open Spectator
             </span>
           </button>

@@ -288,6 +288,40 @@
   transition: padding-bottom 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.wheel-audience .has-topic {
+  padding-top: clamp(4.5rem, 11vh, 7.5rem) !important;
+}
+
+.wheel-audience .topic-banner {
+  position: absolute;
+  top: clamp(0.6rem, 1.8vh, 1.2rem);
+  left: 50%;
+  z-index: 12;
+  max-width: min(90vw, 52rem);
+  margin: 0;
+  padding: 0.45rem 1.6rem 0.55rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  border: 4px solid #fbbf24;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fef3c7 0%, #f59e0b 55%, #d97706 100%);
+  box-shadow:
+    0 0 0 3px #14532d,
+    0 8px 24px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  color: #14532d;
+  font-family: var(--font-oswald), Impact, "Arial Black", sans-serif;
+  font-size: clamp(1.15rem, 3.4vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.15;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
 .wheel-audience .has-letter-legend {
   padding-bottom: clamp(56px, 10vh, 100px) !important;
 }

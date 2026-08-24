@@ -1,5 +1,6 @@
 export type WheelGameState = {
   phrase: string;
+  topic: string;
   revealedLetters: string[];
   revealedAll: boolean;
   zoom: number;
@@ -9,6 +10,7 @@ export type WheelGameState = {
 export function createDefaultWheelState(): WheelGameState {
   return {
     phrase: "",
+    topic: "",
     revealedLetters: [],
     revealedAll: false,
     zoom: 1,
