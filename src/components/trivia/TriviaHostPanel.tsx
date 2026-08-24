@@ -37,7 +37,7 @@ export function TriviaHostPanel() {
   useEffect(() => {
     if (trivia.status !== "open") return;
     let cancelled = false;
-    let timer: ReturnType<typeof setTimeout>;
+    let timer = 0;
     const tick = () => {
       void refreshSnapshot().finally(() => {
         if (!cancelled) timer = window.setTimeout(tick, 1000);
