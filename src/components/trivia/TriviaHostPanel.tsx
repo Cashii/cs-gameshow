@@ -36,10 +36,18 @@ export function TriviaHostPanel() {
 
   useEffect(() => {
     if (trivia.status !== "open") return;
-    const id = window.setInterval(() => {
-      void refreshSnapshot();
-    }, 400);
-    return () => window.clearInterval(id);
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      void refreshSnapshot().finally(() => {
+        if (!cancelled) timer = window.setTimeout(tick, 1000);
+      });
+    };
+    timer = window.setTimeout(tick, 1000);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [trivia.status, refreshSnapshot]);
 
   useEffect(() => {

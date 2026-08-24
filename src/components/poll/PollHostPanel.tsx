@@ -75,10 +75,18 @@ export function PollHostPanel() {
 
   useEffect(() => {
     if (!votingOpen) return;
-    const id = window.setInterval(() => {
-      void refreshSnapshot();
-    }, 400);
-    return () => window.clearInterval(id);
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      void refreshSnapshot().finally(() => {
+        if (!cancelled) timer = window.setTimeout(tick, 1000);
+      });
+    };
+    timer = window.setTimeout(tick, 1000);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [votingOpen, refreshSnapshot]);
 
   return (

@@ -147,6 +147,8 @@ export function SuiteProvider({
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastPersistedJsonRef = useRef<string | null>(null);
   const lastLocalBroadcastAtRef = useRef(0);
+  const refreshInFlightRef = useRef<Promise<void> | null>(null);
+  const refreshQueuedRef = useRef(false);
 
   const replaceSnapshot = useCallback((next: EventSnapshot) => {
     snapshotRef.current = next;
@@ -475,8 +477,21 @@ export function SuiteProvider({
   );
 
   const refreshSnapshot = useCallback(async () => {
-    const next = await fetchSnapshot();
-    applyServerSnapshot(next);
+    refreshQueuedRef.current = true;
+    if (refreshInFlightRef.current) return refreshInFlightRef.current;
+    const pending = (async () => {
+      try {
+        while (refreshQueuedRef.current) {
+          refreshQueuedRef.current = false;
+          const next = await fetchSnapshot();
+          applyServerSnapshot(next);
+        }
+      } finally {
+        refreshInFlightRef.current = null;
+      }
+    })();
+    refreshInFlightRef.current = pending;
+    return pending;
   }, [applyServerSnapshot]);
 
   const currentFeudRound = useMemo(

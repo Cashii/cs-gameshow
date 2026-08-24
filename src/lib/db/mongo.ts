@@ -1,6 +1,15 @@
-import { MongoClient, type Db } from "mongodb";
+import { MongoClient, type Db, type MongoClientOptions } from "mongodb";
 
 const DEFAULT_DB = "gameshow_dev";
+
+const CLIENT_OPTIONS: MongoClientOptions = {
+  maxPoolSize: 10,
+  minPoolSize: 0,
+  maxConnecting: 2,
+  maxIdleTimeMS: 30_000,
+  serverSelectionTimeoutMS: 8_000,
+  connectTimeoutMS: 8_000,
+};
 
 declare global {
   // eslint-disable-next-line no-var
@@ -20,15 +29,11 @@ export function getDbName(): string {
 }
 
 function getClientPromise(): Promise<MongoClient> {
-  if (process.env.NODE_ENV === "development") {
-    if (!global._mongoClientPromise) {
-      const client = new MongoClient(getUri());
-      global._mongoClientPromise = client.connect();
-    }
-    return global._mongoClientPromise;
+  if (!global._mongoClientPromise) {
+    const client = new MongoClient(getUri(), CLIENT_OPTIONS);
+    global._mongoClientPromise = client.connect();
   }
-  const client = new MongoClient(getUri());
-  return client.connect();
+  return global._mongoClientPromise;
 }
 
 export async function getDb(): Promise<Db> {
