@@ -14,7 +14,7 @@ Controls all games and Poll from the left nav. Spectator cover/live and which sc
 **Who:** Projector / large display  
 **PIN:** None
 
-Read-only. Shows the operator-selected spectator screen when live (a game, standby, or poll). Polls no longer take over automatically — pick **Poll** in the Spectator screen dropdown to put results on the projector. **Derby** is the four-horse carnival race; the operator picks the winner off-air, then starts a 20-second animation.
+Read-only. Shows the operator-selected spectator screen when live (a game, standby, or poll). Polls no longer take over automatically — pick **Poll** in the Spectator screen dropdown to put results on the projector. **Derby** is the four-horse carnival race; the operator picks the winner off-air, then starts a 20-second animation. **Jeoparody** is a category board the operator advances from the desk (no player phones). **Elimination Trivia** is boolean questions on phones: remaining count on the projector, A/B split only after the operator reveals. Stop at any remaining count.
 
 ## Hostess
 
@@ -30,4 +30,4 @@ Can only add tokens to the Live Drawer pool (single entry or bulk by color). See
 **Who:** Guests participating via phone  
 **PIN:** None
 
-Open to anyone on the network. Poll-only: when the operator opens a poll, players see the question and vote once. Otherwise this screen stays on standby. Other games have no player board — those are operator + spectator (and hostess for Live Drawer).
+Open to anyone on the network. **Poll:** when the operator opens a poll, players see the question and vote once. **Elimination Trivia:** while a trivia series is running, phones show A/B buttons, still-in, or eliminated. Otherwise this screen stays on standby. Other games have no player board — those are operator + spectator (and hostess for Live Drawer).

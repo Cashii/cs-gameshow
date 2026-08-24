@@ -9,6 +9,8 @@ import { LiveDrawerReveal } from "@/components/live-drawer/LiveDrawerReveal";
 import { TakeItOrLeaveItAudienceView } from "@/components/take-it-or-leave-it/TakeItOrLeaveItAudienceView";
 import { MessageBoardAudienceView } from "@/components/message-board/MessageBoardAudienceView";
 import { DerbyAudienceView } from "@/components/derby/DerbyAudienceView";
+import { JeoparodyAudienceView } from "@/components/jeoparody/JeoparodyAudienceView";
+import { TriviaAudienceView } from "@/components/trivia/TriviaAudienceView";
 
 export const standbyScreen = (
   <div className="flex h-full w-full flex-col items-center justify-center bg-neutral-950 text-center">
@@ -89,6 +91,21 @@ export function ActiveGameBoard({
     content = (
       <div className="h-full w-full overflow-hidden">
         <DerbyAudienceView game={state.derby} />
+      </div>
+    );
+  } else if (activeGame === "jeoparody") {
+    content = (
+      <div className="h-full w-full overflow-hidden">
+        <JeoparodyAudienceView
+          game={state.jeoparody}
+          onToggleFullscreen={onToggleFullscreen}
+        />
+      </div>
+    );
+  } else if (activeGame === "trivia") {
+    content = (
+      <div className="h-full w-full overflow-hidden">
+        <TriviaAudienceView trivia={state.trivia} />
       </div>
     );
   } else {

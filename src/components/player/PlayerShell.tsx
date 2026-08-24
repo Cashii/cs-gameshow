@@ -3,11 +3,17 @@
 import { useEffect, useState } from "react";
 import { SuiteProvider, useSuite } from "@/lib/suite-provider";
 import { PlayerPollOverlay } from "@/components/poll/PlayerPollOverlay";
+import { PlayerTriviaPanel } from "@/components/trivia/PlayerTriviaPanel";
 import {
   getDeviceCode,
   getOrCreateDeviceId,
   getPlayerDisplayName,
 } from "@/lib/player/device-id";
+import type { TriviaChoiceId, TriviaMe } from "@/lib/trivia/types";
+
+function triviaActive(status: string) {
+  return status !== "idle";
+}
 
 function PlayerContent() {
   const { state, refreshSnapshot } = useSuite();
@@ -15,10 +21,41 @@ function PlayerContent() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [checkingVote, setCheckingVote] = useState(false);
+  const [me, setMe] = useState<TriviaMe | null>(null);
   const poll = state.poll;
+  const trivia = state.trivia;
   const deviceId = getOrCreateDeviceId();
   const playerCode = getDeviceCode(deviceId);
   const voted = votedPollId === poll.id;
+
+  useEffect(() => {
+    if (!triviaActive(trivia.status) || !deviceId) {
+      setMe(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(
+      `/api/trivia/me?deviceId=${encodeURIComponent(deviceId)}`,
+      { cache: "no-store" },
+    )
+      .then((r) => r.json())
+      .then((data: TriviaMe) => {
+        if (!cancelled) setMe(data);
+      })
+      .catch(() => {
+        if (!cancelled) setMe(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    trivia.status,
+    trivia.roundId,
+    trivia.survivingChoiceId,
+    trivia.remainingCount,
+    trivia.winnerCodes,
+    deviceId,
+  ]);
 
   useEffect(() => {
     if (poll.status !== "open" || !poll.id || !deviceId) {
@@ -49,6 +86,35 @@ function PlayerContent() {
     };
   }, [poll.id, poll.status, deviceId]);
 
+  const handleTriviaVote = async (choiceId: TriviaChoiceId) => {
+    setLoading(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/trivia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "vote",
+          roundId: trivia.roundId,
+          choiceId,
+          deviceId,
+        }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Vote failed");
+      await refreshSnapshot();
+      setMe((prev) =>
+        prev
+          ? { ...prev, voted: true, canVote: false, choiceId }
+          : prev,
+      );
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Vote failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleVote = async (choiceId: string) => {
     setLoading(true);
     setMessage("");
@@ -75,6 +141,20 @@ function PlayerContent() {
       setLoading(false);
     }
   };
+
+  if (triviaActive(trivia.status)) {
+    return (
+      <PlayerTriviaPanel
+        trivia={trivia}
+        deviceId={deviceId}
+        playerCode={playerCode}
+        me={me}
+        loading={loading}
+        message={message}
+        onVote={handleTriviaVote}
+      />
+    );
+  }
 
   if (poll.status === "open" || poll.status === "results") {
     return (

@@ -19,6 +19,8 @@ import {
   Upload,
   UserRound,
   Users,
+  LayoutGrid,
+  Brain,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -42,11 +44,13 @@ import { TakeItOrLeaveItHostPanel } from "@/components/take-it-or-leave-it/TakeI
 import { PollHostPanel } from "@/components/poll/PollHostPanel";
 import { MessageBoardHostPanel } from "@/components/message-board/MessageBoardHostPanel";
 import { DerbyHostPanel } from "@/components/derby/DerbyHostPanel";
+import { JeoparodyHostPanel } from "@/components/jeoparody/JeoparodyHostPanel";
+import { TriviaHostPanel } from "@/components/trivia/TriviaHostPanel";
 import { PinSettingsPanel } from "@/components/operator/PinSettingsPanel";
 import { PinGate } from "@/components/auth/PinGate";
 
 const NAV_TOP: ActiveGame[] = ["idle"];
-const NAV_GAMES: ActiveGame[] = ["feud", "wheel", "takeIt", "derby"];
+const NAV_GAMES: ActiveGame[] = ["feud", "wheel", "takeIt", "derby", "jeoparody", "trivia"];
 const NAV_TOOLS: ActiveGame[] = ["liveDrawer", "poll", "messageBoard"];
 
 const GAME_ICONS: Record<ActiveGame, LucideIcon> = {
@@ -56,6 +60,8 @@ const GAME_ICONS: Record<ActiveGame, LucideIcon> = {
   liveDrawer: Ticket,
   takeIt: Briefcase,
   derby: Flag,
+  jeoparody: LayoutGrid,
+  trivia: Brain,
   poll: BarChart3,
   messageBoard: Megaphone,
 };
@@ -66,6 +72,8 @@ const GAME_DESCRIPTIONS: Record<Exclude<ActiveGame, "idle">, string> = {
   liveDrawer: "Draw colored tokens from the pool for the spectator display.",
   takeIt: "Open nine cases, take banker offers, and decide take it or leave it.",
   derby: "Pick a winner and run a 20-second four-horse race on the spectator screen.",
+  jeoparody: "Set categories and clues, reveal prompts, and score contestants from the operator desk.",
+  trivia: "Boolean questions on player phones. Cut the field to any remaining count.",
   poll: "Ask a question, open voting on player phones, and show live results.",
   messageBoard: "Put a text announcement on the spectator screen.",
 };
@@ -177,6 +185,7 @@ function OperatorContent() {
   const settingsRef = useRef<HTMLDivElement>(null);
   const spectatorGame = state.spectatorGame ?? state.activeGame;
   const pollLive = state.poll.status === "open";
+  const triviaLive = state.trivia.status === "open";
 
   useEffect(() => {
     if (!settingsOpen) return;
@@ -283,7 +292,10 @@ function OperatorContent() {
               game={game}
               active={state.activeGame === game}
               collapsed={sidebarCollapsed}
-              live={game === "poll" && pollLive}
+              live={
+                (game === "poll" && pollLive) ||
+                (game === "trivia" && triviaLive)
+              }
               onSelect={setActiveGame}
             />
           ))}
@@ -307,7 +319,10 @@ function OperatorContent() {
                   game={game}
                   active={state.activeGame === game}
                   collapsed={sidebarCollapsed}
-                  live={game === "poll" && pollLive}
+                  live={
+                (game === "poll" && pollLive) ||
+                (game === "trivia" && triviaLive)
+              }
                   onSelect={setActiveGame}
                 />
               ))}
@@ -467,6 +482,8 @@ function OperatorContent() {
                     "wheel",
                     "takeIt",
                     "derby",
+                    "jeoparody",
+                    "trivia",
                     "liveDrawer",
                     "poll",
                     "messageBoard",
@@ -485,7 +502,8 @@ function OperatorContent() {
                       </span>
                       <span className="flex items-center gap-2 text-xl font-bold text-white">
                         {ACTIVE_GAME_LABELS[game]}
-                        {game === "poll" && pollLive && (
+                        {((game === "poll" && pollLive) ||
+                          (game === "trivia" && triviaLive)) && (
                           <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-400 uppercase">
                             Live
                           </span>
@@ -521,6 +539,8 @@ function OperatorContent() {
               <DerbyHostPanel />
             </div>
           )}
+          {state.activeGame === "jeoparody" && <JeoparodyHostPanel />}
+          {state.activeGame === "trivia" && <TriviaHostPanel />}
           {state.activeGame === "poll" && <PollHostPanel />}
           {state.activeGame === "messageBoard" && (
             <div className="min-h-0 flex-1 overflow-auto">

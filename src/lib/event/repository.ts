@@ -87,6 +87,8 @@ export async function ensureIndexes(): Promise<void> {
   await votesCol(db).then((c) =>
     c.createIndex({ pollId: 1, createdAt: -1 }),
   );
+  const { ensureTriviaIndexes } = await import("@/lib/trivia/store");
+  await ensureTriviaIndexes();
   indexesReady = true;
 }
 
@@ -229,9 +231,12 @@ function eventDocToSnapshot(
 async function persistSuite(next: SuiteState): Promise<EventSnapshot> {
   const db = await getDb();
   const col = await eventsCol(db);
+  const { refreshTriviaCounts } = await import("@/lib/trivia/store");
+  const { createDefaultTriviaState } = await import("@/lib/trivia/types");
   const toSave = suiteForPersist({
     ...next,
     poll: await applyVoteCountsToPoll(next.poll),
+    trivia: await refreshTriviaCounts(next.trivia ?? createDefaultTriviaState()),
   });
   const doc = await col.findOneAndUpdate(
     { _id: EVENT_ID },

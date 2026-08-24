@@ -20,6 +20,8 @@ Legacy routes `/admin` and `/audience` redirect to `/operator` and `/spectator`.
 - [Live Drawer](games/live-drawer.md)
 - [Take It or Leave It](games/take-it-or-leave-it.md)
 - [Derby](games/derby.md)
+- [Jeoparody](games/jeoparody.md)
+- [Elimination Trivia](games/boolean-trivia.md)
 - [Message Board](games/message-board.md)
 
 ## Setup

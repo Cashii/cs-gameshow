@@ -63,7 +63,7 @@ function SpectatorContent() {
           )
         ) : (
           <ActiveGameBoard
-            activeGame={displayedGame === "poll" ? "idle" : displayedGame}
+            activeGame={displayedGame}
             state={state}
             currentFeudRound={currentFeudRound}
             onToggleFullscreen={toggleFullscreen}

@@ -29,6 +29,8 @@ The client opens `client.db(process.env.MONGODB_DB ?? "gameshow_dev")` explicitl
 | `tokens` | Live Drawer pool tokens `{ eventId, number, colorId, status, drawBatchId }` |
 | `drawBatches` | History of drawn token sets |
 | `votes` | Player poll votes `{ pollId, deviceId, choiceId }` — unique per `(pollId, deviceId)` |
+| `triviaVotes` | Elimination Trivia answers `{ eventId, roundId, deviceId, choiceId, playerCode }` — unique per `(eventId, roundId, deviceId)` |
+| `triviaPlayers` | Elimination Trivia roster `{ eventId, deviceId, playerCode, status, joinedRound, eliminatedRound }` |
 
 Unique index on `tokens`: `(eventId, number, colorId)`.
 
@@ -46,7 +48,7 @@ Expected deployment: one Next.js process on the event LAN.
 |------|-----------|
 | operator | Full suite, tokens, draws, polls, PINs |
 | hostess | Add tokens only |
-| player | Vote on open polls only (no PIN; identified by device ID) |
+| player | Vote on open polls and Elimination Trivia questions (no PIN; identified by device ID) |
 | spectator | Read-only (no session required) |
 
 ## Player uniqueness (100+ phones)
@@ -54,11 +56,11 @@ Expected deployment: one Next.js process on the event LAN.
 Players do not use a PIN. Each phone is tracked separately:
 
 1. **Device ID** — On first visit to `/player`, the browser stores a random UUID in `localStorage`.
-2. **MongoDB unique index** — `(pollId, deviceId)` allows exactly one vote per phone per poll.
+2. **MongoDB unique index** — `(pollId, deviceId)` allows exactly one vote per phone per poll. Elimination Trivia uses `(eventId, roundId, deviceId)` on `triviaVotes` the same way.
 
-100 phones = 100 device IDs = 100 independent votes. Re-opening the player page on the same phone shows "Vote recorded" instead of allowing a second vote.
+100 phones = 100 device IDs = 100 independent votes. Re-opening the player page on the same phone shows "Vote recorded" (poll) or "answer locked" (trivia) instead of allowing a second vote.
 
-The player screen is poll-only. Other games do not have a player board.
+The player screen is poll and Elimination Trivia. Other games do not have a player board.
 
 PINs stored as SHA-256 hashes on the event document. Session cookie: HMAC-signed payload with role.
 
@@ -76,3 +78,6 @@ PINs stored as SHA-256 hashes on the event document. Session cookie: HMAC-signed
 - `POST /api/live-drawer/undo` — return last batch to pool
 - `POST /api/poll` — operator poll control
 - `POST /api/poll/vote` — player vote
+- `POST /api/trivia` — player vote (`action: vote`) or operator Elimination Trivia control (`setup`, `open`, `lock`, `reveal`, `undoReveal`, `nextQuestion`, `resetSeries`)
+- `GET /api/trivia/me` — player personal status (`?deviceId=`)
+- `GET /api/trivia/roster` — operator remaining player codes

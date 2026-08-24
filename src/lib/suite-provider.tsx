@@ -40,6 +40,8 @@ import {
   createDefaultDerbyState,
   type DerbyGameState,
 } from "@/lib/derby/types";
+import type { JeoparodyGameState } from "@/lib/jeoparody/types";
+import { createSampleJeoparodyGame } from "@/lib/jeoparody/defaults";
 
 export type SuiteRole = "operator" | "spectator" | "hostess" | "player";
 
@@ -67,6 +69,9 @@ type SuiteContextValue = {
     updater: (board: MessageBoardState) => MessageBoardState,
   ) => void;
   updateDerby: (updater: (game: DerbyGameState) => DerbyGameState) => void;
+  updateJeoparody: (
+    updater: (game: JeoparodyGameState) => JeoparodyGameState,
+  ) => void;
   patchSuite: (patch: Partial<SuiteState>) => Promise<void>;
   refreshSnapshot: () => Promise<void>;
   applyServerSnapshot: (snapshot: EventSnapshot) => void;
@@ -167,6 +172,7 @@ export function SuiteProvider({
         poolTokens: next.poolTokens,
         calledTokens: next.calledTokens ?? [],
         poll: next.poll,
+        trivia: next.trivia,
         liveDrawer: pickLiveDrawer(base.liveDrawer, next.liveDrawer),
         revision: Math.max(base.revision, next.revision),
       });
@@ -192,7 +198,7 @@ export function SuiteProvider({
       }
       if (next.revision <= confirmedRevisionRef.current) {
         if ((role === "operator" || role === "player") && local) {
-          replaceSnapshot({ ...local, poll: next.poll });
+          replaceSnapshot({ ...local, poll: next.poll, trivia: next.trivia });
           setConnected(true);
         }
         return;
@@ -442,6 +448,16 @@ export function SuiteProvider({
     [applyLocalSuite],
   );
 
+  const updateJeoparody = useCallback(
+    (updater: (game: JeoparodyGameState) => JeoparodyGameState) => {
+      applyLocalSuite((prev) => ({
+        ...prev,
+        jeoparody: updater(prev.jeoparody ?? createSampleJeoparodyGame()),
+      }));
+    },
+    [applyLocalSuite],
+  );
+
   const applyServerSnapshot = useCallback(
     (next: EventSnapshot) => {
       confirmedRevisionRef.current = Math.max(
@@ -489,6 +505,7 @@ export function SuiteProvider({
       updatePoll,
       updateMessageBoard,
       updateDerby,
+      updateJeoparody,
       patchSuite,
       refreshSnapshot,
       applyServerSnapshot,
@@ -510,6 +527,7 @@ export function SuiteProvider({
       updatePoll,
       updateMessageBoard,
       updateDerby,
+      updateJeoparody,
       patchSuite,
       refreshSnapshot,
       applyServerSnapshot,

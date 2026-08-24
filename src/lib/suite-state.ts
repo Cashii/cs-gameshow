@@ -27,6 +27,14 @@ import {
   type DerbyGameState,
   type DerbyPhase,
 } from "@/lib/derby/types";
+import { createSampleJeoparodyGame } from "@/lib/jeoparody/defaults";
+import type { JeoparodyGameState, JeoparodyPhase } from "@/lib/jeoparody/types";
+import {
+  createDefaultTriviaState,
+  isTriviaChoiceId,
+  type TriviaGameState,
+  type TriviaStatus,
+} from "@/lib/trivia/types";
 
 export type ActiveGame =
   | "feud"
@@ -36,7 +44,9 @@ export type ActiveGame =
   | "idle"
   | "poll"
   | "messageBoard"
-  | "derby";
+  | "derby"
+  | "jeoparody"
+  | "trivia";
 export type SpectatorScreen = ActiveGame;
 
 export type SuiteState = {
@@ -52,6 +62,8 @@ export type SuiteState = {
   poll: PollState;
   messageBoard: MessageBoardState;
   derby: DerbyGameState;
+  jeoparody: JeoparodyGameState;
+  trivia: TriviaGameState;
 };
 
 export type EventSnapshot = SuiteState & {
@@ -84,7 +96,9 @@ function normalizeActiveGame(
     raw === "takeIt" ||
     raw === "poll" ||
     raw === "messageBoard" ||
-    raw === "derby"
+    raw === "derby" ||
+    raw === "jeoparody" ||
+    raw === "trivia"
   ) {
     return raw;
   }
@@ -122,6 +136,8 @@ export function createDefaultSuiteState(): SuiteState {
     poll: createEmptyPoll(),
     messageBoard: createDefaultMessageBoardState(),
     derby: createDefaultDerbyState(),
+    jeoparody: createSampleJeoparodyGame(),
+    trivia: createDefaultTriviaState(),
   };
 }
 
@@ -228,6 +244,50 @@ function normalizeMessageBoardState(
   };
 }
 
+const TRIVIA_STATUSES = new Set<TriviaStatus>([
+  "idle",
+  "open",
+  "locked",
+  "revealed",
+  "finished",
+]);
+
+function normalizeTriviaState(
+  raw: Partial<TriviaGameState> | undefined,
+): TriviaGameState {
+  const defaults = createDefaultTriviaState();
+  if (!raw || typeof raw !== "object") return defaults;
+  const status = TRIVIA_STATUSES.has(raw.status as TriviaStatus)
+    ? (raw.status as TriviaStatus)
+    : defaults.status;
+  const num = (value: unknown, fallback: number) =>
+    typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  return {
+    status,
+    roundId: typeof raw.roundId === "string" ? raw.roundId : defaults.roundId,
+    roundIndex: Math.max(0, Math.floor(num(raw.roundIndex, defaults.roundIndex))),
+    question: typeof raw.question === "string" ? raw.question : defaults.question,
+    optionA: typeof raw.optionA === "string" ? raw.optionA : defaults.optionA,
+    optionB: typeof raw.optionB === "string" ? raw.optionB : defaults.optionB,
+    survivingChoiceId: isTriviaChoiceId(raw.survivingChoiceId)
+      ? raw.survivingChoiceId
+      : null,
+    answeredCount: Math.max(0, Math.floor(num(raw.answeredCount, 0))),
+    choiceACount: Math.max(0, Math.floor(num(raw.choiceACount, 0))),
+    choiceBCount: Math.max(0, Math.floor(num(raw.choiceBCount, 0))),
+    remainingCount: Math.max(0, Math.floor(num(raw.remainingCount, 0))),
+    fieldSize: Math.max(0, Math.floor(num(raw.fieldSize, 0))),
+    winnerCodes: Array.isArray(raw.winnerCodes)
+      ? raw.winnerCodes
+          .filter((code): code is string => typeof code === "string" && !!code.trim())
+          .map((code) => code.trim().slice(0, 8))
+      : typeof (raw as { winnerCode?: unknown }).winnerCode === "string" &&
+          (raw as { winnerCode: string }).winnerCode.trim()
+        ? [(raw as { winnerCode: string }).winnerCode.trim().slice(0, 8)]
+        : [],
+  };
+}
+
 const DERBY_PHASES = new Set<DerbyPhase>(["idle", "racing", "finished"]);
 
 function normalizeDerbyState(
@@ -264,6 +324,74 @@ function normalizeDerbyState(
       typeof raw.sequence === "number" && Number.isFinite(raw.sequence)
         ? raw.sequence
         : defaults.sequence,
+  };
+}
+
+const JEOPARODY_PHASES = new Set<JeoparodyPhase>(["board", "clue", "answer"]);
+
+function normalizeJeoparodyState(
+  raw: Partial<JeoparodyGameState> | undefined,
+): JeoparodyGameState {
+  const defaults = createSampleJeoparodyGame();
+  if (!raw || typeof raw !== "object") return defaults;
+
+  const categories = Array.isArray(raw.categories) && raw.categories.length > 0
+    ? raw.categories.map((category, catIndex) => ({
+        id: typeof category?.id === "string" ? category.id : `cat-${catIndex}`,
+        name: typeof category?.name === "string" ? category.name : `Category ${catIndex + 1}`,
+        clues: Array.isArray(category?.clues)
+          ? category.clues.map((clue, clueIndex) => ({
+              id: typeof clue?.id === "string" ? clue.id : `clue-${catIndex}-${clueIndex}`,
+              value:
+                typeof clue?.value === "number" && Number.isFinite(clue.value)
+                  ? clue.value
+                  : (clueIndex + 1) * 200,
+              prompt: typeof clue?.prompt === "string" ? clue.prompt : "",
+              response: typeof clue?.response === "string" ? clue.response : "",
+              played: Boolean(clue?.played),
+            }))
+          : [],
+      }))
+    : defaults.categories;
+
+  const contestants =
+    Array.isArray(raw.contestants) && raw.contestants.length > 0
+      ? raw.contestants.map((contestant, index) => ({
+          id:
+            typeof contestant?.id === "string"
+              ? contestant.id
+              : `player-${index}`,
+          name:
+            typeof contestant?.name === "string" && contestant.name.trim()
+              ? contestant.name
+              : `Player ${index + 1}`,
+          score:
+            typeof contestant?.score === "number" &&
+            Number.isFinite(contestant.score)
+              ? contestant.score
+              : 0,
+        }))
+      : defaults.contestants;
+
+  const selectedClueId =
+    typeof raw.selectedClueId === "string" ? raw.selectedClueId : null;
+  const hasSelected = selectedClueId
+    ? categories.some((category) =>
+        category.clues.some((clue) => clue.id === selectedClueId),
+      )
+    : false;
+
+  let phase: JeoparodyPhase = JEOPARODY_PHASES.has(raw.phase as JeoparodyPhase)
+    ? (raw.phase as JeoparodyPhase)
+    : defaults.phase;
+  if (!hasSelected) phase = "board";
+
+  return {
+    categories,
+    contestants,
+    selectedClueId: hasSelected ? selectedClueId : null,
+    phase,
+    showScores: raw.showScores ?? true,
   };
 }
 
@@ -328,6 +456,8 @@ export function normalizeSuiteState(
     poll: normalizePollState(raw.poll),
     messageBoard: normalizeMessageBoardState(raw.messageBoard),
     derby: normalizeDerbyState(raw.derby),
+    jeoparody: normalizeJeoparodyState(raw.jeoparody),
+    trivia: normalizeTriviaState(raw.trivia),
   };
 }
 
@@ -376,6 +506,8 @@ export const ACTIVE_GAME_LABELS: Record<ActiveGame, string> = {
   poll: "Poll",
   messageBoard: "Message Board",
   derby: "Derby",
+  jeoparody: "Jeoparody",
+  trivia: "Elimination Trivia",
 };
 
 export const SPECTATOR_SCREEN_LABELS: Record<SpectatorScreen, string> =
@@ -387,6 +519,8 @@ export const SPECTATOR_SCREENS: SpectatorScreen[] = [
   "wheel",
   "takeIt",
   "derby",
+  "jeoparody",
+  "trivia",
   "liveDrawer",
   "poll",
   "messageBoard",
