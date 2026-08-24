@@ -35,22 +35,6 @@ export function TriviaHostPanel() {
   };
 
   useEffect(() => {
-    if (trivia.status !== "open") return;
-    let cancelled = false;
-    let timer = 0;
-    const tick = () => {
-      void refreshSnapshot().finally(() => {
-        if (!cancelled) timer = window.setTimeout(tick, 1000);
-      });
-    };
-    timer = window.setTimeout(tick, 1000);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [trivia.status, refreshSnapshot]);
-
-  useEffect(() => {
     if (trivia.status === "idle" && trivia.roundIndex === 0) return;
     let cancelled = false;
     fetch("/api/trivia/roster", { cache: "no-store" })

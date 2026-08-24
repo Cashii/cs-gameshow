@@ -11,6 +11,8 @@ type SyncMsg =
   | { type: "snapshot"; payload: EventSnapshot }
   | { type: "error"; message: string };
 
+const FALLBACK_POLL_MS = 2000;
+
 export function useEventSync(
   setSnapshot: (snapshot: EventSnapshot) => void,
   enabled = true,
@@ -23,8 +25,10 @@ export function useEventSync(
     if (!enabled || typeof window === "undefined") return;
 
     let closed = false;
-    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let pollTimer = 0;
     let es: EventSource | null = null;
+    let opened = false;
+    let errorsBeforeOpen = 0;
 
     const applySnapshot = (snapshot: EventSnapshot) => {
       if (snapshot.revision <= revisionRef.current) return;
@@ -49,40 +53,54 @@ export function useEventSync(
     };
 
     const startPolling = () => {
-      if (pollTimer) return;
-      pollOnce();
-      pollTimer = setInterval(pollOnce, 1000);
+      if (closed || pollTimer) return;
+      void pollOnce();
+      pollTimer = window.setInterval(pollOnce, FALLBACK_POLL_MS);
     };
 
     const stopPolling = () => {
-      if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = null;
-      }
+      if (!pollTimer) return;
+      window.clearInterval(pollTimer);
+      pollTimer = 0;
     };
 
-    if ("EventSource" in window) {
-      es = new EventSource("/api/event/stream");
-      es.onmessage = (ev) => {
-        try {
-          const msg = JSON.parse(ev.data) as SyncMsg;
-          if (msg.type === "snapshot") applySnapshot(msg.payload);
-        } catch {
-          // ignore
-        }
-      };
-      es.onerror = () => {
-        es?.close();
-        es = null;
-        if (!closed) startPolling();
-      };
-    } else {
+    if (!("EventSource" in window)) {
       startPolling();
+      return () => {
+        closed = true;
+        stopPolling();
+      };
     }
+
+    es = new EventSource("/api/event/stream");
+    es.onopen = () => {
+      opened = true;
+      errorsBeforeOpen = 0;
+      stopPolling();
+    };
+    es.onmessage = (ev) => {
+      try {
+        const msg = JSON.parse(ev.data) as SyncMsg;
+        if (msg.type === "snapshot") applySnapshot(msg.payload);
+      } catch {
+        // ignore
+      }
+    };
+    es.onerror = () => {
+      if (closed) return;
+      // EventSource reconnects on its own. Only poll while the stream is down.
+      startPolling();
+      if (opened) return;
+      errorsBeforeOpen += 1;
+      if (errorsBeforeOpen < 3) return;
+      es?.close();
+      es = null;
+    };
 
     return () => {
       closed = true;
       es?.close();
+      es = null;
       stopPolling();
     };
   }, [enabled]);

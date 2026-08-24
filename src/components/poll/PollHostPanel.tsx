@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSuite } from "@/lib/suite-provider";
 
 function formatVoteTime(iso: string): string {
@@ -72,22 +72,6 @@ export function PollHostPanel() {
 
   const votingOpen = poll.status === "open";
   const voteLog = poll.voteLog ?? [];
-
-  useEffect(() => {
-    if (!votingOpen) return;
-    let cancelled = false;
-    let timer = 0;
-    const tick = () => {
-      void refreshSnapshot().finally(() => {
-        if (!cancelled) timer = window.setTimeout(tick, 1000);
-      });
-    };
-    timer = window.setTimeout(tick, 1000);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [votingOpen, refreshSnapshot]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
