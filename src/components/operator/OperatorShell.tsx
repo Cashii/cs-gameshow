@@ -437,18 +437,18 @@ function OperatorContent() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-neutral-800 bg-neutral-900/80 px-6 py-4">
+        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-neutral-800 bg-neutral-900/80 px-6 py-3">
           <div>
-            <h1 className="text-xl font-bold text-white">
+            <h1 className="text-lg font-bold text-white">
               {ACTIVE_GAME_LABELS[state.activeGame]}
             </h1>
-            <p className="text-sm text-neutral-500">
-              {state.activeGame === "idle"
-                ? "Choose a game to get started"
-                : state.activeGame === "poll"
+            {state.activeGame !== "idle" && (
+              <p className="text-sm text-neutral-500">
+                {state.activeGame === "poll"
                   ? "Player voting controls"
                   : "Operator controls"}
-            </p>
+              </p>
+            )}
           </div>
           {state.activeGame === "liveDrawer" && <LiveDrawerHeaderSettings />}
           {state.activeGame === "feud" && <FeudHeaderSettings />}
@@ -461,21 +461,18 @@ function OperatorContent() {
 
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {state.activeGame === "idle" && (
-            <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col justify-center overflow-auto px-8 py-12">
-              <div className="mb-10">
-                <p className="mb-3 text-sm font-semibold tracking-[0.2em] text-blue-400 uppercase">
-                  Operator Dashboard
-                </p>
-                <h2 className="font-gameshow text-4xl font-bold tracking-tight text-white sm:text-5xl">
+            <div className="@container mx-auto w-full max-w-6xl overflow-auto px-6 py-6">
+              <div className="mb-6">
+                <h2 className="font-gameshow text-2xl font-bold tracking-tight text-white sm:text-3xl">
                   Welcome to Cash&apos;s Gameshow App
                 </h2>
-                <p className="mt-4 max-w-2xl text-lg leading-relaxed text-neutral-400">
-                  Choose a game below to open its controls and put it on the
-                  spectator display.
+                <p className="mt-2 max-w-2xl text-sm text-neutral-400">
+                  Choose a game to open its controls and put it on the spectator
+                  display.
                 </p>
               </div>
 
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 @md:grid-cols-2 @3xl:grid-cols-3">
                 {(
                   [
                     "feud",
@@ -495,24 +492,26 @@ function OperatorContent() {
                       key={game}
                       type="button"
                       onClick={() => setActiveGame(game)}
-                      className="group flex min-h-64 flex-col rounded-2xl border border-neutral-800 bg-neutral-900 p-6 text-left transition-all hover:-translate-y-1 hover:border-blue-500/70 hover:bg-neutral-800"
+                      className="group flex h-full flex-col rounded-xl border border-neutral-800 bg-neutral-900 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-blue-500/70 hover:bg-neutral-800"
                     >
-                      <span className="mb-8 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-blue-600/15 text-blue-400 group-hover:bg-blue-600 group-hover:text-white">
-                        <Icon size={28} aria-hidden />
+                      <span className="flex items-center gap-3">
+                        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600/15 text-blue-400 group-hover:bg-blue-600 group-hover:text-white">
+                          <Icon size={20} aria-hidden />
+                        </span>
+                        <span className="flex min-w-0 items-center gap-2 text-base font-bold text-white">
+                          {ACTIVE_GAME_LABELS[game]}
+                          {((game === "poll" && pollLive) ||
+                            (game === "trivia" && triviaLive)) && (
+                            <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-emerald-400 uppercase">
+                              Live
+                            </span>
+                          )}
+                        </span>
                       </span>
-                      <span className="flex items-center gap-2 text-xl font-bold text-white">
-                        {ACTIVE_GAME_LABELS[game]}
-                        {((game === "poll" && pollLive) ||
-                          (game === "trivia" && triviaLive)) && (
-                          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-400 uppercase">
-                            Live
-                          </span>
-                        )}
-                      </span>
-                      <span className="mt-2 flex-1 text-sm leading-relaxed text-neutral-400">
+                      <span className="mt-2 flex-1 text-sm leading-snug text-neutral-400">
                         {GAME_DESCRIPTIONS[game]}
                       </span>
-                      <span className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-blue-400">
+                      <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-blue-400">
                         Open
                         <ChevronRight size={16} />
                       </span>
