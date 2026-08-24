@@ -505,7 +505,7 @@ export const ACTIVE_GAME_LABELS: Record<ActiveGame, string> = {
   takeIt: "Take It or Leave It",
   poll: "Poll",
   messageBoard: "Message Board",
-  derby: "Derby",
+  derby: "Derby Race",
   jeoparody: "Jeoparody",
   trivia: "Elimination Trivia",
 };

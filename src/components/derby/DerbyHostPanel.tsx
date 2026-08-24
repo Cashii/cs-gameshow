@@ -85,7 +85,7 @@ export function DerbyHostPanel() {
     <div className="min-h-0 flex-1 overflow-auto">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-6">
         <div>
-          <h2 className="text-lg font-bold text-white">Derby</h2>
+          <h2 className="text-lg font-bold text-white">Derby Race</h2>
           <p className="mt-1 text-sm text-neutral-400">
             Pick the winner, then start a 20-second race on the spectator
             screen. The audience should not see the pick until the finish.
@@ -94,7 +94,7 @@ export function DerbyHostPanel() {
 
         {!spectatorShowingDerby && (
           <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-            Spectator is not on Derby. Use the Spectator screen dropdown so
+            Spectator is not on Derby Race. Use the Spectator screen dropdown so
             the projector shows the race.
           </p>
         )}
