@@ -20,6 +20,11 @@ export const DERBY_RACERS: DerbyRacer[] = [
 
 export const DERBY_DURATION_MS = 20_000;
 
+export const DEFAULT_DERBY_HORSE_SCALE = 1;
+export const MIN_DERBY_HORSE_SCALE = 0.5;
+export const MAX_DERBY_HORSE_SCALE = 2;
+export const DERBY_HORSE_SCALE_STEP = 0.05;
+
 export type DerbyGameState = {
   phase: DerbyPhase;
   /** Operator pick — do not show on spectator until finished. */
@@ -30,7 +35,17 @@ export type DerbyGameState = {
   durationMs: number;
   seed: number;
   sequence: number;
+  /** Spectator horse size relative to the default (1 = current default). */
+  horseScale: number;
 };
+
+export function clampDerbyHorseScale(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_DERBY_HORSE_SCALE;
+  return Math.min(
+    MAX_DERBY_HORSE_SCALE,
+    Math.max(MIN_DERBY_HORSE_SCALE, Math.round(value * 20) / 20),
+  );
+}
 
 export function createDefaultDerbyState(): DerbyGameState {
   return {
@@ -41,6 +56,7 @@ export function createDefaultDerbyState(): DerbyGameState {
     durationMs: DERBY_DURATION_MS,
     seed: 0,
     sequence: 0,
+    horseScale: DEFAULT_DERBY_HORSE_SCALE,
   };
 }
 

@@ -27,7 +27,7 @@ Uses the same device ID as Poll (UUID in `localStorage`, 4-character code on scr
 - Missed Q1 after the field is set: “not in this round”.
 - Last remaining (if you play that far): winner.
 
-While Elimination Trivia is running, trivia takes over the player screen. Poll still works when trivia is idle.
+Player phones show Elimination Trivia only while the Spectator screen is set to Elimination Trivia. Switch Spectator to Poll (or anything else) and phones follow that instead, even if a trivia series is still leftover in the suite.
 
 ## Spectator
 

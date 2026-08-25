@@ -22,7 +22,9 @@ import {
   type MessageBoardState,
 } from "@/lib/message-board/types";
 import {
+  clampDerbyHorseScale,
   createDefaultDerbyState,
+  DEFAULT_DERBY_HORSE_SCALE,
   isDerbyRacerId,
   type DerbyGameState,
   type DerbyPhase,
@@ -324,6 +326,10 @@ function normalizeDerbyState(
       typeof raw.sequence === "number" && Number.isFinite(raw.sequence)
         ? raw.sequence
         : defaults.sequence,
+    horseScale:
+      typeof raw.horseScale === "number"
+        ? clampDerbyHorseScale(raw.horseScale)
+        : DEFAULT_DERBY_HORSE_SCALE,
   };
 }
 

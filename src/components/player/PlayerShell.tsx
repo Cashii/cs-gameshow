@@ -24,12 +24,13 @@ function PlayerContent() {
   const [me, setMe] = useState<TriviaMe | null>(null);
   const poll = state.poll;
   const trivia = state.trivia;
+  const spectatorGame = state.spectatorGame ?? state.activeGame;
   const deviceId = getOrCreateDeviceId();
   const playerCode = getDeviceCode(deviceId);
   const voted = votedPollId === poll.id;
 
   useEffect(() => {
-    if (!triviaActive(trivia.status) || !deviceId) {
+    if (spectatorGame !== "trivia" || !triviaActive(trivia.status) || !deviceId) {
       setMe(null);
       return;
     }
@@ -55,6 +56,7 @@ function PlayerContent() {
     trivia.remainingCount,
     trivia.winnerCodes,
     deviceId,
+    spectatorGame,
   ]);
 
   useEffect(() => {
@@ -142,7 +144,7 @@ function PlayerContent() {
     }
   };
 
-  if (triviaActive(trivia.status)) {
+  if (spectatorGame === "trivia" && triviaActive(trivia.status)) {
     return (
       <PlayerTriviaPanel
         trivia={trivia}

@@ -1,5 +1,6 @@
 .derby-audience {
-  --derby-horse-w: 10.4rem;
+  --derby-horse-scale: 1;
+  --derby-horse-w: calc(16.2rem * var(--derby-horse-scale));
   position: relative;
   display: flex;
   flex-direction: column;
@@ -178,11 +179,11 @@
   left: calc(0.2rem + var(--derby-progress) * (100% - var(--derby-horse-w) - 1.6rem));
   bottom: 0.05rem;
   width: var(--derby-horse-w);
-  height: 7.6rem;
+  height: calc(11.8rem * var(--derby-horse-scale));
   z-index: 5;
   transform-origin: 50% 92%;
   transform:
-    translateY(calc(var(--derby-hop) * -0.85rem))
+    translateY(calc(var(--derby-hop) * -1.15rem * var(--derby-horse-scale)))
     rotate(calc((var(--derby-hop) - 0.35) * -5deg));
   will-change: left, transform;
   filter: drop-shadow(4px 6px 0 rgba(28, 25, 23, 0.28));

@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
+  clampDerbyHorseScale,
   createDefaultDerbyState,
+  DEFAULT_DERBY_HORSE_SCALE,
   DERBY_RACERS,
   getDerbyRacer,
   type DerbyGameState,
@@ -97,10 +99,14 @@ export function DerbyAudienceView({
   const winner =
     showWinner && game.winnerId ? getDerbyRacer(game.winnerId) : null;
   const racing = game.phase === "racing" && !showWinner;
+  const horseScale = clampDerbyHorseScale(
+    game.horseScale ?? DEFAULT_DERBY_HORSE_SCALE,
+  );
 
   return (
     <div
       className={`derby-audience${racing ? " is-racing" : ""}${winner ? " is-finished" : ""}`}
+      style={{ "--derby-horse-scale": String(horseScale) } as CSSProperties}
     >
       <header className="derby-chrome">
         <h1 className="derby-title">Kentucky Derby</h1>

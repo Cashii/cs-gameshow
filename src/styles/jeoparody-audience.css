@@ -98,10 +98,11 @@
 
 .jeoparody-clue-prompt {
   margin: 0;
-  max-width: 18em;
-  font-size: clamp(32px, 5.5vw, 84px);
+  width: 100%;
+  max-width: 94%;
+  font-size: clamp(56px, 9.5vw, 180px);
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.12;
   text-transform: uppercase;
   text-shadow: 0 3px 0 rgba(0, 0, 0, 0.4);
 }

@@ -3,9 +3,14 @@
 import { useEffect, useState } from "react";
 import { useSuite } from "@/lib/suite-provider";
 import {
+  clampDerbyHorseScale,
   createDefaultDerbyState,
+  DEFAULT_DERBY_HORSE_SCALE,
   DERBY_DURATION_MS,
+  DERBY_HORSE_SCALE_STEP,
   DERBY_RACERS,
+  MAX_DERBY_HORSE_SCALE,
+  MIN_DERBY_HORSE_SCALE,
   getDerbyRacer,
   type DerbyRacerId,
 } from "@/lib/derby/types";
@@ -71,6 +76,7 @@ export function DerbyHostPanel() {
     updateDerby((prev) => ({
       ...createDefaultDerbyState(),
       sequence: prev.sequence,
+      horseScale: prev.horseScale,
     }));
   };
 
@@ -80,6 +86,18 @@ export function DerbyHostPanel() {
       : game.durationMs;
 
   const picked = game.winnerId ? getDerbyRacer(game.winnerId) : null;
+  const horseScale = clampDerbyHorseScale(
+    game.horseScale ?? DEFAULT_DERBY_HORSE_SCALE,
+  );
+
+  const nudgeHorseScale = (delta: number) => {
+    updateDerby((prev) => ({
+      ...prev,
+      horseScale: clampDerbyHorseScale(
+        (prev.horseScale ?? DEFAULT_DERBY_HORSE_SCALE) + delta,
+      ),
+    }));
+  };
 
   return (
     <div className="min-h-0 flex-1 overflow-auto">
@@ -132,6 +150,38 @@ export function DerbyHostPanel() {
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-4">
+          <p className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+            Horse size
+          </p>
+          <p className="mt-1 text-sm text-neutral-400">
+            Scales the horses on the spectator track for this screen.
+          </p>
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              type="button"
+              aria-label="Make horses smaller"
+              disabled={horseScale <= MIN_DERBY_HORSE_SCALE}
+              onClick={() => nudgeHorseScale(-DERBY_HORSE_SCALE_STEP)}
+              className="flex h-11 w-11 items-center justify-center rounded-lg border border-neutral-600 text-2xl font-semibold text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              −
+            </button>
+            <span className="min-w-16 text-center text-lg font-semibold tabular-nums text-white">
+              {Math.round(horseScale * 100)}%
+            </span>
+            <button
+              type="button"
+              aria-label="Make horses larger"
+              disabled={horseScale >= MAX_DERBY_HORSE_SCALE}
+              onClick={() => nudgeHorseScale(DERBY_HORSE_SCALE_STEP)}
+              className="flex h-11 w-11 items-center justify-center rounded-lg border border-neutral-600 text-2xl font-semibold text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              +
+            </button>
           </div>
         </div>
 
