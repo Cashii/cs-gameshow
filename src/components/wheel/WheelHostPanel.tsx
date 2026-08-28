@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import * as Dialog from "@radix-ui/react-dialog";
+import { useEffect, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useSound } from "@/lib/feud/useSound";
+import { phraseHasLetter } from "@/lib/wheel/types";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -54,6 +55,18 @@ function letterTextClass(matchHover: boolean, alreadyRevealed: boolean): string 
   if (matchHover) return "text-amber-400";
   if (alreadyRevealed) return "text-emerald-300";
   return "text-white";
+}
+
+function letterControlClass(missed: boolean, disabled: boolean): string {
+  const base =
+    "flex h-16 w-16 items-center justify-center rounded-lg text-2xl font-bold transition-colors sm:h-20 sm:w-20 sm:text-3xl";
+  if (missed) {
+    return `${base} cursor-not-allowed border border-red-500 bg-red-700 text-white`;
+  }
+  if (disabled) {
+    return `${base} cursor-not-allowed border border-neutral-600 bg-neutral-700 text-neutral-500`;
+  }
+  return `${base} border border-emerald-500 bg-emerald-600 text-white hover:bg-emerald-700`;
 }
 
 function PhraseRevealRow({
@@ -142,35 +155,60 @@ function PhraseRevealRow({
 export function WheelHostPanel() {
   const { state, updateWheel } = useSuite();
   const wheel = state.wheel;
-  const [phraseInput, setPhraseInput] = useState("");
-  const [topicInput, setTopicInput] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const sounds = useSound();
+  const [phraseInput, setPhraseInput] = useState(wheel.phrase);
+  const [topicInput, setTopicInput] = useState(wheel.topic);
+  const [editing, setEditing] = useState(!wheel.phrase);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
+  useEffect(() => {
+    if (wheel.phrase) return;
+    setPhraseInput("");
+    setTopicInput("");
+    setEditing(true);
+  }, [wheel.phrase]);
+
+  const locked = Boolean(wheel.phrase) && !editing;
+
   const handleSetPhrase = () => {
-    if (!phraseInput.trim()) return;
+    const nextPhrase = phraseInput.trim();
+    if (!nextPhrase) return;
+    const nextTopic = topicInput.trim();
+    const phraseChanged = nextPhrase !== wheel.phrase;
     updateWheel((prev) => ({
       ...prev,
-      phrase: phraseInput.trim(),
-      topic: topicInput.trim(),
-      revealedLetters: [],
-      revealedAll: false,
+      phrase: nextPhrase,
+      topic: nextTopic,
+      revealedLetters: phraseChanged ? [] : prev.revealedLetters,
+      revealedAll: phraseChanged ? false : prev.revealedAll,
+      wrongCount: phraseChanged ? 0 : prev.wrongCount,
       zoom: prev.zoom || 1,
     }));
-    setPhraseInput("");
-    setDialogOpen(false);
+    setEditing(false);
+  };
+
+  const handleStartChange = () => {
+    setPhraseInput(wheel.phrase);
+    setTopicInput(wheel.topic);
+    setEditing(true);
   };
 
   const handleRevealLetter = (letter: string) => {
     if (wheel.revealedLetters.includes(letter) || wheel.revealedAll) return;
+    const hit = phraseHasLetter(wheel.phrase, letter);
     updateWheel((prev) => ({
       ...prev,
       revealedLetters: [...prev.revealedLetters, letter],
+      wrongCount: hit ? prev.wrongCount : (prev.wrongCount ?? 0) + 1,
     }));
+    if (!hit) sounds.wrong();
   };
 
+  const isLetterGuessed = (letter: string) =>
+    wheel.revealedLetters.includes(letter);
+
   const isLetterRevealed = (letter: string) =>
-    wheel.revealedLetters.includes(letter) || wheel.revealedAll;
+    isLetterGuessed(letter) || wheel.revealedAll;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -180,83 +218,6 @@ export function WheelHostPanel() {
             <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
               Game actions
             </span>
-            <Dialog.Root
-              open={dialogOpen}
-              onOpenChange={(open) => {
-                setDialogOpen(open);
-                if (open) {
-                  setPhraseInput(wheel.phrase);
-                  setTopicInput(wheel.topic);
-                }
-              }}
-            >
-              <Dialog.Trigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-10 items-center rounded-md border border-emerald-500 bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
-                >
-                  {wheel.phrase ? "Change Phrase" : "Set Phrase"}
-                </button>
-              </Dialog.Trigger>
-              <Dialog.Portal>
-                <Dialog.Overlay className="fixed inset-0 bg-black/70" />
-                <Dialog.Content className="fixed top-1/2 left-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-xl">
-                  <Dialog.Title className="mb-4 text-xl font-bold text-white">
-                    Set Phrase
-                  </Dialog.Title>
-                  <Dialog.Description className="mb-4 text-sm text-neutral-300">
-                    Enter the phrase for the game board. Letters will be
-                    revealed as guessed. Topic is shown on the spectator
-                    banner.
-                  </Dialog.Description>
-                  <label className="mb-3 block">
-                    <span className="mb-1.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                      Topic
-                    </span>
-                    <input
-                      type="text"
-                      value={topicInput}
-                      onChange={(e) => setTopicInput(e.target.value)}
-                      placeholder="e.g. Thing, Place, Before & After"
-                      className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-4 py-2 text-white placeholder-neutral-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                    />
-                  </label>
-                  <label className="mb-4 block">
-                    <span className="mb-1.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                      Phrase
-                    </span>
-                    <input
-                      type="text"
-                      value={phraseInput}
-                      onChange={(e) => setPhraseInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleSetPhrase();
-                      }}
-                      placeholder="Enter phrase here..."
-                      className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-4 py-2 text-white placeholder-neutral-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                      autoFocus
-                    />
-                  </label>
-                  <div className="flex justify-end gap-3">
-                    <Dialog.Close asChild>
-                      <button
-                        type="button"
-                        className="rounded-md px-4 py-2 text-neutral-300 hover:bg-neutral-700"
-                      >
-                        Cancel
-                      </button>
-                    </Dialog.Close>
-                    <button
-                      type="button"
-                      onClick={handleSetPhrase}
-                      className="rounded-md bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-700"
-                    >
-                      Set Phrase
-                    </button>
-                  </div>
-                </Dialog.Content>
-              </Dialog.Portal>
-            </Dialog.Root>
             <button
               type="button"
               onClick={() =>
@@ -354,103 +315,110 @@ export function WheelHostPanel() {
 
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="w-full p-6">
-          <div className="grid grid-cols-[minmax(16rem,18rem)_minmax(0,1fr)] items-stretch gap-6">
-            <div className="flex h-full flex-col rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
-              <h2 className="mb-4 text-xl font-bold text-white">Game Status</h2>
-              <div className="space-y-2 text-sm">
-                <p className="text-neutral-300">
-                  <span className="font-semibold text-white">Revealed Letters:</span>{" "}
-                  {wheel.revealedLetters.length > 0
-                    ? wheel.revealedLetters.join(", ")
-                    : "None"}
-                </p>
-                <p className="text-neutral-300">
-                  <span className="font-semibold text-white">All Revealed:</span>{" "}
-                  {wheel.revealedAll ? "Yes" : "No"}
-                </p>
-              </div>
-            </div>
-
-            <div className="min-w-0 space-y-6">
-              <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
-                {wheel.phrase ? (
-                  <>
-                    <label className="mb-4 block">
-                      <span className="mb-1.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                        Topic
-                      </span>
-                      <input
-                        type="text"
-                        value={wheel.topic}
-                        onChange={(e) =>
-                          updateWheel((prev) => ({
-                            ...prev,
-                            topic: e.target.value,
-                          }))
-                        }
-                        placeholder="Shown on the spectator banner"
-                        className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                      />
-                    </label>
-                    <p className="mb-3 text-lg font-semibold text-white">
-                      {wheel.phrase}
-                    </p>
-                    <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                      Current phrase
-                    </p>
-                    <PhraseRevealRow
-                      phrase={wheel.phrase}
-                      revealedLetters={wheel.revealedLetters}
-                      revealedAll={wheel.revealedAll}
-                      onRevealLetter={handleRevealLetter}
-                    />
-                  </>
-                ) : (
-                  <div>
-                    <p className="text-sm text-neutral-400">Current Phrase</p>
-                    <p className="text-lg font-semibold text-white">
-                      No phrase set
-                    </p>
-                    <label className="mt-4 block">
-                      <span className="mb-1.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                        Topic
-                      </span>
-                      <input
-                        type="text"
-                        value={wheel.topic}
-                        onChange={(e) =>
-                          updateWheel((prev) => ({
-                            ...prev,
-                            topic: e.target.value,
-                          }))
-                        }
-                        placeholder="Shown on the spectator banner"
-                        className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                      />
-                    </label>
-                  </div>
+          <div className="space-y-6">
+            <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-xl font-bold text-white">Current phrase</h2>
+                {locked && (
+                  <button
+                    type="button"
+                    onClick={handleStartChange}
+                    className="inline-flex h-10 items-center rounded-md border border-neutral-500 bg-neutral-600 px-4 text-sm font-semibold text-white hover:bg-neutral-500"
+                  >
+                    Change
+                  </button>
                 )}
               </div>
+              {locked ? (
+                <>
+                  <p className="mb-1.5 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                    Topic
+                  </p>
+                  <p className="mb-4 text-lg font-semibold text-white">
+                    {wheel.topic.trim() || "None"}
+                  </p>
+                  <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                    Phrase
+                  </p>
+                  <PhraseRevealRow
+                    phrase={wheel.phrase}
+                    revealedLetters={wheel.revealedLetters}
+                    revealedAll={wheel.revealedAll}
+                    onRevealLetter={handleRevealLetter}
+                  />
+                </>
+              ) : (
+                <>
+                  <label className="mb-3 block">
+                    <span className="mb-1.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                      Topic
+                    </span>
+                    <input
+                      type="text"
+                      value={topicInput}
+                      onChange={(e) => setTopicInput(e.target.value)}
+                      placeholder="Shown on the spectator banner"
+                      className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    />
+                  </label>
+                  <label className="mb-4 block">
+                    <span className="mb-1.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                      Phrase
+                    </span>
+                    <input
+                      type="text"
+                      value={phraseInput}
+                      onChange={(e) => setPhraseInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSetPhrase();
+                      }}
+                      placeholder="Enter the phrase for the board"
+                      className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    />
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {Boolean(wheel.phrase) && (
+                      <button
+                        type="button"
+                        onClick={() => setEditing(false)}
+                        className="inline-flex h-10 items-center rounded-md px-4 text-sm font-semibold text-neutral-300 hover:bg-neutral-700"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleSetPhrase}
+                      disabled={!phraseInput.trim()}
+                      className="inline-flex h-10 items-center rounded-md border border-emerald-500 bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500"
+                    >
+                      Set
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
 
-              <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
-                <h2 className="mb-4 text-xl font-bold text-white">Letter Controls</h2>
-                <div className="flex flex-wrap gap-3">
-                  {ALPHABET.map((letter) => (
+            <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
+              <h2 className="mb-4 text-xl font-bold text-white">Letter Controls</h2>
+              <div className="flex flex-wrap gap-3">
+                {ALPHABET.map((letter) => {
+                  const guessed = isLetterGuessed(letter);
+                  const missed =
+                    guessed && !phraseHasLetter(wheel.phrase, letter);
+                  const disabled = isLetterRevealed(letter) || !wheel.phrase;
+                  return (
                     <button
                       key={letter}
                       type="button"
                       onClick={() => handleRevealLetter(letter)}
-                      disabled={isLetterRevealed(letter) || !wheel.phrase}
-                      className={`flex h-16 w-16 items-center justify-center rounded-lg text-2xl font-bold transition-colors sm:h-20 sm:w-20 sm:text-3xl ${
-                        isLetterRevealed(letter) || !wheel.phrase
-                          ? "cursor-not-allowed border border-neutral-600 bg-neutral-700 text-neutral-500"
-                          : "border border-emerald-500 bg-emerald-600 text-white hover:bg-emerald-700"
-                      }`}
+                      disabled={disabled}
+                      className={letterControlClass(missed, disabled)}
                     >
                       {letter}
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -471,6 +439,7 @@ export function WheelHostPanel() {
             topic: "",
             revealedLetters: [],
             revealedAll: false,
+            wrongCount: 0,
             zoom: prev.zoom,
           }))
         }

@@ -3,6 +3,7 @@ import {
   clearReveal,
   undoLastBatch,
   returnTokensToPool,
+  clearCalled,
 } from "@/lib/event/repository";
 import { error, isErrorResponse, json, requireRole } from "@/lib/api/helpers";
 
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
 
   try {
     const body = (await request.json()) as {
-      action?: "draw" | "clear" | "undo" | "return";
+      action?: "draw" | "clear" | "undo" | "return" | "clearCalled";
       colorCounts?: { colorId: string; count: number }[];
       tokenIds?: string[];
     };
@@ -29,6 +30,10 @@ export async function POST(request: Request) {
     }
     if (body.action === "return") {
       const snapshot = await returnTokensToPool(body.tokenIds);
+      return json(snapshot);
+    }
+    if (body.action === "clearCalled") {
+      const snapshot = await clearCalled();
       return json(snapshot);
     }
     if (body.action === "draw") {

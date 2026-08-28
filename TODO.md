@@ -9,12 +9,3 @@
   2. Hint interval
 
 3. Newly wed game, keep track of points, show a question, configurable timer
-  
-4. Put numbers drawn in a circle and remove commas, background can now be generic
-
-5. Modify derby race for dildos
-
-6. Wrong animation for wheel of Rich's
-
-7. Improve UI and put draft games (Deal or No Deal, Jeopardy) at the bottom
-

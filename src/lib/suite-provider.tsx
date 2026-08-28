@@ -42,6 +42,14 @@ import {
 } from "@/lib/derby/types";
 import type { JeoparodyGameState } from "@/lib/jeoparody/types";
 import { createSampleJeoparodyGame } from "@/lib/jeoparody/defaults";
+import {
+  createDefaultPriceGuesserState,
+  type PriceGuesserState,
+} from "@/lib/price-guesser/types";
+import {
+  createDefaultPriceOrderState,
+  type PriceOrderState,
+} from "@/lib/price-order/types";
 
 export type SuiteRole = "operator" | "spectator" | "hostess" | "player";
 
@@ -71,6 +79,12 @@ type SuiteContextValue = {
   updateDerby: (updater: (game: DerbyGameState) => DerbyGameState) => void;
   updateJeoparody: (
     updater: (game: JeoparodyGameState) => JeoparodyGameState,
+  ) => void;
+  updatePriceGuesser: (
+    updater: (game: PriceGuesserState) => PriceGuesserState,
+  ) => void;
+  updatePriceOrder: (
+    updater: (game: PriceOrderState) => PriceOrderState,
   ) => void;
   patchSuite: (patch: Partial<SuiteState>) => Promise<void>;
   refreshSnapshot: () => Promise<void>;
@@ -460,6 +474,28 @@ export function SuiteProvider({
     [applyLocalSuite],
   );
 
+  const updatePriceGuesser = useCallback(
+    (updater: (game: PriceGuesserState) => PriceGuesserState) => {
+      applyLocalSuite((prev) => ({
+        ...prev,
+        priceGuesser: updater(
+          prev.priceGuesser ?? createDefaultPriceGuesserState(),
+        ),
+      }));
+    },
+    [applyLocalSuite],
+  );
+
+  const updatePriceOrder = useCallback(
+    (updater: (game: PriceOrderState) => PriceOrderState) => {
+      applyLocalSuite((prev) => ({
+        ...prev,
+        priceOrder: updater(prev.priceOrder ?? createDefaultPriceOrderState()),
+      }));
+    },
+    [applyLocalSuite],
+  );
+
   const applyServerSnapshot = useCallback(
     (next: EventSnapshot) => {
       confirmedRevisionRef.current = Math.max(
@@ -521,6 +557,8 @@ export function SuiteProvider({
       updateMessageBoard,
       updateDerby,
       updateJeoparody,
+      updatePriceGuesser,
+      updatePriceOrder,
       patchSuite,
       refreshSnapshot,
       applyServerSnapshot,
@@ -543,6 +581,8 @@ export function SuiteProvider({
       updateMessageBoard,
       updateDerby,
       updateJeoparody,
+      updatePriceGuesser,
+      updatePriceOrder,
       patchSuite,
       refreshSnapshot,
       applyServerSnapshot,

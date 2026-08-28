@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import LetterBoard from "./LetterBoard";
 import type { WheelGameState } from "@/lib/wheel/types";
 import "@/styles/wheel-audience.css";
@@ -38,6 +39,28 @@ function isLetterSelected(wheel: WheelGameState, letter: string): boolean {
 export function WheelAudienceView({
   wheel,
 }: Readonly<{ wheel: WheelGameState }>) {
+  const wrongCount = wheel.wrongCount ?? 0;
+  const [wrongPulse, setWrongPulse] = useState<number | null>(null);
+  const prevWrongRef = useRef(wrongCount);
+
+  useEffect(() => {
+    const prev = prevWrongRef.current;
+    prevWrongRef.current = wrongCount;
+    if (wrongCount <= prev) return;
+
+    const frame = requestAnimationFrame(() => {
+      setWrongPulse(wrongCount);
+    });
+    const t = window.setTimeout(() => {
+      setWrongPulse(null);
+    }, 3500);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(t);
+    };
+  }, [wrongCount]);
+
   return (
     <div className="wheel-audience">
       <div
@@ -138,6 +161,12 @@ export function WheelAudienceView({
           );
         })}
       </div>
+
+      {wrongPulse != null && wrongPulse > 0 && (
+        <div key={wrongPulse} className="bigx">
+          <div className="bigx-inner">X</div>
+        </div>
+      )}
     </div>
   );
 }

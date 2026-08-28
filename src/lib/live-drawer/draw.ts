@@ -75,25 +75,27 @@ export function parseNumberRange(input: string): string[] {
   const trimmed = input.trim();
   if (!trimmed) return [];
 
-  if (trimmed.includes("-")) {
-    const [startStr, endStr] = trimmed.split("-").map((s) => s.trim());
-    const start = Number(startStr);
-    const end = Number(endStr);
-    if (
-      !Number.isInteger(start) ||
-      !Number.isInteger(end) ||
-      start > end ||
-      end - start > 10000
-    ) {
-      return [];
+  const parts = trimmed.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
+  const nums: string[] = [];
+
+  for (const part of parts) {
+    const rangeMatch = /^(\d+)\s*-\s*(\d+)$/.exec(part);
+    if (rangeMatch) {
+      const start = Number(rangeMatch[1]);
+      const end = Number(rangeMatch[2]);
+      if (
+        !Number.isInteger(start) ||
+        !Number.isInteger(end) ||
+        start > end ||
+        end - start > 10000
+      ) {
+        return [];
+      }
+      for (let i = start; i <= end; i++) nums.push(String(i));
+      continue;
     }
-    const nums: string[] = [];
-    for (let i = start; i <= end; i++) nums.push(String(i));
-    return nums;
+    nums.push(part);
   }
 
-  return trimmed
-    .split(/[\s,;]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  return nums;
 }

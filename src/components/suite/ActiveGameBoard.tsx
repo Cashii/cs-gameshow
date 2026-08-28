@@ -11,6 +11,10 @@ import { MessageBoardAudienceView } from "@/components/message-board/MessageBoar
 import { DerbyAudienceView } from "@/components/derby/DerbyAudienceView";
 import { JeoparodyAudienceView } from "@/components/jeoparody/JeoparodyAudienceView";
 import { TriviaAudienceView } from "@/components/trivia/TriviaAudienceView";
+import { PriceGuesserAudienceView } from "@/components/price-guesser/PriceGuesserAudienceView";
+import { PriceOrderAudienceView } from "@/components/price-order/PriceOrderAudienceView";
+import { createDefaultPriceGuesserState } from "@/lib/price-guesser/types";
+import { createDefaultPriceOrderState } from "@/lib/price-order/types";
 
 export const standbyScreen = (
   <div className="flex h-full w-full flex-col items-center justify-center bg-neutral-950 text-center">
@@ -106,6 +110,22 @@ export function ActiveGameBoard({
     content = (
       <div className="h-full w-full overflow-hidden">
         <TriviaAudienceView trivia={state.trivia} />
+      </div>
+    );
+  } else if (activeGame === "priceGuesser") {
+    content = (
+      <div className="h-full w-full overflow-hidden">
+        <PriceGuesserAudienceView
+          game={state.priceGuesser ?? createDefaultPriceGuesserState()}
+        />
+      </div>
+    );
+  } else if (activeGame === "priceOrder") {
+    content = (
+      <div className="h-full w-full overflow-hidden">
+        <PriceOrderAudienceView
+          game={state.priceOrder ?? createDefaultPriceOrderState()}
+        />
       </div>
     );
   } else {

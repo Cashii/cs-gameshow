@@ -10,6 +10,13 @@
 
 **Player** — Guest on a phone who votes on operator-launched polls. Other games have no player screen.
 
+## Price games
+
+**Price Guesser** — One product photo on the spectator screen with a covered price tag. The player guesses out loud; the operator reveals.
+
+**Price Order** — Up to five product photos. The player sorts cheapest to most expensive; the operator inserts and rearranges that list, then reveals prices.
+
+
 ## Live Drawer
 
 **Token** — A numbered item with a color (e.g. blue #42). Represents a physical token handed to a guest.

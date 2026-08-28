@@ -37,6 +37,16 @@ import {
   type TriviaGameState,
   type TriviaStatus,
 } from "@/lib/trivia/types";
+import {
+  createDefaultPriceGuesserState,
+  type PriceGuesserState,
+} from "@/lib/price-guesser/types";
+import {
+  createDefaultPriceOrderState,
+  PRICE_ORDER_MAX_ITEMS,
+  type PriceOrderItem,
+  type PriceOrderState,
+} from "@/lib/price-order/types";
 
 export type ActiveGame =
   | "feud"
@@ -48,7 +58,9 @@ export type ActiveGame =
   | "messageBoard"
   | "derby"
   | "jeoparody"
-  | "trivia";
+  | "trivia"
+  | "priceGuesser"
+  | "priceOrder";
 export type SpectatorScreen = ActiveGame;
 
 export type SuiteState = {
@@ -66,6 +78,8 @@ export type SuiteState = {
   derby: DerbyGameState;
   jeoparody: JeoparodyGameState;
   trivia: TriviaGameState;
+  priceGuesser: PriceGuesserState;
+  priceOrder: PriceOrderState;
 };
 
 export type EventSnapshot = SuiteState & {
@@ -100,7 +114,9 @@ function normalizeActiveGame(
     raw === "messageBoard" ||
     raw === "derby" ||
     raw === "jeoparody" ||
-    raw === "trivia"
+    raw === "trivia" ||
+    raw === "priceGuesser" ||
+    raw === "priceOrder"
   ) {
     return raw;
   }
@@ -140,6 +156,8 @@ export function createDefaultSuiteState(): SuiteState {
     derby: createDefaultDerbyState(),
     jeoparody: createSampleJeoparodyGame(),
     trivia: createDefaultTriviaState(),
+    priceGuesser: createDefaultPriceGuesserState(),
+    priceOrder: createDefaultPriceOrderState(),
   };
 }
 
@@ -333,6 +351,64 @@ function normalizeDerbyState(
   };
 }
 
+function finitePrice(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? Math.round(value * 100) / 100
+    : null;
+}
+
+function normalizePriceGuesserState(
+  raw: Partial<PriceGuesserState> | undefined,
+): PriceGuesserState {
+  const defaults = createDefaultPriceGuesserState();
+  if (!raw || typeof raw !== "object") return defaults;
+  return {
+    imageUrl: typeof raw.imageUrl === "string" ? raw.imageUrl : defaults.imageUrl,
+    label: typeof raw.label === "string" ? raw.label : defaults.label,
+    price: finitePrice(raw.price),
+    priceRevealed: Boolean(raw.priceRevealed),
+  };
+}
+
+function normalizePriceOrderItem(
+  raw: Partial<PriceOrderItem> | undefined,
+  index: number,
+): PriceOrderItem | null {
+  if (!raw || typeof raw !== "object") return null;
+  const id =
+    typeof raw.id === "string" && raw.id.trim() ? raw.id : `item-${index}`;
+  return {
+    id,
+    imageUrl: typeof raw.imageUrl === "string" ? raw.imageUrl : "",
+    label: typeof raw.label === "string" ? raw.label : "",
+    price: finitePrice(raw.price),
+    priceRevealed: Boolean(raw.priceRevealed),
+  };
+}
+
+function normalizePriceOrderState(
+  raw: Partial<PriceOrderState> | undefined,
+): PriceOrderState {
+  const defaults = createDefaultPriceOrderState();
+  if (!raw || typeof raw !== "object") return defaults;
+  const items = Array.isArray(raw.items)
+    ? raw.items
+        .slice(0, PRICE_ORDER_MAX_ITEMS)
+        .map((item, index) => normalizePriceOrderItem(item, index))
+        .filter((item): item is PriceOrderItem => item != null)
+    : defaults.items;
+  const knownIds = new Set(items.map((item) => item.id));
+  const order = Array.isArray(raw.order)
+    ? raw.order.filter(
+        (id, index, list): id is string =>
+          typeof id === "string" &&
+          knownIds.has(id) &&
+          list.indexOf(id) === index,
+      )
+    : [];
+  return { items, order };
+}
+
 const JEOPARODY_PHASES = new Set<JeoparodyPhase>(["board", "clue", "answer"]);
 
 function normalizeJeoparodyState(
@@ -456,6 +532,8 @@ export function normalizeSuiteState(
       zoom: typeof raw.wheel?.zoom === "number" ? raw.wheel.zoom : 1,
       showLetterLegend: raw.wheel?.showLetterLegend ?? true,
       topic: typeof raw.wheel?.topic === "string" ? raw.wheel.topic : "",
+      wrongCount:
+        typeof raw.wheel?.wrongCount === "number" ? raw.wheel.wrongCount : 0,
     },
     liveDrawer: normalizeLiveDrawerState(raw.liveDrawer ?? raw.draw),
     takeIt: normalizeTakeItState(raw.takeIt ?? raw.deal),
@@ -464,6 +542,8 @@ export function normalizeSuiteState(
     derby: normalizeDerbyState(raw.derby),
     jeoparody: normalizeJeoparodyState(raw.jeoparody),
     trivia: normalizeTriviaState(raw.trivia),
+    priceGuesser: normalizePriceGuesserState(raw.priceGuesser),
+    priceOrder: normalizePriceOrderState(raw.priceOrder),
   };
 }
 
@@ -514,6 +594,8 @@ export const ACTIVE_GAME_LABELS: Record<ActiveGame, string> = {
   derby: "Derby Race",
   jeoparody: "Jeoparody",
   trivia: "Elimination Trivia",
+  priceGuesser: "Price Guesser",
+  priceOrder: "Price Order",
 };
 
 export const SPECTATOR_SCREEN_LABELS: Record<SpectatorScreen, string> =
@@ -523,10 +605,12 @@ export const SPECTATOR_SCREENS: SpectatorScreen[] = [
   "idle",
   "feud",
   "wheel",
-  "takeIt",
   "derby",
-  "jeoparody",
   "trivia",
+  "priceGuesser",
+  "priceOrder",
+  "jeoparody",
+  "takeIt",
   "liveDrawer",
   "poll",
   "messageBoard",

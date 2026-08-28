@@ -5,6 +5,7 @@ export type WheelGameState = {
   revealedAll: boolean;
   zoom: number;
   showLetterLegend: boolean;
+  wrongCount: number;
 };
 
 export function createDefaultWheelState(): WheelGameState {
@@ -15,5 +16,10 @@ export function createDefaultWheelState(): WheelGameState {
     revealedAll: false,
     zoom: 1,
     showLetterLegend: true,
+    wrongCount: 0,
   };
+}
+
+export function phraseHasLetter(phrase: string, letter: string): boolean {
+  return phrase.toUpperCase().includes(letter.toUpperCase());
 }

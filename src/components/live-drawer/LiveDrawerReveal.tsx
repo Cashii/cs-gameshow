@@ -80,15 +80,39 @@ function LiveDrawerWaitingReel() {
   );
 }
 
+const BALL_INSET = { 1: 0.15, 2: 0.15, 3: 0.15, 4: 0.15 } as const;
+
+function digitCount(value: string): keyof typeof BALL_INSET {
+  const length = Math.min(4, Math.max(1, value.trim().length)) as 1 | 2 | 3 | 4;
+  return length;
+}
+
+function fitNumberInBall(ball: HTMLElement): void {
+  const num = ball.querySelector<HTMLElement>(".live-drawer-ball-num");
+  if (!num) return;
+  const size = Math.min(ball.clientWidth, ball.clientHeight);
+  if (size < 8) return;
+  const digits = digitCount(num.textContent ?? "1");
+  const max = size * (1 - 2 * BALL_INSET[digits]);
+  let lo = 8;
+  let hi = size;
+  for (let i = 0; i < 16; i += 1) {
+    const mid = (lo + hi) / 2;
+    num.style.fontSize = `${mid}px`;
+    const fits = num.scrollWidth <= max + 1 && num.scrollHeight <= max + 1;
+    if (fits) lo = mid;
+    else hi = mid;
+  }
+  num.style.fontSize = `${lo * 0.96}px`;
+}
+
 function LiveDrawerFittedNumbers({
   tokens,
-  mixedColors,
   phase,
   numberScale,
   sequence,
 }: Readonly<{
   tokens: LiveDrawerToken[];
-  mixedColors: boolean;
   phase: Phase;
   numberScale: number;
   sequence: number;
@@ -115,6 +139,7 @@ function LiveDrawerFittedNumbers({
       else hi = mid;
     }
     text.style.fontSize = `${lo}px`;
+    text.querySelectorAll<HTMLElement>(".live-drawer-ball").forEach(fitNumberInBall);
   }, [numberScale]);
 
   useLayoutEffect(() => {
@@ -132,35 +157,22 @@ function LiveDrawerFittedNumbers({
 
   return (
     <div ref={boxRef} className="live-drawer-fit">
-      <div
-        ref={textRef}
-        className={`live-drawer-text ${phase}${mixedColors ? " is-mixed" : ""}`}
-      >
-        {tokens.flatMap((token, i) => {
+      <div ref={textRef} className={`live-drawer-balls ${phase}`}>
+        {tokens.map((token, i) => {
           const color = getLiveDrawerColor(token.colorId);
-          const digit = (
+          return (
             <span
               key={token.id}
-              className="live-drawer-digit"
+              className="live-drawer-ball"
+              data-digits={String(digitCount(token.number))}
               style={{
-                ...(mixedColors && color ? { color: color.hex } : {}),
+                backgroundColor: color?.hex ?? "#334155",
                 animationDelay: `${i * 120}ms`,
               }}
             >
-              {token.number}
+              <span className="live-drawer-ball-num">{token.number}</span>
             </span>
           );
-          if (i === 0) return [digit];
-          return [
-            <span
-              key={`${token.id}-sep`}
-              className="live-drawer-sep"
-              style={{ animationDelay: `${i * 120 - 40}ms` }}
-            >
-              ,
-            </span>,
-            digit,
-          ];
         })}
       </div>
     </div>
@@ -226,42 +238,12 @@ export function LiveDrawerReveal({
     };
   }, [game.sequence, tokenKey, tokens]);
 
-  const uniqueColorIds = [
-    ...new Set(displayTokens.map((token) => token.colorId)),
-  ];
-  const mixedColors = uniqueColorIds.length > 1;
-  const accent =
-    !mixedColors && displayTokens.length > 0
-      ? getLiveDrawerColor(displayTokens[0]!.colorId)
-      : null;
-  const rainbowStops = mixedColors
-    ? (() => {
-        const hexes = uniqueColorIds
-          .map((id) => getLiveDrawerColor(id)?.hex)
-          .filter((hex): hex is string => Boolean(hex));
-        return hexes.length > 0 ? [...hexes, hexes[0]].join(", ") : "";
-      })()
-    : "";
-
   const themeStyle = {
     "--live-drawer-text-scale": String(game.numberScale ?? 1),
-    ...(accent
-      ? {
-          "--live-drawer-bg": accent.hex,
-          "--live-drawer-glow": accent.hex,
-          "--live-drawer-glow-soft": accent.hex,
-        }
-      : {}),
-    ...(mixedColors ? { "--live-drawer-rainbow": rainbowStops } : {}),
   } as React.CSSProperties;
 
   return (
-    <div
-      className={`live-drawer-audience${accent ? " has-color" : ""}${
-        mixedColors ? " has-rainbow" : ""
-      }`}
-      style={themeStyle}
-    >
+    <div className="live-drawer-audience" style={themeStyle}>
       {phase === "empty" || displayTokens.length === 0 ? (
         <LiveDrawerWaitingReel />
       ) : (
@@ -269,7 +251,6 @@ export function LiveDrawerReveal({
           <div className="live-drawer-burst" aria-hidden />
           <LiveDrawerFittedNumbers
             tokens={displayTokens}
-            mixedColors={mixedColors}
             phase={phase}
             numberScale={game.numberScale ?? 1}
             sequence={game.sequence}

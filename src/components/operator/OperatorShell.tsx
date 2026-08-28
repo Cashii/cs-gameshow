@@ -21,6 +21,8 @@ import {
   Users,
   LayoutGrid,
   Brain,
+  Tag,
+  ListOrdered,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -46,12 +48,24 @@ import { MessageBoardHostPanel } from "@/components/message-board/MessageBoardHo
 import { DerbyHostPanel } from "@/components/derby/DerbyHostPanel";
 import { JeoparodyHostPanel } from "@/components/jeoparody/JeoparodyHostPanel";
 import { TriviaHostPanel } from "@/components/trivia/TriviaHostPanel";
+import { PriceGuesserHostPanel } from "@/components/price-guesser/PriceGuesserHostPanel";
+import { PriceOrderHostPanel } from "@/components/price-order/PriceOrderHostPanel";
 import { PinSettingsPanel } from "@/components/operator/PinSettingsPanel";
 import { PinGate } from "@/components/auth/PinGate";
 
 const NAV_TOP: ActiveGame[] = ["idle"];
-const NAV_GAMES: ActiveGame[] = ["feud", "wheel", "takeIt", "derby", "jeoparody", "trivia"];
+const NAV_GAMES: ActiveGame[] = [
+  "feud",
+  "wheel",
+  "derby",
+  "trivia",
+  "priceGuesser",
+  "priceOrder",
+  "jeoparody",
+  "takeIt",
+];
 const NAV_TOOLS: ActiveGame[] = ["liveDrawer", "poll", "messageBoard"];
+const BETA_GAMES: ReadonlySet<ActiveGame> = new Set(["takeIt", "jeoparody"]);
 
 const GAME_ICONS: Record<ActiveGame, LucideIcon> = {
   idle: Home,
@@ -62,6 +76,8 @@ const GAME_ICONS: Record<ActiveGame, LucideIcon> = {
   derby: Flag,
   jeoparody: LayoutGrid,
   trivia: Brain,
+  priceGuesser: Tag,
+  priceOrder: ListOrdered,
   poll: BarChart3,
   messageBoard: Megaphone,
 };
@@ -74,9 +90,29 @@ const GAME_DESCRIPTIONS: Record<Exclude<ActiveGame, "idle">, string> = {
   derby: "Pick a winner and run a 20-second race on the spectator screen.",
   jeoparody: "Set categories and clues, reveal prompts, and score contestants from the operator desk.",
   trivia: "Boolean questions on player phones. Cut the field to any remaining count.",
+  priceGuesser: "Show an item photo with a hidden price tag, then reveal the real price.",
+  priceOrder: "Put up to five items on screen and build cheapest-to-most-expensive order.",
   poll: "Ask a question, open voting on player phones, and show live results.",
   messageBoard: "Put a text announcement on the spectator screen.",
 };
+
+function BetaTag({ compact, inverted }: Readonly<{ compact?: boolean; inverted?: boolean }>) {
+  return (
+    <span
+      className={`shrink-0 rounded-full font-bold tracking-wide uppercase ${
+        compact
+          ? "px-1 py-px text-[8px]"
+          : "px-1.5 py-0.5 text-[10px]"
+      } ${
+        inverted
+          ? "bg-white/20 text-white"
+          : "bg-amber-500/15 text-amber-400"
+      }`}
+    >
+      Beta
+    </span>
+  );
+}
 
 function NavItem({
   game,
@@ -92,9 +128,14 @@ function NavItem({
   onSelect: (game: ActiveGame) => void;
 }>) {
   const Icon = GAME_ICONS[game];
-  const label = live
-    ? `${ACTIVE_GAME_LABELS[game]} (live)`
-    : ACTIVE_GAME_LABELS[game];
+  const beta = BETA_GAMES.has(game);
+  const label = [
+    ACTIVE_GAME_LABELS[game],
+    beta ? "beta" : null,
+    live ? "live" : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
   return (
     <button
       type="button"
@@ -119,21 +160,34 @@ function NavItem({
             aria-hidden
           />
         )}
+        {beta && collapsed && (
+          <span
+            className={`absolute -right-1.5 -bottom-1 rounded-full px-0.5 text-[7px] font-bold tracking-wide uppercase ${
+              active ? "bg-white/25 text-white" : "bg-amber-500 text-neutral-950"
+            }`}
+            aria-hidden
+          >
+            β
+          </span>
+        )}
       </span>
       {!collapsed && (
         <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
           <span className="truncate">{ACTIVE_GAME_LABELS[game]}</span>
-          {live && (
-            <span
-              className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase ${
-                active
-                  ? "bg-white/20 text-white"
-                  : "bg-emerald-500/15 text-emerald-400"
-              }`}
-            >
-              Live
-            </span>
-          )}
+          <span className="flex shrink-0 items-center gap-1">
+            {beta && <BetaTag inverted={active} />}
+            {live && (
+              <span
+                className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase ${
+                  active
+                    ? "bg-white/20 text-white"
+                    : "bg-emerald-500/15 text-emerald-400"
+                }`}
+              >
+                Live
+              </span>
+            )}
+          </span>
         </span>
       )}
     </button>
@@ -150,13 +204,14 @@ function SpectatorNavItem({
   onSelect: (screen: SpectatorScreen) => void;
 }>) {
   const Icon = GAME_ICONS[screen];
+  const beta = BETA_GAMES.has(screen);
   const label =
     screen === "idle" ? "Standby" : SPECTATOR_SCREEN_LABELS[screen];
   return (
     <button
       type="button"
       onClick={() => onSelect(screen)}
-      aria-label={label}
+      aria-label={beta ? `${label} beta` : label}
       aria-current={active ? "true" : undefined}
       className={`flex w-full flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-left font-normal transition-colors ${
         active
@@ -168,6 +223,7 @@ function SpectatorNavItem({
       <span className="w-full text-center text-[9px] leading-tight font-medium">
         {label}
       </span>
+      {beta && <BetaTag compact inverted={active} />}
     </button>
   );
 }
@@ -477,10 +533,12 @@ function OperatorContent() {
                   [
                     "feud",
                     "wheel",
-                    "takeIt",
                     "derby",
-                    "jeoparody",
                     "trivia",
+                    "priceGuesser",
+                    "priceOrder",
+                    "jeoparody",
+                    "takeIt",
                     "liveDrawer",
                     "poll",
                     "messageBoard",
@@ -500,6 +558,7 @@ function OperatorContent() {
                         </span>
                         <span className="flex min-w-0 items-center gap-2 text-base font-bold text-white">
                           {ACTIVE_GAME_LABELS[game]}
+                          {BETA_GAMES.has(game) && <BetaTag />}
                           {((game === "poll" && pollLive) ||
                             (game === "trivia" && triviaLive)) && (
                             <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-emerald-400 uppercase">
@@ -523,11 +582,7 @@ function OperatorContent() {
           )}
           {state.activeGame === "feud" && <FeudHostPanel />}
           {state.activeGame === "wheel" && <WheelHostPanel />}
-          {state.activeGame === "liveDrawer" && (
-            <div className="min-h-0 flex-1 overflow-auto">
-              <LiveDrawerHostPanel />
-            </div>
-          )}
+          {state.activeGame === "liveDrawer" && <LiveDrawerHostPanel />}
           {state.activeGame === "takeIt" && (
             <div className="min-h-0 flex-1 overflow-auto">
               <TakeItOrLeaveItHostPanel />
@@ -540,6 +595,8 @@ function OperatorContent() {
           )}
           {state.activeGame === "jeoparody" && <JeoparodyHostPanel />}
           {state.activeGame === "trivia" && <TriviaHostPanel />}
+          {state.activeGame === "priceGuesser" && <PriceGuesserHostPanel />}
+          {state.activeGame === "priceOrder" && <PriceOrderHostPanel />}
           {state.activeGame === "poll" && <PollHostPanel />}
           {state.activeGame === "messageBoard" && (
             <div className="min-h-0 flex-1 overflow-auto">

@@ -23,6 +23,8 @@ Legacy routes `/admin` and `/audience` redirect to `/operator` and `/spectator`.
 - [Jeoparody](games/jeoparody.md)
 - [Elimination Trivia](games/boolean-trivia.md)
 - [Message Board](games/message-board.md)
+- [Price Guesser](games/price-guesser.md)
+- [Price Order](games/price-order.md)
 
 ## Setup
 

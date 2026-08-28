@@ -89,6 +89,8 @@ export async function ensureIndexes(): Promise<void> {
   );
   const { ensureTriviaIndexes } = await import("@/lib/trivia/store");
   await ensureTriviaIndexes();
+  const { ensureMediaIndexes } = await import("@/lib/media/store");
+  await ensureMediaIndexes();
   indexesReady = true;
 }
 
@@ -430,7 +432,45 @@ export async function returnTokensToPool(
   await tokensCol(db).then((c) =>
     c.updateMany(filter, { $set: { status: "pool", drawBatchId: null } }),
   );
-  return bumpAndPublish(true);
+  if (!tokenIds?.length) {
+    await drawBatchesCol(db).then((c) => c.deleteMany({ eventId: EVENT_ID }));
+  }
+  const returnedIds = tokenIds?.length ? new Set(tokenIds) : null;
+  return updateEventSuite((prev) => {
+    const revealed = prev.liveDrawer.revealedTokens;
+    const nextRevealed = returnedIds
+      ? revealed.filter((token) => !returnedIds.has(token.id))
+      : [];
+    const changed = nextRevealed.length !== revealed.length;
+    return {
+      ...prev,
+      liveDrawer: {
+        ...prev.liveDrawer,
+        revealedTokens: nextRevealed,
+        sequence: changed
+          ? prev.liveDrawer.sequence + 1
+          : prev.liveDrawer.sequence,
+      },
+    };
+  });
+}
+
+export async function clearCalled(): Promise<EventSnapshot> {
+  const db = await getDb();
+  await tokensCol(db).then((c) =>
+    c.deleteMany({ eventId: EVENT_ID, status: "drawn" }),
+  );
+  await drawBatchesCol(db).then((c) => c.deleteMany({ eventId: EVENT_ID }));
+  return updateEventSuite((prev) => ({
+    ...prev,
+    liveDrawer: {
+      ...prev.liveDrawer,
+      revealedTokens: [],
+      sequence: prev.liveDrawer.revealedTokens.length
+        ? prev.liveDrawer.sequence + 1
+        : prev.liveDrawer.sequence,
+    },
+  }));
 }
 
 function isHexObjectId(value: string): boolean {

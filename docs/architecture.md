@@ -31,6 +31,7 @@ The client opens `client.db(process.env.MONGODB_DB ?? "gameshow_dev")` explicitl
 | `votes` | Player poll votes `{ pollId, deviceId, choiceId }` — unique per `(pollId, deviceId)` |
 | `triviaVotes` | Elimination Trivia answers `{ eventId, roundId, deviceId, choiceId, playerCode }` — unique per `(eventId, roundId, deviceId)` |
 | `triviaPlayers` | Elimination Trivia roster `{ eventId, deviceId, playerCode, status, joinedRound, eliminatedRound }` |
+| `media` | Uploaded product photos for Price Guesser and Price Order `{ eventId, mimeType, data, createdAt }` |
 
 Unique index on `tokens`: `(eventId, number, colorId)`.
 
@@ -80,4 +81,6 @@ PINs stored as SHA-256 hashes on the event document. Session cookie: HMAC-signed
 - `POST /api/poll/vote` — player vote
 - `POST /api/trivia` — player vote (`action: vote`) or operator Elimination Trivia control (`setup`, `open`, `lock`, `reveal`, `undoReveal`, `nextQuestion`, `resetSeries`)
 - `GET /api/trivia/me` — player personal status (`?deviceId=`)
-- `GET /api/trivia/roster` — operator remaining player codes
+- `POST /api/media` — operator image upload (Price Guesser / Price Order)
+- `GET /api/media/[id]` — serve an uploaded image
+- `DELETE /api/media/[id]` — operator delete image
