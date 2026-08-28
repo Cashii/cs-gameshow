@@ -119,7 +119,7 @@ export function JeoparodyHostPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-neutral-800 bg-neutral-900/90 px-6 py-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
         <div className="flex rounded-md border border-neutral-700 p-0.5">
           {(["play", "setup"] as const).map((id) => (
             <button
@@ -146,7 +146,7 @@ export function JeoparodyHostPanel() {
               onConfirm: resetBoard,
             })
           }
-          className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-500 bg-neutral-600 px-4 text-sm font-semibold text-white hover:bg-neutral-500"
+          className="inline-flex h-10 items-center gap-2 rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
         >
           <RotateCcw size={16} /> Reset board
         </button>
@@ -170,7 +170,7 @@ export function JeoparodyHostPanel() {
           onClick={() =>
             patch((prev) => ({ ...prev, showScores: !prev.showScores }))
           }
-          className="ml-auto inline-flex h-10 items-center gap-2 rounded-md border border-neutral-600 px-3 text-sm font-semibold text-neutral-200 hover:bg-neutral-800"
+          className="ml-auto inline-flex h-10 items-center gap-2 rounded-md border border-teal-500 bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-500"
         >
           {game.showScores ? <Eye size={16} /> : <EyeOff size={16} />}
           Scores {game.showScores ? "on" : "off"}
@@ -188,7 +188,7 @@ export function JeoparodyHostPanel() {
             >
               {game.categories.map((category) => (
                 <div key={category.id} className="flex min-w-0 flex-col gap-2">
-                  <div className="flex min-h-14 items-center justify-center rounded-md bg-[#0b2a6b] px-2 py-2 text-center text-xs font-bold tracking-wide text-white uppercase">
+                  <div className="flex min-h-14 items-center justify-center rounded-md bg-[#0b2a6b] px-2 py-2 text-center text-xs font-bold tracking-wide text-[#fff] uppercase">
                     {category.name || "Category"}
                   </div>
                   {category.clues.map((clue) => {
@@ -218,20 +218,20 @@ export function JeoparodyHostPanel() {
           <div className="min-h-0 overflow-auto border-t border-neutral-800 p-4 lg:border-t-0 lg:border-l">
             {selected && game.phase !== "board" ? (
               <div className="flex flex-col gap-4">
-                <p className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+                <p className="text-xs font-semibold tracking-wide text-neutral-300 uppercase">
                   {selected.category.name} · ${selected.clue.value}
                 </p>
                 <div>
-                  <p className="text-xs text-neutral-500 uppercase">Prompt</p>
+                  <p className="text-xs text-neutral-300 uppercase">Prompt</p>
                   <p className="mt-1 text-base font-semibold text-white">
                     {selected.clue.prompt || "(empty prompt)"}
                   </p>
                 </div>
-                <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3">
-                  <p className="text-xs text-amber-300 uppercase">
+                <div className="rounded-lg border border-amber-400 bg-amber-100 p-3">
+                  <p className="text-xs font-semibold tracking-wide text-amber-800 uppercase">
                     Response (operator only until revealed)
                   </p>
-                  <p className="mt-1 text-lg font-bold text-amber-100">
+                  <p className="mt-1 text-lg font-bold text-amber-950">
                     {selected.clue.response || "(empty response)"}
                   </p>
                 </div>
@@ -248,7 +248,7 @@ export function JeoparodyHostPanel() {
                     <button
                       type="button"
                       onClick={() => setPhase("clue")}
-                      className="rounded-md border border-neutral-600 px-3 py-2 text-sm font-semibold text-neutral-200 hover:bg-neutral-800"
+                      className="rounded-md border border-teal-500 bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-500"
                     >
                       Hide answer
                     </button>
@@ -256,7 +256,7 @@ export function JeoparodyHostPanel() {
                   <button
                     type="button"
                     onClick={backToBoard}
-                    className="rounded-md border border-neutral-600 px-3 py-2 text-sm font-semibold text-neutral-200 hover:bg-neutral-800"
+                    className="rounded-md border border-teal-500 bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-500"
                   >
                     Back to board
                   </button>
@@ -326,7 +326,7 @@ export function JeoparodyHostPanel() {
                     ],
                   }))
                 }
-                className="inline-flex items-center gap-1 rounded-md border border-neutral-600 px-3 py-1.5 text-sm text-neutral-200 hover:bg-neutral-800"
+                className="inline-flex items-center gap-1 rounded-md border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm text-white hover:bg-teal-500"
               >
                 <Plus size={14} /> Add
               </button>
@@ -398,7 +398,7 @@ export function JeoparodyHostPanel() {
                     categories: [...prev.categories, createEmptyCategory()],
                   }))
                 }
-                className="inline-flex items-center gap-1 rounded-md border border-neutral-600 px-3 py-1.5 text-sm text-neutral-200 hover:bg-neutral-800"
+                className="inline-flex items-center gap-1 rounded-md border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm text-white hover:bg-teal-500"
               >
                 <Plus size={14} /> Add category
               </button>

@@ -12,6 +12,7 @@ import { SquarePhotoEditor } from "@/components/price/SquarePhotoEditor";
 import { DEFAULT_PHOTO_FIT } from "@/lib/price/photo-fit";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { OperatorNotice } from "@/components/operator/OperatorNotice";
 import { useEffect, useState } from "react";
 
 export function PriceGuesserHostPanel() {
@@ -47,10 +48,10 @@ export function PriceGuesserHostPanel() {
         </div>
 
         {!spectatorLive && (
-          <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          <OperatorNotice>
             Spectator is not on Price Guesser. Use the Spectator screen list so
             the projector shows the item.
-          </p>
+          </OperatorNotice>
         )}
 
         <div className="mx-auto w-full max-w-sm">
@@ -122,7 +123,7 @@ export function PriceGuesserHostPanel() {
           <button
             type="button"
             onClick={() => setConfirmReset(true)}
-            className="inline-flex items-center gap-2 rounded-lg border border-neutral-600 px-5 py-2.5 text-sm font-semibold text-neutral-200 hover:bg-neutral-800"
+            className="inline-flex items-center gap-2 rounded-lg border border-teal-500 bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-500"
           >
             <RotateCcw size={16} />
             Clear item

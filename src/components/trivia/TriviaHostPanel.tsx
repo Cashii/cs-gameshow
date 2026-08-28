@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSuite } from "@/lib/suite-provider";
 import type { TriviaChoiceId, TriviaStatus } from "@/lib/trivia/types";
+import { OperatorNotice } from "@/components/operator/OperatorNotice";
 
 function triviaStatusLabel(
   status: TriviaStatus,
@@ -30,9 +31,9 @@ function triviaStatusClass(
   settingUpNext: boolean,
   questionClosed: boolean,
 ): string {
-  if (settingUpNext || questionClosed) return "text-sky-300";
-  if (status === "open") return "text-emerald-400";
-  if (status === "finished") return "text-amber-300";
+  if (settingUpNext || questionClosed) return "text-sky-700";
+  if (status === "open") return "text-emerald-600";
+  if (status === "finished") return "text-amber-700";
   return "text-white";
 }
 
@@ -122,27 +123,24 @@ export function TriviaHostPanel() {
       ) : null}
 
       {settingUpNext ? (
-        <div className="mb-6 rounded-lg border border-sky-500/70 bg-sky-950/50 px-4 py-3">
-          <p className="text-base font-bold text-sky-200">
-            Set up question {questionNumber}
-          </p>
-          <p className="mt-1 text-sm text-neutral-200">
-            Previous question is closed. {trivia.remainingCount} remaining.
-            Enter the next question, then open voting.
-          </p>
-        </div>
+        <OperatorNotice
+          className="mb-6"
+          tone="info"
+          title={`Set up question ${questionNumber}`}
+        >
+          Previous question is closed. {trivia.remainingCount} remaining.
+          Enter the next question, then open voting.
+        </OperatorNotice>
       ) : null}
 
       {questionClosed ? (
-        <div className="mb-6 rounded-lg border border-amber-500/60 bg-amber-950/40 px-4 py-3">
-          <p className="text-base font-bold text-amber-200">
-            Question {trivia.roundIndex} closed
-          </p>
-          <p className="mt-1 text-sm text-neutral-200">
-            {trivia.remainingCount} remaining. Start question{" "}
-            {trivia.roundIndex + 1} or declare winners if this is your cut.
-          </p>
-        </div>
+        <OperatorNotice
+          className="mb-6"
+          title={`Question ${trivia.roundIndex} closed`}
+        >
+          {trivia.remainingCount} remaining. Start question{" "}
+          {trivia.roundIndex + 1} or declare winners if this is your cut.
+        </OperatorNotice>
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(16rem,0.9fr)]">
@@ -244,7 +242,7 @@ export function TriviaHostPanel() {
                 type="button"
                 disabled={loading}
                 onClick={() => void runAction({ action: "undoReveal" })}
-                className="rounded-lg border border-neutral-500 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-40"
+                className="rounded-lg border border-teal-500 bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
               >
                 {trivia.status === "finished" ? "Undo winners" : "Undo reveal"}
               </button>
@@ -254,7 +252,7 @@ export function TriviaHostPanel() {
                 type="button"
                 disabled={loading}
                 onClick={() => void runAction({ action: "nextQuestion" })}
-                className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-40"
+                className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
               >
                 Start question {trivia.roundIndex + 1}
               </button>

@@ -227,7 +227,7 @@ export function TakeItOrLeaveItHostPanel() {
             <button
               type="button"
               onClick={() => startGame(false)}
-              className="rounded-md border border-neutral-600 bg-neutral-700 px-6 py-3 font-semibold text-white hover:bg-neutral-600"
+              className="rounded-md border border-teal-500 bg-teal-600 px-6 py-3 font-semibold text-white hover:bg-teal-500"
             >
               Start Without Shuffle
             </button>

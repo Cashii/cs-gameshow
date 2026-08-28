@@ -245,7 +245,7 @@ export function FeudHostPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-neutral-800 bg-neutral-900/90 px-6 py-3">
+      <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
             Game actions
@@ -253,7 +253,7 @@ export function FeudHostPanel() {
           <button
             type="button"
             onClick={resetRound}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-500 bg-neutral-600 px-4 text-sm font-semibold text-white hover:bg-neutral-500"
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
           >
             <RotateCcw size={16} /> Reset Round
           </button>

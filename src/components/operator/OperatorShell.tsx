@@ -82,6 +82,25 @@ const GAME_ICONS: Record<ActiveGame, LucideIcon> = {
   messageBoard: Megaphone,
 };
 
+const CARD_ICON: Record<Exclude<ActiveGame, "idle">, string> = {
+  feud: "bg-[#2563eb] text-white",
+  wheel: "bg-emerald-500 text-white",
+  liveDrawer: "bg-sky-500 text-white",
+  takeIt: "bg-red-500 text-white",
+  derby: "bg-lime-600 text-white",
+  jeoparody: "bg-violet-500 text-white",
+  trivia: "bg-cyan-500 text-white",
+  priceGuesser: "bg-amber-500 text-white",
+  priceOrder: "bg-teal-500 text-white",
+  poll: "bg-orange-500 text-white",
+  messageBoard: "bg-fuchsia-500 text-white",
+};
+
+const NAV_ACTIVE: Record<ActiveGame, string> = {
+  idle: "bg-teal-600 text-white",
+  ...CARD_ICON,
+};
+
 const GAME_DESCRIPTIONS: Record<Exclude<ActiveGame, "idle">, string> = {
   feud: "Reveal survey answers, track strikes, and run each round.",
   wheel: "Set a phrase and reveal letters on the spectator board.",
@@ -106,7 +125,7 @@ function BetaTag({ compact, inverted }: Readonly<{ compact?: boolean; inverted?:
       } ${
         inverted
           ? "bg-white/20 text-white"
-          : "bg-amber-500/15 text-amber-400"
+          : "bg-amber-500/15 text-amber-600"
       }`}
     >
       Beta
@@ -146,7 +165,7 @@ function NavItem({
         collapsed ? "justify-center px-2" : "gap-2.5 px-2.5"
       } ${
         active
-          ? "bg-blue-600 text-white shadow-sm"
+          ? `${NAV_ACTIVE[game]} shadow-sm`
           : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
       }`}
     >
@@ -156,7 +175,7 @@ function NavItem({
           <span
             className={`absolute -top-0.5 -right-0.5 h-2 w-2 animate-pulse rounded-full ${
               active ? "bg-emerald-300" : "bg-emerald-400"
-            } ring-2 ${active ? "ring-blue-600" : "ring-neutral-900"}`}
+            } ring-2 ${active ? "ring-white/40" : "ring-neutral-900"}`}
             aria-hidden
           />
         )}
@@ -215,7 +234,7 @@ function SpectatorNavItem({
       aria-current={active ? "true" : undefined}
       className={`flex w-full flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-left font-normal transition-colors ${
         active
-          ? "bg-blue-600 text-white shadow-sm"
+          ? `${NAV_ACTIVE[screen]} shadow-sm`
           : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
       }`}
     >
@@ -309,21 +328,24 @@ function OperatorContent() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-neutral-950 text-neutral-100">
+    <div className="flex h-screen bg-transparent text-neutral-100">
       <aside
-        className={`flex shrink-0 flex-col border-r border-neutral-800 bg-neutral-900 transition-[width] duration-200 ${
-          sidebarCollapsed ? "w-12" : "w-52"
+        className={`flex shrink-0 flex-col overflow-visible border-r border-neutral-800 bg-neutral-900 transition-[width] duration-200 ${
+          sidebarCollapsed ? "w-12" : "w-60"
         }`}
       >
         <div
-          className={`flex min-h-16 items-center border-b border-neutral-800 ${
+          className={`flex items-center overflow-visible border-b border-neutral-800 ${
             sidebarCollapsed
-              ? "justify-center px-1.5"
-              : "justify-between gap-2 px-3 py-2"
+              ? "min-h-16 justify-center px-1.5"
+              : "min-h-16 justify-between gap-1.5 px-3 py-3"
           }`}
         >
           {!sidebarCollapsed && (
-            <p className="font-gameshow min-w-0 truncate text-xl font-bold leading-tight tracking-wide text-white">
+            <p
+              className="min-w-0 whitespace-nowrap py-1.5 text-[1.2rem] leading-none text-teal-600"
+              style={{ fontFamily: "var(--font-pacifico), cursive" }}
+            >
               Cash&apos;s Gameshow
             </p>
           )}
@@ -422,7 +444,7 @@ function OperatorContent() {
                     saveSuiteJson();
                     setSettingsOpen(false);
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-neutral-200 hover:bg-neutral-800"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-neutral-100 hover:bg-neutral-800"
                 >
                   <Download size={16} className="shrink-0" />
                   Save
@@ -434,7 +456,7 @@ function OperatorContent() {
                     loadInputRef.current?.click();
                     setSettingsOpen(false);
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-neutral-200 hover:bg-neutral-800"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-neutral-100 hover:bg-neutral-800"
                 >
                   <Upload size={16} className="shrink-0" />
                   Load
@@ -446,7 +468,7 @@ function OperatorContent() {
                     openHostess();
                     setSettingsOpen(false);
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-violet-100 hover:bg-violet-600/30"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-violet-700 hover:bg-violet-100"
                 >
                   <UserRound size={16} className="shrink-0" />
                   Open Hostess
@@ -458,7 +480,7 @@ function OperatorContent() {
                     openPlayer();
                     setSettingsOpen(false);
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-emerald-100 hover:bg-emerald-600/30"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-emerald-700 hover:bg-emerald-100"
                 >
                   <Smartphone size={16} className="shrink-0" />
                   Open Player
@@ -470,7 +492,7 @@ function OperatorContent() {
                     setShowPinSettings(true);
                     setSettingsOpen(false);
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-neutral-200 hover:bg-neutral-800"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-neutral-100 hover:bg-neutral-800"
                 >
                   <KeyRound size={16} className="shrink-0" />
                   PIN Settings
@@ -492,8 +514,8 @@ function OperatorContent() {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-neutral-800 bg-neutral-900/80 px-6 py-3">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
           <div>
             <h1 className="text-lg font-bold text-white">
               {ACTIVE_GAME_LABELS[state.activeGame]}
@@ -519,7 +541,10 @@ function OperatorContent() {
           {state.activeGame === "idle" && (
             <div className="@container mx-auto w-full max-w-6xl overflow-auto px-6 py-6">
               <div className="mb-6">
-                <h2 className="font-gameshow text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                <h2
+                  className="text-3xl tracking-tight text-teal-700 sm:text-4xl"
+                  style={{ fontFamily: "var(--font-pacifico), cursive" }}
+                >
                   Welcome to Cash&apos;s Gameshow App
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm text-neutral-400">
@@ -550,10 +575,12 @@ function OperatorContent() {
                       key={game}
                       type="button"
                       onClick={() => setActiveGame(game)}
-                      className="group flex h-full flex-col rounded-xl border border-neutral-800 bg-neutral-900 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-blue-500/70 hover:bg-neutral-800"
+                      className="group flex h-full flex-col rounded-2xl border border-neutral-700 bg-neutral-900 p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-teal-400 hover:shadow-md"
                     >
                       <span className="flex items-center gap-3">
-                        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600/15 text-blue-400 group-hover:bg-blue-600 group-hover:text-white">
+                        <span
+                          className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${CARD_ICON[game]}`}
+                        >
                           <Icon size={20} aria-hidden />
                         </span>
                         <span className="flex min-w-0 items-center gap-2 text-base font-bold text-white">
@@ -570,7 +597,7 @@ function OperatorContent() {
                       <span className="mt-2 flex-1 text-sm leading-snug text-neutral-400">
                         {GAME_DESCRIPTIONS[game]}
                       </span>
-                      <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-blue-400">
+                      <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-teal-600">
                         Open
                         <ChevronRight size={16} />
                       </span>
@@ -606,7 +633,7 @@ function OperatorContent() {
         </main>
       </div>
 
-      <aside className="flex w-20 shrink-0 flex-col border-l border-neutral-800 bg-neutral-900">
+      <aside className="flex h-full min-h-0 w-20 shrink-0 flex-col overflow-hidden border-l border-neutral-800 bg-neutral-900">
         <nav className="flex flex-1 flex-col gap-0.5 overflow-auto p-2">
           {SPECTATOR_SCREENS.map((screen) => (
             <SpectatorNavItem

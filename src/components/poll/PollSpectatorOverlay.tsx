@@ -12,9 +12,9 @@ export function PollSpectatorOverlay({
   const live = poll.status === "open";
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col bg-neutral-950 px-8 py-6 sm:px-16 sm:py-8">
+    <div className="studio-ui flex h-full min-h-0 w-full flex-col px-8 py-6 sm:px-16 sm:py-8">
       <div className="shrink-0 text-center">
-        <p className="text-sm font-semibold tracking-[0.28em] text-sky-400 uppercase sm:text-base">
+        <p className="text-sm font-semibold tracking-[0.28em] text-teal-600 uppercase sm:text-base">
           {live ? "Live results" : "Poll results"}
         </p>
         <h1
@@ -54,9 +54,9 @@ export function PollSpectatorOverlay({
                   {pct}%
                 </span>
               </div>
-              <div className="h-5 overflow-hidden rounded-full bg-white/10 sm:h-7">
+              <div className="h-5 overflow-hidden rounded-full bg-neutral-800 sm:h-7">
                 <div
-                  className="h-full rounded-full bg-sky-500 transition-all duration-500 ease-out"
+                  className="h-full rounded-full bg-teal-500 transition-all duration-500 ease-out"
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -66,7 +66,7 @@ export function PollSpectatorOverlay({
       </ul>
 
       {live && (
-        <div className="mx-auto mt-4 min-h-0 w-full min-w-0 flex-1">
+        <div className="mx-auto mt-10 min-h-0 w-full min-w-0 flex-1 pt-2">
           <PlayerVoteQr />
         </div>
       )}

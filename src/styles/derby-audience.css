@@ -437,6 +437,7 @@
 }
 
 .derby-audience.theme-wonderbar .derby-track {
+  overflow: visible;
   border-color: #f5d0fe;
   background:
     repeating-linear-gradient(
@@ -553,8 +554,18 @@
   overflow: visible;
 }
 
+.derby-audience.theme-wonderbar .derby-track-wrap {
+  overflow: visible;
+}
+
+.derby-audience.theme-wonderbar.is-finished {
+  overflow: visible;
+}
+
 .derby-audience.theme-wonderbar .derby-horse.is-winner {
   z-index: 7;
+  transform-origin: 18% 82%;
+  transform: rotate(-55deg);
   filter:
     drop-shadow(0 0 14px rgba(255, 255, 255, 0.55))
     drop-shadow(0 0 10px rgba(244, 114, 182, 0.45));
@@ -567,35 +578,124 @@
   overflow: visible;
 }
 
-.derby-toy-spray {
-  display: none;
+.derby-toy-gush {
+  position: absolute;
+  left: 92.5%;
+  top: 48%;
+  z-index: 3;
+  width: 0;
+  height: 0;
   pointer-events: none;
 }
 
-.derby-toy.is-winner .derby-toy-spray {
-  display: inline;
+.derby-racer-blue .derby-toy-gush {
+  left: 97.5%;
+  top: 30.5%;
 }
 
-.derby-toy-spray-burst {
-  transform-origin: center;
-  transform-box: fill-box;
-  animation: derby-toy-burst 0.55s ease-in-out infinite;
+.derby-racer-green .derby-toy-gush {
+  left: 95.5%;
+  top: 50%;
 }
 
-.derby-toy-spray-stream {
-  transform-origin: 0% 50%;
-  transform-box: fill-box;
-  animation: derby-toy-stream 0.55s ease-in-out infinite;
+.derby-racer-yellow .derby-toy-gush {
+  left: 97%;
+  top: 49%;
 }
 
-.derby-toy-spray-stream-late {
-  animation-delay: 0.18s;
+.derby-toy-gush-splotch {
+  position: absolute;
+  background: #fff;
+  --splotch-rot: 0deg;
+  animation: derby-toy-splotch 0.7s ease-in-out infinite;
 }
 
-.derby-audience.theme-wonderbar.is-finished .derby-horse.is-winner .derby-toy-figure {
-  animation: derby-winner-throb 0.7s ease-in-out infinite;
-  transform-origin: 50% 50%;
-  transform-box: fill-box;
+.derby-toy-gush-splotch-a {
+  left: -0.7rem;
+  top: -0.55rem;
+  width: calc(1.45rem * var(--derby-racer-scale));
+  height: calc(1.15rem * var(--derby-racer-scale));
+  border-radius: 68% 32% 58% 42% / 44% 62% 38% 56%;
+  --splotch-rot: -18deg;
+}
+
+.derby-toy-gush-splotch-b {
+  left: -0.2rem;
+  top: -0.7rem;
+  width: calc(1.05rem * var(--derby-racer-scale));
+  height: calc(1.25rem * var(--derby-racer-scale));
+  border-radius: 40% 60% 72% 28% / 58% 34% 66% 42%;
+  --splotch-rot: 12deg;
+  animation-delay: 0.12s;
+}
+
+.derby-toy-gush-drop {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(0.72rem * var(--derby-racer-scale) * var(--gush-s, 1));
+  height: calc(0.58rem * var(--derby-racer-scale) * var(--gush-s, 1));
+  border-radius: var(--gush-rad, 60% 40% 55% 45% / 45% 55% 40% 60%);
+  background: #fff;
+  opacity: 0;
+  box-shadow: 0.22em -0.14em 0 -0.04em #fff;
+  animation: derby-toy-gush-drop var(--gush-dur, 0.7s) ease-out infinite;
+  animation-delay: var(--gush-delay, 0s);
+}
+
+@keyframes derby-toy-gush-drop {
+  0% {
+    transform: translate(var(--gush-ox, 0), var(--gush-oy, 0))
+      rotate(var(--gush-rot, 0deg)) scale(0.55);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  58% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--gush-x), var(--gush-y))
+      rotate(calc(var(--gush-rot, 0deg) + 28deg)) scale(0.95);
+    opacity: 0;
+  }
+}
+
+@keyframes derby-toy-splotch {
+  0%,
+  100% {
+    transform: rotate(var(--splotch-rot, 0deg)) scale(0.92);
+  }
+  40% {
+    transform: rotate(var(--splotch-rot, 0deg)) scale(1.08);
+  }
+  70% {
+    transform: rotate(var(--splotch-rot, 0deg)) scale(0.98);
+  }
+}
+
+@keyframes derby-toy-gush-drop {
+  0% {
+    transform: translate(0, 0) rotate(var(--gush-rot, 0deg)) scale(0.45);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  62% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--gush-x), var(--gush-y))
+      rotate(calc(var(--gush-rot, 0deg) + 28deg)) scale(1.05);
+    opacity: 0;
+  }
+}
+
+.derby-audience.theme-wonderbar.is-finished .derby-horse.is-winner .derby-toy {
+  animation: derby-winner-throb 0.85s ease-in-out infinite;
+  transform-origin: 18% 78%;
 }
 
 .derby-toy-buzz-marks {
@@ -777,16 +877,16 @@
 @keyframes derby-toy-stream {
   0%,
   100% {
-    transform: scaleX(0.4) scaleY(0.75);
-    opacity: 0.65;
+    transform: scaleX(0.72) scaleY(0.85);
+    opacity: 0.8;
   }
   28% {
-    transform: scaleX(1.18) scaleY(1.2);
+    transform: scaleX(1.28) scaleY(1.25);
     opacity: 1;
   }
   62% {
-    transform: scaleX(0.82) scaleY(0.95);
-    opacity: 0.85;
+    transform: scaleX(0.94) scaleY(1.05);
+    opacity: 0.92;
   }
 }
 
@@ -808,7 +908,7 @@
     transform: scale(1);
   }
   50% {
-    transform: scale(1.04);
+    transform: scale(1.07);
   }
 }
 
@@ -834,25 +934,25 @@
   .derby-audience.theme-wonderbar.is-racing .derby-toy-buzz-marks,
   .derby-audience.theme-wonderbar.is-racing .derby-toy-buzz-line,
   .derby-audience.theme-wonderbar.is-racing .derby-toy-led,
-  .derby-audience.theme-wonderbar.is-finished .derby-horse.is-winner .derby-toy-figure {
+  .derby-audience.theme-wonderbar.is-finished .derby-horse.is-winner .derby-toy {
     animation: none;
   }
 
-  .derby-toy-spray-burst,
-  .derby-toy-spray-stream {
+  .derby-toy-gush-splotch,
+  .derby-toy-gush-core {
     animation: none;
   }
 
-  .derby-toy-spray-stream {
-    transform: scaleX(0.7);
-    opacity: 0.8;
-  }
-
-  .derby-toy-spray-drop {
+  .derby-toy-spray-drop,
+  .derby-toy-gush-drop {
     display: none;
   }
 
   .derby-audience.theme-wonderbar .derby-horse {
     transform: rotate(-6deg);
+  }
+
+  .derby-audience.theme-wonderbar .derby-horse.is-winner {
+    transform: rotate(-55deg);
   }
 }

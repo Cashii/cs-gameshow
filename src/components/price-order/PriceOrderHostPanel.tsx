@@ -33,6 +33,7 @@ import { deleteMediaByUrl } from "@/lib/media/upload";
 import { SquarePhotoEditor } from "@/components/price/SquarePhotoEditor";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { OperatorNotice } from "@/components/operator/OperatorNotice";
 
 export function PriceOrderHostPanel() {
   const { state, updatePriceOrder } = useSuite();
@@ -156,7 +157,7 @@ export function PriceOrderHostPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-neutral-800 bg-neutral-900/90 px-6 py-3">
+      <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
             Game actions
@@ -173,7 +174,7 @@ export function PriceOrderHostPanel() {
             type="button"
             disabled={ordered.length === 0}
             onClick={() => revealAll(false)}
-            className="inline-flex h-10 items-center rounded-md border border-neutral-500 bg-neutral-600 px-4 text-sm font-semibold text-white hover:bg-neutral-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Hide all prices
           </button>
@@ -181,7 +182,7 @@ export function PriceOrderHostPanel() {
             type="button"
             disabled={ordered.length === 0}
             onClick={clearOrder}
-            className="inline-flex h-10 items-center rounded-md border border-neutral-500 bg-neutral-600 px-4 text-sm font-semibold text-white hover:bg-neutral-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Clear list
           </button>
@@ -198,10 +199,10 @@ export function PriceOrderHostPanel() {
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex w-full flex-col gap-6 px-6 py-6">
           {!spectatorLive && (
-            <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            <OperatorNotice>
               Spectator is not on Price Order. Use the Spectator screen list so
               the projector shows the items.
-            </p>
+            </OperatorNotice>
           )}
 
           <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)]">
@@ -353,7 +354,7 @@ export function PriceOrderHostPanel() {
                   type="button"
                   disabled={!canAdd}
                   onClick={addItem}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-600 px-3 py-1.5 text-sm font-semibold text-neutral-200 hover:bg-neutral-800 disabled:opacity-40"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
                 >
                   <Plus size={14} />
                   Add item

@@ -429,7 +429,7 @@ export function LiveDrawerHostPanel() {
                     }
                   }}
                   placeholder="1-10"
-                  className="mt-2 h-20 w-full rounded-lg border-2 border-neutral-600 bg-neutral-700 px-4 text-4xl font-bold tabular-nums text-white placeholder:text-2xl placeholder:font-normal placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none"
+                  className="mt-2 h-20 w-full rounded-lg border-2 border-neutral-600 bg-neutral-700 px-4 text-4xl font-bold tabular-nums text-white placeholder:text-2xl placeholder:font-normal placeholder:text-neutral-500 focus:border-teal-500 focus:outline-none"
                 />
                 <p className="mt-1.5 text-xs text-neutral-400">
                   One number, a comma list, or a range like 1-10. All use the
@@ -455,7 +455,7 @@ export function LiveDrawerHostPanel() {
                   type="button"
                   onClick={handleAddToken}
                   disabled={loading || !addNumber.trim()}
-                  className="mt-3 w-full rounded-md bg-sky-600 py-3 text-base font-semibold text-white"
+                  className="mt-3 w-full rounded-md bg-teal-600 py-3 text-base font-semibold text-white"
                 >
                   Add to pool
                 </button>
@@ -470,7 +470,7 @@ export function LiveDrawerHostPanel() {
                       type="button"
                       disabled={loading}
                       onClick={() => runAction({ action: "clear" })}
-                      className="inline-flex h-10 shrink-0 items-center rounded-md border border-neutral-500 bg-neutral-600 px-4 text-sm font-semibold text-white hover:bg-neutral-500 disabled:opacity-50"
+                      className="inline-flex h-10 shrink-0 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
                     >
                       Clear display
                     </button>
@@ -574,7 +574,7 @@ export function LiveDrawerHostPanel() {
                       type="button"
                       disabled={loading || drawTotal === 0}
                       onClick={handleRandomDraw}
-                      className="rounded-md bg-sky-600 px-4 py-2 font-semibold text-white hover:bg-sky-500 disabled:opacity-40"
+                      className="rounded-md bg-teal-600 px-4 py-2 font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
                     >
                       Draw random
                     </button>
@@ -603,7 +603,7 @@ export function LiveDrawerHostPanel() {
                       onClick={() => setListTab("pool")}
                       className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
                         listTab === "pool"
-                          ? "bg-neutral-600 text-white"
+                          ? "bg-teal-600 text-white"
                           : "text-neutral-400 hover:text-white"
                       }`}
                     >
@@ -614,7 +614,7 @@ export function LiveDrawerHostPanel() {
                       onClick={() => setListTab("called")}
                       className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
                         listTab === "called"
-                          ? "bg-neutral-600 text-white"
+                          ? "bg-teal-600 text-white"
                           : "text-neutral-400 hover:text-white"
                       }`}
                     >
@@ -666,7 +666,7 @@ export function LiveDrawerHostPanel() {
                         type="button"
                         disabled={loading || calledTokens.length === 0}
                         onClick={() => setReturnCalledOpen(true)}
-                        className="inline-flex h-8 items-center rounded-md border border-neutral-500 bg-neutral-700 px-3 text-sm font-semibold text-white hover:bg-neutral-600 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex h-8 items-center rounded-md border border-teal-500 bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         Return to pool
                       </button>

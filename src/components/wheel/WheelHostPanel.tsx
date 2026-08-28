@@ -52,17 +52,14 @@ const PHRASE_CELL_CLASS =
   "flex h-[1.35em] w-[1.2em] items-center justify-center font-mono text-xl leading-none font-semibold select-none sm:text-2xl";
 
 function letterTextClass(matchHover: boolean, alreadyRevealed: boolean): string {
-  if (matchHover) return "text-amber-400";
-  if (alreadyRevealed) return "text-emerald-300";
+  if (matchHover) return "text-amber-600";
+  if (alreadyRevealed) return "text-green-600";
   return "text-white";
 }
 
-function letterControlClass(missed: boolean, disabled: boolean): string {
+function letterControlClass(disabled: boolean): string {
   const base =
     "flex h-16 w-16 items-center justify-center rounded-lg text-2xl font-bold transition-colors sm:h-20 sm:w-20 sm:text-3xl";
-  if (missed) {
-    return `${base} cursor-not-allowed border border-red-500 bg-red-700 text-white`;
-  }
   if (disabled) {
     return `${base} cursor-not-allowed border border-neutral-600 bg-neutral-700 text-neutral-500`;
   }
@@ -141,9 +138,9 @@ function PhraseRevealRow({
       <p className="mt-4 mb-2 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
         Board summary
       </p>
-      <p className={`${PHRASE_ROW_CLASS} text-emerald-300`} aria-live="polite">
+      <p className={`${PHRASE_ROW_CLASS} text-green-600`} aria-live="polite">
         {summaryChars.map((char, index) => (
-          <span key={`b-${index}`} className={`${PHRASE_CELL_CLASS} text-emerald-300`}>
+          <span key={`b-${index}`} className={`${PHRASE_CELL_CLASS} text-green-600`}>
             {char === " " ? "\u00a0" : char}
           </span>
         ))}
@@ -212,7 +209,7 @@ export function WheelHostPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-neutral-800 bg-neutral-900/90 px-6 py-3">
+      <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
         <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
@@ -304,7 +301,7 @@ export function WheelHostPanel() {
               <button
                 type="button"
                 onClick={() => updateWheel((prev) => ({ ...prev, zoom: 1 }))}
-                className="ml-1 inline-flex h-10 items-center rounded-md border border-neutral-500 bg-neutral-600 px-3 text-sm font-semibold text-white hover:bg-neutral-700"
+                className="ml-1 inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-500"
               >
                 Reset
               </button>
@@ -323,7 +320,7 @@ export function WheelHostPanel() {
                   <button
                     type="button"
                     onClick={handleStartChange}
-                    className="inline-flex h-10 items-center rounded-md border border-neutral-500 bg-neutral-600 px-4 text-sm font-semibold text-white hover:bg-neutral-500"
+                    className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
                   >
                     Change
                   </button>
@@ -403,9 +400,6 @@ export function WheelHostPanel() {
               <h2 className="mb-4 text-xl font-bold text-white">Letter Controls</h2>
               <div className="flex flex-wrap gap-3">
                 {ALPHABET.map((letter) => {
-                  const guessed = isLetterGuessed(letter);
-                  const missed =
-                    guessed && !phraseHasLetter(wheel.phrase, letter);
                   const disabled = isLetterRevealed(letter) || !wheel.phrase;
                   return (
                     <button
@@ -413,7 +407,7 @@ export function WheelHostPanel() {
                       type="button"
                       onClick={() => handleRevealLetter(letter)}
                       disabled={disabled}
-                      className={letterControlClass(missed, disabled)}
+                      className={letterControlClass(disabled)}
                     >
                       {letter}
                     </button>

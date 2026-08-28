@@ -36,7 +36,7 @@ export const DERBY_THEME_OPTIONS: { value: DerbyTheme; label: string }[] = [
 export const DERBY_DURATION_MS = 20_000;
 export const DEFAULT_DERBY_RACER_SCALE = 1;
 export const MIN_DERBY_RACER_SCALE = 0.6;
-export const MAX_DERBY_RACER_SCALE = 1.8;
+export const MAX_DERBY_RACER_SCALE = 2.5;
 
 export type DerbyGameState = {
   phase: DerbyPhase;

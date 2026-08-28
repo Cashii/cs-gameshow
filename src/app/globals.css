@@ -51,6 +51,127 @@ body {
   font-size: 16px;
 }
 
+/* Light studio theme: operator + player. Hostess and spectator stay dark. */
+.studio-ui,
+html.studio-ui {
+  --studio-ink: #16324a;
+  --color-white: var(--studio-ink);
+  --color-neutral-950: #f7f8f6;
+  --color-neutral-900: #ffffff;
+  --color-neutral-800: #e7eef0;
+  --color-neutral-700: #c5d3d8;
+  --color-neutral-600: #8a9aa3;
+  --color-neutral-500: #5c6e78;
+  --color-neutral-400: #3d4f59;
+  --color-neutral-300: #2a3a44;
+  --color-neutral-200: #1c2a32;
+  --color-neutral-100: #142028;
+  --color-neutral-50: #0b1418;
+  --color-sky-400: #22d3ee;
+  --color-sky-500: #06b6d4;
+  --color-sky-600: #0891b2;
+  --color-teal-400: #2dd4bf;
+  --color-teal-500: #14b8a6;
+  --color-teal-600: #0d9488;
+  --color-blue-400: #2dd4bf;
+  --color-blue-500: #14b8a6;
+  --color-blue-600: #0d9488;
+  --color-blue-700: #0f766e;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-amber-300: #fbbf24;
+  --color-amber-400: #f59e0b;
+  --color-amber-500: #f59e0b;
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-lime-400: #a3e635;
+  --color-lime-500: #84cc16;
+  --background: #f7f8f6;
+  --foreground: #16324a;
+  color: var(--studio-ink);
+  background-color: #f7f8f6;
+  background-image:
+    radial-gradient(ellipse 48% 38% at 0% 0%, rgb(20 184 166 / 0.22) 0%, transparent 70%),
+    radial-gradient(ellipse 42% 36% at 100% 0%, rgb(14 165 233 / 0.2) 0%, transparent 68%),
+    radial-gradient(ellipse 40% 34% at 100% 100%, rgb(245 158 11 / 0.2) 0%, transparent 65%),
+    radial-gradient(ellipse 36% 30% at 0% 100%, rgb(124 58 237 / 0.16) 0%, transparent 62%);
+  background-attachment: fixed;
+}
+
+html.studio-ui body {
+  background: transparent;
+  color: var(--studio-ink);
+}
+
+.studio-ui .bg-white {
+  background-color: #fff;
+}
+
+.studio-ui :is(
+  .bg-sky-600,
+  .bg-sky-500,
+  .bg-sky-400,
+  .bg-blue-600,
+  .bg-blue-500,
+  .bg-blue-400,
+  .bg-blue-700,
+  .bg-emerald-600,
+  .bg-emerald-500,
+  .bg-emerald-400,
+  .bg-violet-600,
+  .bg-violet-500,
+  .bg-fuchsia-600,
+  .bg-fuchsia-500,
+  .bg-pink-600,
+  .bg-pink-500,
+  .bg-red-600,
+  .bg-red-500,
+  .bg-red-400,
+  .bg-amber-600,
+  .bg-amber-500,
+  .bg-amber-400,
+  .bg-orange-600,
+  .bg-orange-500,
+  .bg-green-600,
+  .bg-green-500,
+  .bg-teal-600,
+  .bg-teal-500,
+  .bg-cyan-600,
+  .bg-cyan-500,
+  .bg-lime-600,
+  .bg-lime-500,
+  .bg-indigo-600,
+  .bg-indigo-500,
+  .bg-\[\#2563eb\],
+  .bg-\[\#0b2a6b\],
+  .bg-\[\#123a8c\],
+  .bg-\[\#071a44\],
+  .bg-\[\#1a4bb5\],
+  .bg-rose-600,
+  .bg-rose-500
+) {
+  --color-white: #fff;
+}
+
+.studio-ui [style*="background-color"],
+.studio-ui [style*="backgroundColor"] {
+  --color-white: #fff;
+}
+
+html.studio-ui,
+html.studio-ui * {
+  scrollbar-color: rgb(13 148 136 / 0.35) transparent;
+}
+
+html.studio-ui *::-webkit-scrollbar-thumb {
+  background: rgb(13 148 136 / 0.32);
+}
+
+html.studio-ui *::-webkit-scrollbar-thumb:hover {
+  background: rgb(13 148 136 / 0.48);
+}
+
 .operator-ui :where(.text-sm) {
   font-size: 1rem;
 }

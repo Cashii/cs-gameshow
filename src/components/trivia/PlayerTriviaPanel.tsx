@@ -66,9 +66,9 @@ export function PlayerTriviaPanel({
 
   if (trivia.status === "open" && me?.canVote) {
     return (
-      <div className="flex h-full w-full flex-col overflow-auto bg-neutral-950 px-4 py-8">
+    <div className="flex h-full w-full flex-col overflow-auto bg-transparent px-4 py-8">
         <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center text-center">
-          <p className="text-sm font-semibold tracking-[0.2em] text-sky-400 uppercase">
+          <p className="text-sm font-semibold tracking-[0.2em] text-teal-600 uppercase">
             Question {trivia.roundIndex || 1}
           </p>
           <h1 className="mt-2 text-2xl font-bold text-white sm:text-3xl">
@@ -79,7 +79,7 @@ export function PlayerTriviaPanel({
               type="button"
               disabled={loading}
               onClick={() => onVote("a")}
-              className="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-5 text-xl font-semibold text-white hover:border-sky-500 hover:bg-neutral-800 disabled:opacity-50"
+              className="w-full rounded-2xl border-2 border-orange-300 bg-orange-100 px-4 py-5 text-xl font-semibold text-orange-950 hover:bg-orange-200 disabled:opacity-50"
             >
               {trivia.optionA}
             </button>
@@ -87,7 +87,7 @@ export function PlayerTriviaPanel({
               type="button"
               disabled={loading}
               onClick={() => onVote("b")}
-              className="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-5 text-xl font-semibold text-white hover:border-sky-500 hover:bg-neutral-800 disabled:opacity-50"
+              className="w-full rounded-2xl border-2 border-sky-300 bg-sky-100 px-4 py-5 text-xl font-semibold text-sky-950 hover:bg-sky-200 disabled:opacity-50"
             >
               {trivia.optionB}
             </button>
@@ -165,13 +165,15 @@ function StatusScreen({
 }) {
   const titleColor =
     tone === "out"
-      ? "text-red-400"
+      ? "text-rose-600"
       : tone === "win"
-        ? "text-amber-300"
-        : "text-white";
+        ? "text-amber-500"
+        : tone === "miss"
+          ? "text-violet-600"
+          : "text-teal-600";
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center bg-neutral-950 px-4 text-center">
-      <p className="text-sm font-semibold tracking-[0.2em] text-sky-400 uppercase">
+    <div className="flex h-full w-full flex-col items-center justify-center bg-transparent px-4 text-center">
+      <p className="text-sm font-semibold tracking-[0.2em] text-teal-600 uppercase">
         {eyebrow}
       </p>
       <h1 className={`mt-3 text-4xl font-bold sm:text-5xl ${titleColor}`}>

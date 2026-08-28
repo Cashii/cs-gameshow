@@ -18,6 +18,7 @@ import {
   type DerbyTheme,
 } from "@/lib/derby/types";
 import { Select } from "@/components/ui/Select";
+import { OperatorNotice } from "@/components/operator/OperatorNotice";
 
 function newRaceId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -113,10 +114,10 @@ export function DerbyHostPanel() {
         </div>
 
         {!spectatorShowingDerby && (
-          <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          <OperatorNotice>
             Spectator is not on Derby Race. Use the Spectator screen dropdown so
             the projector shows the race.
-          </p>
+          </OperatorNotice>
         )}
 
         <div>
@@ -248,7 +249,7 @@ export function DerbyHostPanel() {
           <button
             type="button"
             onClick={reset}
-            className="rounded-lg border border-neutral-600 px-5 py-2.5 text-sm font-semibold text-neutral-200 hover:bg-neutral-800"
+            className="rounded-lg border border-teal-500 bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-500"
           >
             Reset
           </button>

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { DerbyRacer, DerbyRacerId } from "@/lib/derby/types";
 
 function ToyPaint({ id, racer }: Readonly<{ id: string; racer: DerbyRacer }>) {
@@ -18,11 +18,6 @@ function ToyPaint({ id, racer }: Readonly<{ id: string; racer: DerbyRacer }>) {
         <stop offset="0%" stopColor="#fff" stopOpacity="0.38" />
         <stop offset="48%" stopColor={racer.hex} />
         <stop offset="100%" stopColor={racer.hexDark} />
-      </radialGradient>
-      <radialGradient id={`${id}-spray`} cx="30%" cy="28%" r="72%">
-        <stop offset="0%" stopColor="#ffffff" />
-        <stop offset="52%" stopColor="#f6f0e2" />
-        <stop offset="100%" stopColor="#e4d3b4" />
       </radialGradient>
     </defs>
   );
@@ -437,106 +432,31 @@ const TOY_SHAPES: Record<
   yellow: ThickToy,
 };
 
-const SPRAY_ORIGIN: Record<
-  DerbyRacerId,
-  { x: number; y: number; rotate: number }
-> = {
-  red: { x: 270, y: 82, rotate: 6 },
-  blue: { x: 283, y: 38, rotate: -28 },
-  green: { x: 279, y: 86, rotate: 4 },
-  yellow: { x: 288, y: 84, rotate: 7 },
-};
-
-const SPRAY_DROPS = [
-  { dx: 36, dy: -2, rx: 5, ry: 6, delay: 0, dur: 0.58 },
-  { dx: 58, dy: -14, rx: 7, ry: 9, delay: 0.05, dur: 0.7 },
-  { dx: 74, dy: 4, rx: 9, ry: 11, delay: 0.08, dur: 0.76 },
-  { dx: 92, dy: -8, rx: 11, ry: 13, delay: 0.02, dur: 0.84 },
-  { dx: 48, dy: 12, rx: 6, ry: 7, delay: 0.14, dur: 0.62 },
-  { dx: 80, dy: -22, rx: 8, ry: 10, delay: 0.11, dur: 0.78 },
-  { dx: 86, dy: 16, rx: 9, ry: 10, delay: 0.18, dur: 0.72 },
-  { dx: 42, dy: -10, rx: 4, ry: 5, delay: 0.22, dur: 0.5 },
-  { dx: 104, dy: 2, rx: 10, ry: 12, delay: 0.09, dur: 0.9 },
-  { dx: 64, dy: 20, rx: 6, ry: 8, delay: 0.2, dur: 0.66 },
-  { dx: 70, dy: -1, rx: 5, ry: 6, delay: 0.28, dur: 0.6 },
-  { dx: 96, dy: -16, rx: 7, ry: 9, delay: 0.16, dur: 0.8 },
+const GUSH_SPLOTCHES = [
+  { className: "derby-toy-gush-splotch-a" },
+  { className: "derby-toy-gush-splotch-b" },
 ] as const;
 
-function WinnerSpray({
-  id,
-  racerId,
-}: Readonly<{ id: string; racerId: DerbyRacerId }>) {
-  const origin = SPRAY_ORIGIN[racerId];
-
-  return (
-    <g
-      className="derby-toy-spray"
-      transform={`translate(${origin.x} ${origin.y}) rotate(${origin.rotate})`}
-    >
-      <ellipse
-        className="derby-toy-spray-burst"
-        cx="6"
-        cy="0"
-        rx="8"
-        ry="7"
-        fill={`url(#${id}-spray)`}
-      />
-      <ellipse
-        className="derby-toy-spray-stream"
-        cx="34"
-        cy="0"
-        rx="34"
-        ry="7"
-        fill={`url(#${id}-spray)`}
-      />
-      <ellipse
-        className="derby-toy-spray-stream derby-toy-spray-stream-late"
-        cx="48"
-        cy="1"
-        rx="42"
-        ry="5"
-        fill={`url(#${id}-spray)`}
-        opacity="0.78"
-      />
-      {SPRAY_DROPS.map((drop) => (
-        <ellipse
-          key={`${drop.dx}-${drop.dy}-${drop.delay}`}
-          className="derby-toy-spray-drop"
-          cx="0"
-          cy="0"
-          rx={drop.rx}
-          ry={drop.ry}
-          fill={`url(#${id}-spray)`}
-        >
-          <animate
-            attributeName="cx"
-            from="0"
-            to={drop.dx}
-            dur={`${drop.dur}s`}
-            begin={`${drop.delay}s`}
-            repeatCount="indefinite"
-          />
-          <animate
-            attributeName="cy"
-            from="0"
-            to={drop.dy}
-            dur={`${drop.dur}s`}
-            begin={`${drop.delay}s`}
-            repeatCount="indefinite"
-          />
-          <animate
-            attributeName="opacity"
-            values="0;1;1;0"
-            keyTimes="0;0.1;0.55;1"
-            dur={`${drop.dur}s`}
-            begin={`${drop.delay}s`}
-            repeatCount="indefinite"
-          />
-        </ellipse>
-      ))}
-    </g>
-  );
-}
+const GUSH_DROPS = [
+  { ox: "0.35rem", oy: "-0.45rem", x: "1.7rem", y: "-1.4rem", s: 1.05, rot: "-22deg", delay: "0s", dur: "0.62s", rad: "72% 28% 64% 36% / 42% 58% 34% 66%" },
+  { ox: "0.7rem", oy: "0.25rem", x: "2.9rem", y: "1.1rem", s: 1.35, rot: "18deg", delay: "0.05s", dur: "0.74s", rad: "38% 62% 48% 52% / 70% 30% 64% 36%" },
+  { ox: "-0.15rem", oy: "0.55rem", x: "0.9rem", y: "1.6rem", s: 0.85, rot: "-8deg", delay: "0.1s", dur: "0.56s", rad: "80% 20% 45% 55% / 32% 68% 58% 42%" },
+  { ox: "0.55rem", oy: "-0.1rem", x: "3.5rem", y: "-0.2rem", s: 1.55, rot: "32deg", delay: "0.02s", dur: "0.8s", rad: "55% 45% 30% 70% / 48% 52% 62% 38%" },
+  { ox: "0.2rem", oy: "-0.7rem", x: "2.3rem", y: "-2.2rem", s: 1.1, rot: "-34deg", delay: "0.12s", dur: "0.68s", rad: "28% 72% 60% 40% / 55% 45% 35% 65%" },
+  { ox: "0.9rem", oy: "0.45rem", x: "4.2rem", y: "1.8rem", s: 1.4, rot: "8deg", delay: "0.07s", dur: "0.86s", rad: "64% 36% 72% 28% / 40% 60% 45% 55%" },
+  { ox: "0.05rem", oy: "0.1rem", x: "1.3rem", y: "0.15rem", s: 0.7, rot: "42deg", delay: "0.16s", dur: "0.5s", rad: "50% 50% 80% 20% / 28% 72% 40% 60%" },
+  { ox: "0.8rem", oy: "-0.55rem", x: "3.9rem", y: "-1.9rem", s: 1.2, rot: "-16deg", delay: "0.04s", dur: "0.78s", rad: "42% 58% 36% 64% / 68% 32% 50% 50%" },
+  { ox: "1.05rem", oy: "0.05rem", x: "4.7rem", y: "0.45rem", s: 1.6, rot: "24deg", delay: "0.14s", dur: "0.9s", rad: "70% 30% 40% 60% / 36% 64% 70% 30%" },
+  { ox: "0.4rem", oy: "0.7rem", x: "2.5rem", y: "2.3rem", s: 1.05, rot: "-28deg", delay: "0.2s", dur: "0.64s", rad: "33% 67% 58% 42% / 52% 48% 28% 72%" },
+  { ox: "1.15rem", oy: "-0.35rem", x: "5.3rem", y: "-1.3rem", s: 1.3, rot: "12deg", delay: "0.09s", dur: "0.84s", rad: "58% 42% 22% 78% / 44% 56% 60% 40%" },
+  { ox: "-0.25rem", oy: "-0.5rem", x: "0.55rem", y: "-1.7rem", s: 0.65, rot: "-40deg", delay: "0.22s", dur: "0.48s", rad: "76% 24% 54% 46% / 30% 70% 48% 52%" },
+  { ox: "0.6rem", oy: "0.2rem", x: "3.2rem", y: "0.7rem", s: 1.45, rot: "6deg", delay: "0.06s", dur: "0.72s", rad: "46% 54% 68% 32% / 62% 38% 42% 58%" },
+  { ox: "0.95rem", oy: "0.65rem", x: "4.9rem", y: "2.15rem", s: 1.15, rot: "36deg", delay: "0.18s", dur: "0.76s", rad: "24% 76% 50% 50% / 58% 42% 66% 34%" },
+  { ox: "0.3rem", oy: "0.05rem", x: "2rem", y: "0.35rem", s: 0.9, rot: "-12deg", delay: "0.24s", dur: "0.58s", rad: "62% 38% 28% 72% / 46% 54% 38% 62%" },
+  { ox: "1.25rem", oy: "0.3rem", x: "5.7rem", y: "0.9rem", s: 1.35, rot: "-6deg", delay: "0.11s", dur: "0.88s", rad: "40% 60% 75% 25% / 34% 66% 52% 48%" },
+  { ox: "0.5rem", oy: "-0.85rem", x: "3.7rem", y: "-2.5rem", s: 0.95, rot: "20deg", delay: "0.15s", dur: "0.7s", rad: "68% 32% 48% 52% / 26% 74% 44% 56%" },
+  { ox: "0.75rem", oy: "-0.25rem", x: "2.7rem", y: "-0.9rem", s: 1.25, rot: "-32deg", delay: "0.03s", dur: "0.66s", rad: "52% 48% 34% 66% / 72% 28% 56% 44%" },
+] as const;
 
 export function DerbyToy({
   racer,
@@ -556,8 +476,33 @@ export function DerbyToy({
         <ToyPaint id={id} racer={racer} />
         <BuzzMarks racer={racer} />
         <Shape id={id} racer={racer} />
-        <WinnerSpray id={id} racerId={racer.id} />
       </svg>
+      {isWinner && (
+        <div className="derby-toy-gush" aria-hidden>
+          {GUSH_SPLOTCHES.map((splotch) => (
+            <span key={splotch.className} className={`derby-toy-gush-splotch ${splotch.className}`} />
+          ))}
+          {GUSH_DROPS.map((drop) => (
+            <span
+              key={`${drop.x}-${drop.y}-${drop.delay}`}
+              className="derby-toy-gush-drop"
+              style={
+                {
+                  "--gush-ox": drop.ox,
+                  "--gush-oy": drop.oy,
+                  "--gush-x": drop.x,
+                  "--gush-y": drop.y,
+                  "--gush-s": String(drop.s),
+                  "--gush-rot": drop.rot,
+                  "--gush-rad": drop.rad,
+                  "--gush-delay": drop.delay,
+                  "--gush-dur": drop.dur,
+                } as CSSProperties
+              }
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

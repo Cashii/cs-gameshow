@@ -31,8 +31,8 @@ export function Tooltip({
           sideOffset={5}
           avoidCollisions
           style={{
-            backgroundColor: "#1f2937",
-            color: "#fff",
+            backgroundColor: "var(--color-neutral-900)",
+            color: "var(--color-neutral-100)",
             padding: "6px 12px",
             borderRadius: 6,
             fontSize: 12,
@@ -44,7 +44,7 @@ export function Tooltip({
           }}
         >
           {content}
-          <TooltipPrimitive.Arrow style={{ fill: "#1f2937" }} />
+          <TooltipPrimitive.Arrow style={{ fill: "var(--color-neutral-900)" }} />
         </TooltipPrimitive.Content>
       </TooltipPrimitive.Portal>
     </TooltipPrimitive.Root>

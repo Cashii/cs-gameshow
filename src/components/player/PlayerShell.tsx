@@ -10,6 +10,7 @@ import {
   getPlayerDisplayName,
 } from "@/lib/player/device-id";
 import type { TriviaChoiceId, TriviaMe } from "@/lib/trivia/types";
+import { StandbyScreen } from "@/components/studio/StandbyScreen";
 
 function triviaActive(status: string) {
   return status !== "idle";
@@ -173,17 +174,16 @@ function PlayerContent() {
   }
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center bg-neutral-950 px-4 text-center">
-      <h1 className="text-3xl font-bold text-white">CS Gameshow</h1>
-      <p className="mt-4 text-neutral-400">
-        Stand by — no poll is open right now.
-      </p>
+    <StandbyScreen
+      size="player"
+      subtitle="Stand by — no poll is open right now."
+    >
       {playerCode ? (
         <p className="mt-10 text-sm tracking-widest text-neutral-500">
           {playerCode}
         </p>
       ) : null}
-    </div>
+    </StandbyScreen>
   );
 }
 

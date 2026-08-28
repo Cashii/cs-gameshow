@@ -23,7 +23,7 @@ export function Toast({ message }: Readonly<{ message: string | null }>) {
   return (
     <div
       role="alert"
-      className="fixed right-4 bottom-4 z-[2000] max-w-sm rounded-lg border border-red-500/40 bg-neutral-900 px-4 py-3 text-sm font-medium text-red-200 shadow-xl"
+      className="fixed right-4 bottom-4 z-[2000] max-w-sm rounded-lg border border-red-400 bg-red-50 px-4 py-3 text-sm font-medium text-red-800 shadow-xl"
     >
       {message}
     </div>

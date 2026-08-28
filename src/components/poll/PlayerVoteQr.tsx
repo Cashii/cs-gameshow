@@ -3,7 +3,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import QRCode from "react-qr-code";
 
-export function PlayerVoteQr() {
+export function PlayerVoteQr({
+  label = "Scan to vote",
+}: Readonly<{ label?: string }>) {
   const slotRef = useRef<HTMLDivElement>(null);
   const [url, setUrl] = useState("");
   const [size, setSize] = useState(80);
@@ -38,7 +40,7 @@ export function PlayerVoteQr() {
             <QRCode
               value={url}
               size={size}
-              title="Open player screen to vote"
+              title={label}
               level="M"
               style={{ height: "auto", maxWidth: "100%", width: "100%" }}
             />
@@ -49,7 +51,7 @@ export function PlayerVoteQr() {
               fontSize: `clamp(0.95rem, ${Math.max(14, size * 0.14)}px, 2.25rem)`,
             }}
           >
-            Scan to vote
+            {label}
           </p>
         </>
       )}

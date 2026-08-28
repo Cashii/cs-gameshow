@@ -15,20 +15,9 @@ import { PriceGuesserAudienceView } from "@/components/price-guesser/PriceGuesse
 import { PriceOrderAudienceView } from "@/components/price-order/PriceOrderAudienceView";
 import { createDefaultPriceGuesserState } from "@/lib/price-guesser/types";
 import { createDefaultPriceOrderState } from "@/lib/price-order/types";
+import { StandbyScreen } from "@/components/studio/StandbyScreen";
 
-export const standbyScreen = (
-  <div className="flex h-full w-full flex-col items-center justify-center bg-neutral-950 text-center">
-    <h1
-      className="text-5xl font-bold tracking-wide text-white sm:text-7xl"
-      style={{ fontFamily: "var(--font-oswald), Impact, sans-serif" }}
-    >
-      CS Gameshow
-    </h1>
-    <p className="mt-4 text-lg tracking-[0.2em] text-neutral-400 uppercase">
-      Stand by
-    </p>
-  </div>
-);
+const standbyScreen = <StandbyScreen />;
 
 export function ActiveGameBoard({
   activeGame,
@@ -107,11 +96,7 @@ export function ActiveGameBoard({
       </div>
     );
   } else if (activeGame === "trivia") {
-    const triviaNotStarted =
-      state.trivia.status === "idle" && state.trivia.roundIndex === 0;
-    content = triviaNotStarted ? (
-      standbyScreen
-    ) : (
+    content = (
       <div className="h-full w-full overflow-hidden">
         <TriviaAudienceView trivia={state.trivia} />
       </div>

@@ -29,7 +29,7 @@ export function MessageBoardHostPanel() {
           type="button"
           disabled={!text.trim()}
           onClick={() => updateMessageBoard(() => ({ text: "" }))}
-          className="rounded-lg border border-neutral-600 px-4 py-2 text-sm font-semibold text-neutral-200 hover:bg-neutral-800 disabled:opacity-40"
+          className="rounded-lg border border-teal-500 bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
         >
           Clear
         </button>

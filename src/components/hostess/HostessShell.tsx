@@ -103,7 +103,7 @@ function HostessContent() {
     <>
       <div className="hostess-screen mx-auto flex w-full max-w-lg flex-col gap-2 bg-neutral-950 text-neutral-100">
         <div
-          className="flex h-16 shrink-0 items-center justify-center rounded-xl border-2 border-neutral-600 bg-neutral-800 px-4"
+          className="flex h-16 shrink-0 items-center justify-center rounded-lg border border-neutral-600 bg-neutral-900 px-4"
           aria-live="polite"
           aria-label="Number entry"
         >
@@ -147,7 +147,7 @@ function HostessContent() {
           type="button"
           onClick={handleAdd}
           disabled={!number.trim()}
-          className="shrink-0 rounded-lg bg-neutral-100 py-4 text-lg font-bold text-neutral-900 disabled:opacity-40"
+          className="shrink-0 rounded-lg bg-sky-600 py-4 text-lg font-bold text-white disabled:opacity-40"
         >
           Add
         </button>

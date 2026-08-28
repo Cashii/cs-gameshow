@@ -75,7 +75,7 @@ export function PollHostPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-neutral-800 bg-neutral-900/90 px-6 py-3">
+      <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
             Spectator actions
@@ -111,7 +111,7 @@ export function PollHostPanel() {
             type="button"
             disabled={loading}
             onClick={() => runAction({ action: "clear" })}
-            className="inline-flex h-10 items-center rounded-md border border-neutral-500 bg-neutral-600 px-4 text-sm font-semibold text-white hover:bg-neutral-500 disabled:opacity-50"
+            className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
           >
             Clear poll
           </button>
@@ -192,7 +192,7 @@ export function PollHostPanel() {
                   setChoices([...choices, `Option ${choices.length + 1}`])
                 }
                 disabled={choices.length >= 6}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-600 px-3 py-2 text-sm font-semibold text-neutral-200 hover:bg-neutral-800 disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
               >
                 <Plus size={16} />
                 Add choice

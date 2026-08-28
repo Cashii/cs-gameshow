@@ -40,7 +40,7 @@ export function HostessNumberPad({
               key={key}
               type="button"
               onClick={() => press(key)}
-              className="flex min-h-0 items-center justify-center rounded-xl bg-neutral-800 text-2xl font-semibold text-neutral-200 active:bg-neutral-700"
+              className="flex min-h-0 items-center justify-center rounded-lg bg-neutral-800 text-2xl font-semibold text-neutral-100 active:bg-neutral-700"
               aria-label="Backspace"
             >
               ⌫
@@ -53,7 +53,7 @@ export function HostessNumberPad({
               key={key}
               type="button"
               onClick={() => press(key)}
-              className="flex min-h-0 items-center justify-center rounded-xl bg-neutral-800 text-base font-semibold text-neutral-400 active:bg-neutral-700"
+              className="flex min-h-0 items-center justify-center rounded-lg bg-neutral-800 text-base font-semibold text-neutral-300 active:bg-neutral-700"
             >
               Clear
             </button>
@@ -64,7 +64,7 @@ export function HostessNumberPad({
             key={key}
             type="button"
             onClick={() => press(key)}
-            className="flex min-h-0 items-center justify-center rounded-xl bg-neutral-800 text-4xl font-bold text-white active:bg-neutral-700"
+            className="flex min-h-0 items-center justify-center rounded-lg bg-neutral-800 text-4xl font-bold text-white active:bg-neutral-700"
           >
             {key}
           </button>
