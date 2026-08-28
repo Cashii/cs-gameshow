@@ -13,8 +13,10 @@ import { JeoparodyAudienceView } from "@/components/jeoparody/JeoparodyAudienceV
 import { TriviaAudienceView } from "@/components/trivia/TriviaAudienceView";
 import { PriceGuesserAudienceView } from "@/components/price-guesser/PriceGuesserAudienceView";
 import { PriceOrderAudienceView } from "@/components/price-order/PriceOrderAudienceView";
+import { QuestionTimeAudienceView } from "@/components/question-time/QuestionTimeAudienceView";
 import { createDefaultPriceGuesserState } from "@/lib/price-guesser/types";
 import { createDefaultPriceOrderState } from "@/lib/price-order/types";
+import { createDefaultQuestionTimeState } from "@/lib/question-time/types";
 import { StandbyScreen } from "@/components/studio/StandbyScreen";
 
 const standbyScreen = <StandbyScreen />;
@@ -114,6 +116,14 @@ export function ActiveGameBoard({
       <div className="h-full w-full overflow-hidden">
         <PriceOrderAudienceView
           game={state.priceOrder ?? createDefaultPriceOrderState()}
+        />
+      </div>
+    );
+  } else if (activeGame === "questionTime") {
+    content = (
+      <div className="h-full w-full overflow-hidden">
+        <QuestionTimeAudienceView
+          game={state.questionTime ?? createDefaultQuestionTimeState()}
         />
       </div>
     );

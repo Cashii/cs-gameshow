@@ -23,6 +23,7 @@ import {
   Brain,
   Tag,
   ListOrdered,
+  Heart,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -50,6 +51,7 @@ import { JeoparodyHostPanel } from "@/components/jeoparody/JeoparodyHostPanel";
 import { TriviaHostPanel } from "@/components/trivia/TriviaHostPanel";
 import { PriceGuesserHostPanel } from "@/components/price-guesser/PriceGuesserHostPanel";
 import { PriceOrderHostPanel } from "@/components/price-order/PriceOrderHostPanel";
+import { QuestionTimeHostPanel } from "@/components/question-time/QuestionTimeHostPanel";
 import { PinSettingsPanel } from "@/components/operator/PinSettingsPanel";
 import { PinGate } from "@/components/auth/PinGate";
 
@@ -61,6 +63,7 @@ const NAV_GAMES: ActiveGame[] = [
   "trivia",
   "priceGuesser",
   "priceOrder",
+  "questionTime",
   "jeoparody",
   "takeIt",
 ];
@@ -78,6 +81,7 @@ const GAME_ICONS: Record<ActiveGame, LucideIcon> = {
   trivia: Brain,
   priceGuesser: Tag,
   priceOrder: ListOrdered,
+  questionTime: Heart,
   poll: BarChart3,
   messageBoard: Megaphone,
 };
@@ -92,6 +96,7 @@ const CARD_ICON: Record<Exclude<ActiveGame, "idle">, string> = {
   trivia: "bg-cyan-500 text-white",
   priceGuesser: "bg-amber-500 text-white",
   priceOrder: "bg-teal-500 text-white",
+  questionTime: "bg-rose-500 text-white",
   poll: "bg-orange-500 text-white",
   messageBoard: "bg-fuchsia-500 text-white",
 };
@@ -111,6 +116,7 @@ const GAME_DESCRIPTIONS: Record<Exclude<ActiveGame, "idle">, string> = {
   trivia: "Boolean questions on player phones. Cut the field to any remaining count.",
   priceGuesser: "Show an item photo with a hidden price tag, then reveal the real price.",
   priceOrder: "Put up to five items on screen and build cheapest-to-most-expensive order.",
+  questionTime: "Show a question, score two teams, and run a giant countdown for the room.",
   poll: "Ask a question, open voting on player phones, and show live results.",
   messageBoard: "Put a text announcement on the spectator screen.",
 };
@@ -562,6 +568,7 @@ function OperatorContent() {
                     "trivia",
                     "priceGuesser",
                     "priceOrder",
+                    "questionTime",
                     "jeoparody",
                     "takeIt",
                     "liveDrawer",
@@ -624,6 +631,7 @@ function OperatorContent() {
           {state.activeGame === "trivia" && <TriviaHostPanel />}
           {state.activeGame === "priceGuesser" && <PriceGuesserHostPanel />}
           {state.activeGame === "priceOrder" && <PriceOrderHostPanel />}
+          {state.activeGame === "questionTime" && <QuestionTimeHostPanel />}
           {state.activeGame === "poll" && <PollHostPanel />}
           {state.activeGame === "messageBoard" && (
             <div className="min-h-0 flex-1 overflow-auto">

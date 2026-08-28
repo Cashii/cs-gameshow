@@ -50,6 +50,10 @@ import {
   createDefaultPriceOrderState,
   type PriceOrderState,
 } from "@/lib/price-order/types";
+import {
+  createDefaultQuestionTimeState,
+  type QuestionTimeState,
+} from "@/lib/question-time/types";
 
 export type SuiteRole = "operator" | "spectator" | "hostess" | "player";
 
@@ -85,6 +89,9 @@ type SuiteContextValue = {
   ) => void;
   updatePriceOrder: (
     updater: (game: PriceOrderState) => PriceOrderState,
+  ) => void;
+  updateQuestionTime: (
+    updater: (game: QuestionTimeState) => QuestionTimeState,
   ) => void;
   patchSuite: (patch: Partial<SuiteState>) => Promise<void>;
   refreshSnapshot: () => Promise<void>;
@@ -496,6 +503,18 @@ export function SuiteProvider({
     [applyLocalSuite],
   );
 
+  const updateQuestionTime = useCallback(
+    (updater: (game: QuestionTimeState) => QuestionTimeState) => {
+      applyLocalSuite((prev) => ({
+        ...prev,
+        questionTime: updater(
+          prev.questionTime ?? createDefaultQuestionTimeState(),
+        ),
+      }));
+    },
+    [applyLocalSuite],
+  );
+
   const applyServerSnapshot = useCallback(
     (next: EventSnapshot) => {
       confirmedRevisionRef.current = Math.max(
@@ -559,6 +578,7 @@ export function SuiteProvider({
       updateJeoparody,
       updatePriceGuesser,
       updatePriceOrder,
+      updateQuestionTime,
       patchSuite,
       refreshSnapshot,
       applyServerSnapshot,
@@ -583,6 +603,7 @@ export function SuiteProvider({
       updateJeoparody,
       updatePriceGuesser,
       updatePriceOrder,
+      updateQuestionTime,
       patchSuite,
       refreshSnapshot,
       applyServerSnapshot,

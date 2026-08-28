@@ -16,6 +16,8 @@
 
 **Price Order** — Up to five product photos. The player sorts cheapest to most expensive; the operator inserts and rearranges that list, then reveals prices.
 
+**Question Time** — Question, two team scores, and a giant countdown on the spectator screen. Couples play in the room; there is no player phone board.
+
 
 ## Live Drawer
 

@@ -49,6 +49,13 @@ import {
   type PriceOrderState,
 } from "@/lib/price-order/types";
 import { normalizePhotoFit } from "@/lib/price/photo-fit";
+import {
+  clampQuestionTimeDurationMs,
+  clampQuestionTimeScore,
+  createDefaultQuestionTimeState,
+  type QuestionTimeState,
+  type QuestionTimeTeam,
+} from "@/lib/question-time/types";
 
 export type ActiveGame =
   | "feud"
@@ -62,7 +69,8 @@ export type ActiveGame =
   | "jeoparody"
   | "trivia"
   | "priceGuesser"
-  | "priceOrder";
+  | "priceOrder"
+  | "questionTime";
 export type SpectatorScreen = ActiveGame;
 
 export type SuiteState = {
@@ -82,6 +90,7 @@ export type SuiteState = {
   trivia: TriviaGameState;
   priceGuesser: PriceGuesserState;
   priceOrder: PriceOrderState;
+  questionTime: QuestionTimeState;
 };
 
 export type EventSnapshot = SuiteState & {
@@ -118,7 +127,8 @@ function normalizeActiveGame(
     raw === "jeoparody" ||
     raw === "trivia" ||
     raw === "priceGuesser" ||
-    raw === "priceOrder"
+    raw === "priceOrder" ||
+    raw === "questionTime"
   ) {
     return raw;
   }
@@ -160,6 +170,7 @@ export function createDefaultSuiteState(): SuiteState {
     trivia: createDefaultTriviaState(),
     priceGuesser: createDefaultPriceGuesserState(),
     priceOrder: createDefaultPriceOrderState(),
+    questionTime: createDefaultQuestionTimeState(),
   };
 }
 
@@ -390,6 +401,49 @@ function normalizePriceOrderItem(
   };
 }
 
+function normalizeQuestionTimeTeam(
+  raw: Partial<QuestionTimeTeam> | undefined,
+  fallback: QuestionTimeTeam,
+): QuestionTimeTeam {
+  return {
+    name:
+      typeof raw?.name === "string" && raw.name.trim()
+        ? raw.name
+        : fallback.name,
+    score: clampQuestionTimeScore(raw?.score),
+  };
+}
+
+function normalizeQuestionTimeState(
+  raw: Partial<QuestionTimeState> | undefined,
+): QuestionTimeState {
+  const defaults = createDefaultQuestionTimeState();
+  if (!raw || typeof raw !== "object") return defaults;
+  const timerDurationMs = clampQuestionTimeDurationMs(raw.timerDurationMs);
+  const timerRunning = Boolean(raw.timerRunning);
+  const timerEndsAt =
+    timerRunning &&
+    typeof raw.timerEndsAt === "number" &&
+    Number.isFinite(raw.timerEndsAt)
+      ? raw.timerEndsAt
+      : null;
+  const timerRemainingMs =
+    typeof raw.timerRemainingMs === "number" &&
+    Number.isFinite(raw.timerRemainingMs)
+      ? Math.max(0, Math.round(raw.timerRemainingMs))
+      : timerDurationMs;
+  return {
+    question:
+      typeof raw.question === "string" ? raw.question : defaults.question,
+    leftTeam: normalizeQuestionTimeTeam(raw.leftTeam, defaults.leftTeam),
+    rightTeam: normalizeQuestionTimeTeam(raw.rightTeam, defaults.rightTeam),
+    timerDurationMs,
+    timerRemainingMs,
+    timerRunning: timerRunning && timerEndsAt != null,
+    timerEndsAt: timerRunning ? timerEndsAt : null,
+  };
+}
+
 function normalizePriceOrderState(
   raw: Partial<PriceOrderState> | undefined,
 ): PriceOrderState {
@@ -544,6 +598,7 @@ export function normalizeSuiteState(
     trivia: normalizeTriviaState(raw.trivia),
     priceGuesser: normalizePriceGuesserState(raw.priceGuesser),
     priceOrder: normalizePriceOrderState(raw.priceOrder),
+    questionTime: normalizeQuestionTimeState(raw.questionTime),
   };
 }
 
@@ -596,6 +651,7 @@ export const ACTIVE_GAME_LABELS: Record<ActiveGame, string> = {
   trivia: "Elimination Trivia",
   priceGuesser: "Price Guesser",
   priceOrder: "Price Order",
+  questionTime: "Question Time",
 };
 
 export const SPECTATOR_SCREEN_LABELS: Record<SpectatorScreen, string> =
@@ -609,6 +665,7 @@ export const SPECTATOR_SCREENS: SpectatorScreen[] = [
   "trivia",
   "priceGuesser",
   "priceOrder",
+  "questionTime",
   "jeoparody",
   "takeIt",
   "liveDrawer",

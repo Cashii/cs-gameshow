@@ -25,6 +25,7 @@ Legacy routes `/admin` and `/audience` redirect to `/operator` and `/spectator`.
 - [Message Board](games/message-board.md)
 - [Price Guesser](games/price-guesser.md)
 - [Price Order](games/price-order.md)
+- [Question Time](games/question-time.md)
 
 ## Setup
 
