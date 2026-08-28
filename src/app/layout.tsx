@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Oswald } from "next/font/google";
+import { Geist, Geist_Mono, Oswald, Pacifico } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,6 +18,12 @@ const oswald = Oswald({
   weight: ["400", "500", "600", "700"],
 });
 
+const pacifico = Pacifico({
+  variable: "--font-pacifico",
+  subsets: ["latin"],
+  weight: "400",
+});
+
 export const metadata: Metadata = {
   title: "CS Gameshow",
   description: "Live game show suite for business game nights",
@@ -31,7 +37,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${oswald.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${oswald.variable} ${pacifico.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-neutral-950 text-neutral-100">
         {children}

@@ -22,10 +22,10 @@ import {
   type MessageBoardState,
 } from "@/lib/message-board/types";
 import {
-  clampDerbyHorseScale,
+  clampDerbyRacerScale,
   createDefaultDerbyState,
-  DEFAULT_DERBY_HORSE_SCALE,
   isDerbyRacerId,
+  isDerbyTheme,
   type DerbyGameState,
   type DerbyPhase,
 } from "@/lib/derby/types";
@@ -312,6 +312,10 @@ function normalizeDerbyState(
 
   return {
     phase,
+    theme: isDerbyTheme(raw.theme) ? raw.theme : defaults.theme,
+    racerScale: clampDerbyRacerScale(
+      raw.racerScale ?? (raw as { horseScale?: unknown }).horseScale,
+    ),
     winnerId,
     raceId: typeof raw.raceId === "string" ? raw.raceId : null,
     startedAt,
@@ -326,10 +330,6 @@ function normalizeDerbyState(
       typeof raw.sequence === "number" && Number.isFinite(raw.sequence)
         ? raw.sequence
         : defaults.sequence,
-    horseScale:
-      typeof raw.horseScale === "number"
-        ? clampDerbyHorseScale(raw.horseScale)
-        : DEFAULT_DERBY_HORSE_SCALE,
   };
 }
 

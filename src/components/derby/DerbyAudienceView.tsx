@@ -2,16 +2,21 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
-  clampDerbyHorseScale,
+  clampDerbyRacerScale,
   createDefaultDerbyState,
-  DEFAULT_DERBY_HORSE_SCALE,
-  DERBY_RACERS,
   getDerbyRacer,
+  getDerbyRacers,
+  getDerbyTheme,
   type DerbyGameState,
   type DerbyRacerId,
 } from "@/lib/derby/types";
 import { createRaceSampler, raceProgress } from "@/lib/derby/race";
 import { DerbyHorse } from "@/components/derby/DerbyHorse";
+import { DerbyToy } from "@/components/derby/DerbyToy";
+import {
+  DerbyDiscoBall,
+  DerbyWonderbarBrand,
+} from "@/components/derby/DerbyWonderbarBrand";
 import "@/styles/derby-audience.css";
 
 function prefersReducedMotion(): boolean {
@@ -30,6 +35,8 @@ export function DerbyAudienceView({
   game: gameProp,
 }: Readonly<{ game: DerbyGameState }>) {
   const game = gameProp ?? createDefaultDerbyState();
+  const theme = getDerbyTheme(game);
+  const racers = getDerbyRacers(theme);
   const horseRefs = useRef<
     Partial<Record<DerbyRacerId, HTMLDivElement | null>>
   >({});
@@ -43,18 +50,24 @@ export function DerbyAudienceView({
   useEffect(() => {
     const apply = (t: number, hopping: boolean) => {
       const frame = sampler ? sampler(t) : IDLE_FRAME;
-      for (const racer of DERBY_RACERS) {
+      for (const racer of racers) {
         const el = horseRefs.current[racer.id];
         if (!el) continue;
         el.style.setProperty(
           "--derby-progress",
           String(frame.positions[racer.id]),
         );
-        const hops = 22;
-        const hop = hopping
-          ? Math.max(0, Math.sin(frame.positions[racer.id] * hops * Math.PI))
-          : 0;
-        el.style.setProperty("--derby-hop", hop.toFixed(3));
+        if (theme === "wonderbar") {
+          el.style.setProperty("--derby-wiggle", "0");
+          el.style.setProperty("--derby-hop", "0");
+        } else {
+          const hops = 22;
+          const hop = hopping
+            ? Math.max(0, Math.sin(frame.positions[racer.id] * hops * Math.PI))
+            : 0;
+          el.style.setProperty("--derby-hop", hop.toFixed(3));
+          el.style.setProperty("--derby-wiggle", "0");
+        }
       }
     };
 
@@ -94,22 +107,39 @@ export function DerbyAudienceView({
     game.winnerId,
     game.sequence,
     sampler,
+    theme,
+    racers,
   ]);
 
   const winner =
-    showWinner && game.winnerId ? getDerbyRacer(game.winnerId) : null;
+    showWinner && game.winnerId ? getDerbyRacer(game.winnerId, theme) : null;
   const racing = game.phase === "racing" && !showWinner;
-  const horseScale = clampDerbyHorseScale(
-    game.horseScale ?? DEFAULT_DERBY_HORSE_SCALE,
-  );
 
   return (
     <div
-      className={`derby-audience${racing ? " is-racing" : ""}${winner ? " is-finished" : ""}`}
-      style={{ "--derby-horse-scale": String(horseScale) } as CSSProperties}
+      className={`derby-audience theme-${theme}${racing ? " is-racing" : ""}${winner ? " is-finished" : ""}`}
+      style={
+        {
+          "--derby-racer-scale": String(clampDerbyRacerScale(game.racerScale)),
+        } as CSSProperties
+      }
     >
+      {theme === "wonderbar" && (
+        <>
+          <div className="derby-disco-ceiling" aria-hidden />
+          <div className="derby-disco-column" aria-hidden />
+          <div className="derby-disco-ball-wrap" aria-hidden>
+            <DerbyDiscoBall />
+          </div>
+        </>
+      )}
+
       <header className="derby-chrome">
-        <h1 className="derby-title">Kentucky Derby</h1>
+        {theme === "wonderbar" ? (
+          <DerbyWonderbarBrand />
+        ) : (
+          <h1 className="derby-title">Kentucky Derby</h1>
+        )}
       </header>
 
       <div className="derby-track-wrap">
@@ -121,7 +151,7 @@ export function DerbyAudienceView({
           </div>
           <div className="derby-start" aria-hidden />
           <div className="derby-finish" aria-hidden />
-          {DERBY_RACERS.map((racer) => (
+          {racers.map((racer) => (
             <div key={racer.id} className="derby-lane">
               <span className="derby-lane-label">{racer.name}</span>
               <div className="derby-lane-slot" aria-hidden />
@@ -129,9 +159,13 @@ export function DerbyAudienceView({
                 ref={(el) => {
                   horseRefs.current[racer.id] = el;
                 }}
-                className="derby-horse"
+                className={`derby-horse derby-racer-${racer.id}${winner?.id === racer.id ? " is-winner" : ""}`}
               >
-                <DerbyHorse racer={racer} />
+                {theme === "wonderbar" ? (
+                  <DerbyToy racer={racer} isWinner={winner?.id === racer.id} />
+                ) : (
+                  <DerbyHorse racer={racer} />
+                )}
               </div>
             </div>
           ))}

@@ -71,7 +71,7 @@ const GAME_DESCRIPTIONS: Record<Exclude<ActiveGame, "idle">, string> = {
   wheel: "Set a phrase and reveal letters on the spectator board.",
   liveDrawer: "Draw colored tokens from the pool for the spectator display.",
   takeIt: "Open nine cases, take banker offers, and decide take it or leave it.",
-  derby: "Pick a winner and run a 20-second four-horse race on the spectator screen.",
+  derby: "Pick a winner and run a 20-second race on the spectator screen.",
   jeoparody: "Set categories and clues, reveal prompts, and score contestants from the operator desk.",
   trivia: "Boolean questions on player phones. Cut the field to any remaining count.",
   poll: "Ask a question, open voting on player phones, and show live results.",
