@@ -10,12 +10,14 @@ export function ImageUploadField({
   onError,
   label = "Upload photo",
   compact = false,
+  square = false,
 }: Readonly<{
   imageUrl: string;
   onUploaded: (url: string) => void;
   onError: (message: string) => void;
   label?: string;
   compact?: boolean;
+  square?: boolean;
 }>) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -46,6 +48,10 @@ export function ImageUploadField({
     }
   };
 
+  let frameClass = "h-40";
+  if (square) frameClass = "aspect-square mx-auto w-full max-w-52";
+  else if (compact) frameClass = "h-28";
+
   return (
     <div className="flex flex-col gap-2">
       <button
@@ -53,16 +59,14 @@ export function ImageUploadField({
         disabled={busy}
         onClick={() => inputRef.current?.click()}
         aria-label={imageUrl ? "Replace photo" : label}
-        className={`group relative flex w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-neutral-600 bg-neutral-900 text-neutral-400 hover:border-sky-500 hover:text-sky-300 disabled:opacity-60 ${
-          compact ? "h-28" : "h-40"
-        }`}
+        className={`group relative flex w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-neutral-600 bg-neutral-900 text-neutral-400 hover:border-sky-500 hover:text-sky-300 disabled:opacity-60 ${frameClass}`}
       >
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={imageUrl}
             alt=""
-            className="h-full w-full object-contain bg-neutral-950"
+            className={`h-full w-full bg-neutral-950 ${square ? "object-cover" : "object-contain"}`}
           />
         ) : (
           <span className="flex flex-col items-center gap-2 text-sm font-semibold">

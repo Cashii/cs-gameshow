@@ -103,7 +103,7 @@ export function DerbyHostPanel() {
 
   return (
     <div className="min-h-0 flex-1 overflow-auto">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-6">
+      <div className="flex w-full flex-col gap-6 px-6 py-6">
         <div>
           <h2 className="text-lg font-bold text-white">{title}</h2>
           <p className="mt-1 text-sm text-neutral-400">

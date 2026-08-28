@@ -1,19 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
+import { photoFitStyle, type PhotoFit } from "@/lib/price/photo-fit";
 
 export function ItemPhoto({
   src,
   alt,
+  fit,
 }: Readonly<{
   src: string;
   alt: string;
+  fit?: PhotoFit;
 }>) {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     setFailed(false);
   }, [src]);
+
+  const style: CSSProperties | undefined = fit ? photoFitStyle(fit) : undefined;
 
   return (
     <div className="price-photo-frame">
@@ -24,6 +29,7 @@ export function ItemPhoto({
           src={src}
           alt={alt}
           className="price-photo"
+          style={style}
           onError={() => setFailed(true)}
         />
       ) : (

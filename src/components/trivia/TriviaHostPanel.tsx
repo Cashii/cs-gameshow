@@ -2,7 +2,39 @@
 
 import { useEffect, useState } from "react";
 import { useSuite } from "@/lib/suite-provider";
-import type { TriviaChoiceId } from "@/lib/trivia/types";
+import type { TriviaChoiceId, TriviaStatus } from "@/lib/trivia/types";
+
+function triviaStatusLabel(
+  status: TriviaStatus,
+  questionNumber: number,
+  settingUpNext: boolean,
+): string {
+  switch (status) {
+    case "open":
+      return `Voting open · Q${questionNumber}`;
+    case "locked":
+      return `Locked · Q${questionNumber}`;
+    case "revealed":
+      return `Question ${questionNumber} closed`;
+    case "finished":
+      return "Winners";
+    default:
+      return settingUpNext
+        ? `Set up question ${questionNumber}`
+        : "Ready for question 1";
+  }
+}
+
+function triviaStatusClass(
+  status: TriviaStatus,
+  settingUpNext: boolean,
+  questionClosed: boolean,
+): string {
+  if (settingUpNext || questionClosed) return "text-sky-300";
+  if (status === "open") return "text-emerald-400";
+  if (status === "finished") return "text-amber-300";
+  return "text-white";
+}
 
 export function TriviaHostPanel() {
   const { state, refreshSnapshot } = useSuite();
@@ -26,7 +58,6 @@ export function TriviaHostPanel() {
       const data = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Action failed");
       await refreshSnapshot();
-      setMessage("Done");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Failed");
     } finally {
@@ -35,7 +66,10 @@ export function TriviaHostPanel() {
   };
 
   useEffect(() => {
-    if (trivia.status === "idle" && trivia.roundIndex === 0) return;
+    if (trivia.status === "idle" && trivia.roundIndex === 0) {
+      setRoster([]);
+      return;
+    }
     let cancelled = false;
     fetch("/api/trivia/roster", { cache: "no-store" })
       .then((r) => r.json())
@@ -50,16 +84,22 @@ export function TriviaHostPanel() {
     };
   }, [trivia.status, trivia.remainingCount, trivia.roundIndex]);
 
-  const statusLabel =
-    trivia.status === "open"
-      ? "Voting open"
-      : trivia.status === "locked"
-        ? "Locked"
-        : trivia.status === "revealed"
-          ? "Revealed"
-          : trivia.status === "finished"
-            ? "Winners"
-            : "Idle";
+  const questionNumber = trivia.roundIndex > 0 ? trivia.roundIndex : 1;
+  const settingUpNext = trivia.status === "idle" && trivia.roundIndex > 1;
+  const questionClosed =
+    trivia.status === "revealed" && trivia.remainingCount > 1;
+
+  useEffect(() => {
+    setQuestion(trivia.question || "");
+    setOptionA(trivia.optionA || "True");
+    setOptionB(trivia.optionB || "False");
+  }, [trivia.roundIndex, trivia.status]);
+
+  const statusLabel = triviaStatusLabel(
+    trivia.status,
+    questionNumber,
+    settingUpNext,
+  );
 
   const survive = (survivingChoiceId: TriviaChoiceId) => {
     void runAction({ action: "reveal", survivingChoiceId });
@@ -67,32 +107,61 @@ export function TriviaHostPanel() {
 
   return (
     <div className="min-h-0 flex-1 overflow-auto px-6 py-6">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-bold text-white">Elimination Trivia</h3>
-          <p className="text-sm text-neutral-400">
-            Question 1 is the field. Lock, pick the surviving side, then keep
-            cutting. Stop whenever remaining is the size you want.
+      {!settingUpNext && !questionClosed ? (
+        <div className="mb-4">
+          <p
+            className={`text-sm font-semibold ${triviaStatusClass(
+              trivia.status,
+              settingUpNext,
+              questionClosed,
+            )}`}
+          >
+            {statusLabel}
           </p>
         </div>
-        <p className="text-sm text-neutral-400">
-          Status: <span className="font-semibold text-white">{statusLabel}</span>
-          {trivia.roundIndex > 0 ? ` — Q${trivia.roundIndex}` : ""}
-        </p>
-      </div>
+      ) : null}
+
+      {settingUpNext ? (
+        <div className="mb-6 rounded-lg border border-sky-500/70 bg-sky-950/50 px-4 py-3">
+          <p className="text-base font-bold text-sky-200">
+            Set up question {questionNumber}
+          </p>
+          <p className="mt-1 text-sm text-neutral-200">
+            Previous question is closed. {trivia.remainingCount} remaining.
+            Enter the next question, then open voting.
+          </p>
+        </div>
+      ) : null}
+
+      {questionClosed ? (
+        <div className="mb-6 rounded-lg border border-amber-500/60 bg-amber-950/40 px-4 py-3">
+          <p className="text-base font-bold text-amber-200">
+            Question {trivia.roundIndex} closed
+          </p>
+          <p className="mt-1 text-sm text-neutral-200">
+            {trivia.remainingCount} remaining. Start question{" "}
+            {trivia.roundIndex + 1} or declare winners if this is your cut.
+          </p>
+        </div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(16rem,0.9fr)]">
         <div className="space-y-4">
           <label className="block">
             <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-              Question
+              Question {questionNumber}
             </span>
             <input
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="True or false: …"
+              autoFocus={settingUpNext}
               disabled={trivia.status === "open" || trivia.status === "locked"}
-              className="mt-1.5 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-white disabled:opacity-60"
+              className={`mt-1.5 w-full rounded-lg border bg-neutral-800 px-3 py-2.5 text-white disabled:opacity-60 ${
+                settingUpNext
+                  ? "border-sky-400 ring-2 ring-sky-400/40"
+                  : "border-neutral-700"
+              }`}
             />
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -135,7 +204,9 @@ export function TriviaHostPanel() {
                 }
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40"
               >
-                Open voting
+                {settingUpNext
+                  ? `Open question ${questionNumber}`
+                  : "Open voting"}
               </button>
             )}
             {trivia.status === "open" && (
@@ -185,7 +256,7 @@ export function TriviaHostPanel() {
                 onClick={() => void runAction({ action: "nextQuestion" })}
                 className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-40"
               >
-                Next question
+                Start question {trivia.roundIndex + 1}
               </button>
             )}
             {((trivia.status === "revealed" && trivia.remainingCount > 0) ||

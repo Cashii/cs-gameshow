@@ -1,7 +1,7 @@
 "use client";
 
 import { Minus, Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSuite } from "@/lib/suite-provider";
 import {
   LIVE_DRAWER_COLORS,
@@ -15,6 +15,52 @@ import {
 import { Toast, useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { EventSnapshot } from "@/lib/suite-state";
+
+function snapshotWithAddedTokens(
+  snapshot: EventSnapshot,
+  entries: { id: string; number: string; colorId: string }[],
+): EventSnapshot {
+  const poolKeys = new Set(
+    snapshot.poolTokens.map((token) => `${token.colorId}:${token.number}`),
+  );
+  const calledByKey = new Map(
+    snapshot.calledTokens.map((token) => [
+      `${token.colorId}:${token.number}`,
+      token,
+    ]),
+  );
+  const poolSummary = { ...snapshot.poolSummary };
+  const toPool: EventSnapshot["poolTokens"] = [];
+  let calledTokens = snapshot.calledTokens;
+
+  for (const entry of entries) {
+    const key = `${entry.colorId}:${entry.number}`;
+    if (poolKeys.has(key)) continue;
+    poolKeys.add(key);
+
+    const called = calledByKey.get(key);
+    if (called) {
+      calledTokens = calledTokens.filter((token) => token.id !== called.id);
+      toPool.push(called);
+    } else {
+      toPool.push({
+        id: entry.id,
+        number: entry.number,
+        colorId: entry.colorId,
+      });
+    }
+    poolSummary[entry.colorId] = (poolSummary[entry.colorId] ?? 0) + 1;
+  }
+
+  if (toPool.length === 0) return snapshot;
+
+  return {
+    ...snapshot,
+    poolTokens: [...snapshot.poolTokens, ...toPool],
+    calledTokens,
+    poolSummary,
+  };
+}
 
 function snapshotWithoutToken(
   snapshot: EventSnapshot,
@@ -45,6 +91,23 @@ function snapshotWithoutToken(
   };
 }
 
+function addTokensSummary(
+  added: number,
+  skipped: number,
+  restored: number,
+): string {
+  const parts = [`Added ${added}`];
+  if (restored > 0) {
+    parts.push(
+      `returned ${restored} called number${restored === 1 ? "" : "s"} to the pool`,
+    );
+  }
+  if (skipped > 0) {
+    parts.push(`skipped ${skipped} already in pool`);
+  }
+  return parts.join(", ");
+}
+
 function revealedChipClass(number: string): string {
   const digits = number.trim().length;
   if (digits >= 3) return "h-14 min-w-14 px-1 text-base";
@@ -73,6 +136,7 @@ export function LiveDrawerHostPanel() {
   const [clearPoolOpen, setClearPoolOpen] = useState(false);
   const [returnCalledOpen, setReturnCalledOpen] = useState(false);
   const [clearCalledOpen, setClearCalledOpen] = useState(false);
+  const addInFlightRef = useRef(false);
 
   useEffect(() => {
     setColorCounts((prev) => {
@@ -205,7 +269,7 @@ export function LiveDrawerHostPanel() {
   };
 
   const handleAddToken = async () => {
-    if (!addColorId) return;
+    if (!addColorId || addInFlightRef.current) return;
     const numbers = parseNumberRange(addNumber);
     if (numbers.length === 0) {
       if (addNumber.trim()) {
@@ -215,38 +279,37 @@ export function LiveDrawerHostPanel() {
       }
       return;
     }
-    setLoading(true);
+    const entries = numbers.map((number) => ({
+      id: `opt-${crypto.randomUUID()}`,
+      number,
+      colorId: addColorId,
+    }));
+    const previous = snapshot;
+    if (previous) {
+      applyServerSnapshot(snapshotWithAddedTokens(previous, entries));
+    }
+    setAddNumber("");
+    setListTab("pool");
+    addInFlightRef.current = true;
     try {
       const data = await postTokens(
         numbers.map((number) => ({ number, colorId: addColorId })),
       );
-      setAddNumber("");
-      setListTab("pool");
       const added = data.added ?? 0;
       const skipped = data.skipped ?? 0;
       const restored = data.restored ?? 0;
       if (numbers.length > 1 || skipped > 0 || restored > 0) {
-        const parts = [`Added ${added}`];
-        if (restored > 0) {
-          parts.push(
-            `returned ${restored} called number${restored === 1 ? "" : "s"} to the pool`,
-          );
-        }
-        if (skipped > 0) {
-          parts.push(
-            `skipped ${skipped} already in pool`,
-          );
-        }
-        const summary = parts.join(", ");
+        const summary = addTokensSummary(added, skipped, restored);
         setMessage(summary);
         showToast(summary);
       }
     } catch (e) {
+      if (previous) applyServerSnapshot(previous);
       const text = e instanceof Error ? e.message : "Failed";
       setMessage(text);
       showToast(text);
     } finally {
-      setLoading(false);
+      addInFlightRef.current = false;
     }
   };
 
@@ -351,50 +414,10 @@ export function LiveDrawerHostPanel() {
     <>
       <Toast message={toastMessage} />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="shrink-0 border-b border-neutral-800 bg-neutral-900/90 px-6 py-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-              Actions
-            </span>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => runAction({ action: "clear" })}
-              className="inline-flex h-10 items-center rounded-md border border-neutral-500 bg-neutral-600 px-4 text-sm font-semibold text-white hover:bg-neutral-500 disabled:opacity-50"
-            >
-              Clear display
-            </button>
-          </div>
-        </div>
-        <div className="min-h-0 flex-1 overflow-auto">
-          <div className="grid w-full grid-cols-1 gap-6 p-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-            <div className="space-y-4">
-              <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-5">
-                <h2 className="text-lg font-bold text-white">Pool summary</h2>
-                <ul className="mt-4 grid grid-cols-4 gap-3">
-                  {LIVE_DRAWER_COLORS.map((c) => {
-                    const count = poolSummary[c.id] ?? 0;
-                    return (
-                    <li key={c.id} className="flex justify-center">
-                      <span
-                        title={`${c.name}: ${count}`}
-                        className={`flex h-16 w-16 items-center justify-center rounded-full font-bold text-white tabular-nums shadow-inner ${
-                          String(count).length >= 2 ? "text-2xl" : "text-3xl"
-                        }`}
-                        style={{
-                          backgroundColor: c.hex,
-                          textShadow: "0 1px 2px rgba(0,0,0,0.45)",
-                        }}
-                      >
-                        {count}
-                      </span>
-                    </li>
-                    );
-                  })}
-                </ul>
-              </div>
-
-              <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-5">
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto p-6 xl:overflow-hidden">
+            <div className="flex shrink-0 flex-col gap-6 xl:flex-row xl:items-stretch">
+            <div className="flex w-full shrink-0 flex-col xl:w-80">
+              <div className="flex flex-1 flex-col rounded-lg border border-neutral-700 bg-neutral-800 p-5">
                 <h2 className="text-lg font-bold text-white">Add token</h2>
                 <input
                   value={addNumber}
@@ -412,13 +435,13 @@ export function LiveDrawerHostPanel() {
                   One number, a comma list, or a range like 1-10. All use the
                   selected color.
                 </p>
-                <div className="mt-2 grid grid-cols-4 gap-1.5">
+                <div className="mt-2 flex flex-wrap gap-2">
                   {LIVE_DRAWER_COLORS.map((c) => (
                     <button
                       key={c.id}
                       type="button"
                       onClick={() => setAddColorId(c.id)}
-                      className={`min-w-0 w-full rounded px-1 py-2 text-center text-xs font-semibold text-white ${
+                      className={`min-w-26 flex-1 rounded-md px-3 py-3 text-center text-sm font-semibold text-white ${
                         addColorId === c.id ? "ring-2 ring-sky-400 ring-offset-1 ring-offset-neutral-800" : ""
                       }`}
                       style={{ backgroundColor: c.hex }}
@@ -427,6 +450,7 @@ export function LiveDrawerHostPanel() {
                     </button>
                   ))}
                 </div>
+                <div className="min-h-4 flex-1" />
                 <button
                   type="button"
                   onClick={handleAddToken}
@@ -438,10 +462,19 @@ export function LiveDrawerHostPanel() {
               </div>
             </div>
 
-            <div className="flex h-full min-h-0 min-w-0 flex-col">
-              <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-neutral-700 bg-neutral-800">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-neutral-700 bg-neutral-800">
                 <div className="shrink-0 border-b border-neutral-700 p-5">
-                  <h2 className="text-lg font-bold text-white">On spectator</h2>
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="text-lg font-bold text-white">On Display</h2>
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => runAction({ action: "clear" })}
+                      className="inline-flex h-10 shrink-0 items-center rounded-md border border-neutral-500 bg-neutral-600 px-4 text-sm font-semibold text-white hover:bg-neutral-500 disabled:opacity-50"
+                    >
+                      Clear display
+                    </button>
+                  </div>
                   {revealed.length === 0 ? (
                     <p className="mt-2 text-neutral-400">Nothing revealed</p>
                   ) : (
@@ -466,12 +499,12 @@ export function LiveDrawerHostPanel() {
                     </ul>
                   )}
                 </div>
-                <div className="flex flex-1 flex-col p-5">
+                <div className="@container flex flex-1 flex-col p-5">
                   <h2 className="text-lg font-bold text-white">Draw controls</h2>
                   <p className="mt-1 text-sm text-neutral-400">
                     Random draw by color count or select specific tokens below.
                   </p>
-                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="mt-4 grid grid-cols-4 gap-2 @min-[70rem]:grid-cols-8">
                     {LIVE_DRAWER_COLORS.map((c) => {
                       const available = poolSummary[c.id] ?? 0;
                       const count = colorCounts[c.id] ?? 0;
@@ -479,7 +512,7 @@ export function LiveDrawerHostPanel() {
                       return (
                         <div
                           key={c.id}
-                          className={`text-sm font-semibold ${empty ? "text-neutral-600" : "text-neutral-300"}`}
+                          className={`min-w-0 text-sm font-semibold ${empty ? "text-neutral-600" : "text-neutral-300"}`}
                         >
                           {c.name}
                           <div
@@ -495,12 +528,12 @@ export function LiveDrawerHostPanel() {
                               onClick={() =>
                                 setColorDrawCount(c.id, c.name, count - 1)
                               }
-                              className="inline-flex w-12 shrink-0 items-center justify-center text-white hover:bg-black/25 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="inline-flex w-8 shrink-0 items-center justify-center text-white hover:bg-black/25 disabled:cursor-not-allowed disabled:opacity-40"
                             >
-                              <Minus size={22} />
+                              <Minus size={18} />
                             </button>
                             {empty ? (
-                              <div className="flex min-w-0 flex-1 items-center justify-center text-4xl font-bold leading-none tabular-nums text-neutral-400">
+                              <div className="flex min-w-0 flex-1 items-center justify-center text-3xl font-bold leading-none tabular-nums text-neutral-400">
                                 0
                               </div>
                             ) : (
@@ -517,7 +550,7 @@ export function LiveDrawerHostPanel() {
                                     Number(e.target.value) || 0,
                                   )
                                 }
-                                className="h-full min-w-0 flex-1 bg-transparent px-1 text-center text-4xl font-bold leading-none tabular-nums text-white [appearance:textfield] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                className="h-full min-w-0 flex-1 bg-transparent px-0.5 text-center text-3xl font-bold leading-none tabular-nums text-white [appearance:textfield] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                               />
                             )}
                             <button
@@ -527,9 +560,9 @@ export function LiveDrawerHostPanel() {
                               onClick={() =>
                                 setColorDrawCount(c.id, c.name, count + 1)
                               }
-                              className="inline-flex w-12 shrink-0 items-center justify-center text-white hover:bg-black/25 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="inline-flex w-8 shrink-0 items-center justify-center text-white hover:bg-black/25 disabled:cursor-not-allowed disabled:opacity-40"
                             >
-                              <Plus size={22} />
+                              <Plus size={18} />
                             </button>
                           </div>
                         </div>
@@ -547,9 +580,9 @@ export function LiveDrawerHostPanel() {
                     </button>
                     <button
                       type="button"
-                      disabled={loading}
+                      disabled={loading || selectedIds.size === 0}
                       onClick={handleSelectedDraw}
-                      className="rounded-md bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-500"
+                      className="rounded-md bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-500 disabled:opacity-40"
                     >
                       Draw selected ({selectedIds.size})
                     </button>
@@ -558,8 +591,12 @@ export function LiveDrawerHostPanel() {
               </div>
             </div>
 
-            <div className="flex min-w-0 flex-col rounded-lg border border-neutral-700 bg-neutral-800 xl:col-span-2">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-700 p-4">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              <h2 className="mb-3 text-lg font-bold text-white">
+                Token Summary
+              </h2>
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-neutral-700 bg-neutral-800">
+                <div className="flex flex-wrap items-center gap-3 border-b border-neutral-700 p-4">
                   <div className="flex rounded-lg border border-neutral-600 p-0.5">
                     <button
                       type="button"
@@ -584,18 +621,47 @@ export function LiveDrawerHostPanel() {
                       Called ({calledTokens.length})
                     </button>
                   </div>
+                  <div className="flex min-w-0 flex-1 flex-nowrap items-center justify-center gap-2 overflow-x-auto">
+                    <span className="shrink-0 text-sm font-semibold tracking-wide text-neutral-300 uppercase">
+                      Total
+                    </span>
+                    <ul
+                      aria-label="Pool summary"
+                      className="flex flex-nowrap items-center gap-2"
+                    >
+                    {LIVE_DRAWER_COLORS.map((c) => {
+                      const count = poolSummary[c.id] ?? 0;
+                      return (
+                        <li key={c.id} className="shrink-0">
+                          <span
+                            title={`${c.name}: ${count}`}
+                            className={`flex h-11 w-11 items-center justify-center rounded-full font-bold text-white tabular-nums shadow-inner ${
+                              String(count).length >= 2 ? "text-base" : "text-lg"
+                            }`}
+                            style={{
+                              backgroundColor: c.hex,
+                              textShadow: "0 1px 2px rgba(0,0,0,0.45)",
+                            }}
+                          >
+                            {count}
+                          </span>
+                        </li>
+                      );
+                    })}
+                    </ul>
+                  </div>
                   {listTab === "pool" && (
                     <button
                       type="button"
                       disabled={loading || poolTokens.length === 0}
                       onClick={() => setClearPoolOpen(true)}
-                      className="inline-flex h-8 items-center rounded-md border border-red-500/40 px-3 text-sm font-semibold text-red-400 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="inline-flex h-8 shrink-0 items-center rounded-md border border-red-500/40 px-3 text-sm font-semibold text-red-400 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Clear pool
                     </button>
                   )}
                   {listTab === "called" && (
-                    <div className="flex flex-wrap items-center justify-end gap-2">
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                       <button
                         type="button"
                         disabled={loading || calledTokens.length === 0}
@@ -616,7 +682,7 @@ export function LiveDrawerHostPanel() {
                   )}
                 </div>
 
-                <div className="max-h-[520px] flex-1 overflow-auto p-4">
+                <div className="min-h-0 flex-1 overflow-auto p-4">
                   {listTab === "called" ? (
                     calledRows.length === 0 ? (
                       <p className="text-neutral-400">No called numbers</p>
@@ -709,8 +775,8 @@ export function LiveDrawerHostPanel() {
                     {message}
                   </p>
                 )}
+              </div>
             </div>
-          </div>
         </div>
       </div>
       <ConfirmDialog

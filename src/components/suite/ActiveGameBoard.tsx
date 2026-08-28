@@ -107,7 +107,11 @@ export function ActiveGameBoard({
       </div>
     );
   } else if (activeGame === "trivia") {
-    content = (
+    const triviaNotStarted =
+      state.trivia.status === "idle" && state.trivia.roundIndex === 0;
+    content = triviaNotStarted ? (
+      standbyScreen
+    ) : (
       <div className="h-full w-full overflow-hidden">
         <TriviaAudienceView trivia={state.trivia} />
       </div>

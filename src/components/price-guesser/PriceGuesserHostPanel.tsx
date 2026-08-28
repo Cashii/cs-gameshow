@@ -8,7 +8,8 @@ import {
 } from "@/lib/price-guesser/types";
 import { parsePriceInput, priceInputValue } from "@/lib/price/format";
 import { deleteMediaByUrl } from "@/lib/media/upload";
-import { ImageUploadField } from "@/components/price/ImageUploadField";
+import { SquarePhotoEditor } from "@/components/price/SquarePhotoEditor";
+import { DEFAULT_PHOTO_FIT } from "@/lib/price/photo-fit";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useEffect, useState } from "react";
@@ -36,7 +37,7 @@ export function PriceGuesserHostPanel() {
 
   return (
     <div className="min-h-0 flex-1 overflow-auto">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-6">
+      <div className="flex w-full flex-col gap-6 px-6 py-6">
         <div>
           <h2 className="text-lg font-bold text-white">Price Guesser</h2>
           <p className="mt-1 text-sm text-neutral-400">
@@ -52,13 +53,22 @@ export function PriceGuesserHostPanel() {
           </p>
         )}
 
-        <ImageUploadField
-          imageUrl={game.imageUrl}
-          onUploaded={(url) =>
-            patch((prev) => ({ ...prev, imageUrl: url, priceRevealed: false }))
-          }
-          onError={showToast}
-        />
+        <div className="mx-auto w-full max-w-sm">
+          <SquarePhotoEditor
+            imageUrl={game.imageUrl}
+            fit={game.photoFit ?? DEFAULT_PHOTO_FIT}
+            onUploaded={(url) =>
+              patch((prev) => ({
+                ...prev,
+                imageUrl: url,
+                priceRevealed: false,
+                photoFit: { ...DEFAULT_PHOTO_FIT },
+              }))
+            }
+            onFitChange={(photoFit) => patch((prev) => ({ ...prev, photoFit }))}
+            onError={showToast}
+          />
+        </div>
 
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">

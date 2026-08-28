@@ -1,8 +1,14 @@
+import {
+  DEFAULT_PHOTO_FIT,
+  type PhotoFit,
+} from "@/lib/price/photo-fit";
+
 export type PriceGuesserState = {
   imageUrl: string;
   label: string;
   price: number | null;
   priceRevealed: boolean;
+  photoFit: PhotoFit;
 };
 
 export function createDefaultPriceGuesserState(): PriceGuesserState {
@@ -11,5 +17,6 @@ export function createDefaultPriceGuesserState(): PriceGuesserState {
     label: "",
     price: null,
     priceRevealed: false,
+    photoFit: { ...DEFAULT_PHOTO_FIT },
   };
 }

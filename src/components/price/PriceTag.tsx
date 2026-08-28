@@ -10,7 +10,7 @@ export function PriceTag({
 }: Readonly<{
   price: number | null;
   revealed: boolean;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
 }>) {
   const [pop, setPop] = useState(false);
 
@@ -29,7 +29,12 @@ export function PriceTag({
   }, [revealed]);
 
   const sizeClass =
-    size === "lg" ? " price-tag-lg" : size === "sm" ? " price-tag-sm" : "";
+    {
+      sm: " price-tag-sm",
+      md: "",
+      lg: " price-tag-lg",
+      xl: " price-tag-xl",
+    }[size] ?? "";
 
   return (
     <div

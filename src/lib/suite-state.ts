@@ -44,9 +44,11 @@ import {
 import {
   createDefaultPriceOrderState,
   PRICE_ORDER_MAX_ITEMS,
+  syncPriceOrderSlots,
   type PriceOrderItem,
   type PriceOrderState,
 } from "@/lib/price-order/types";
+import { normalizePhotoFit } from "@/lib/price/photo-fit";
 
 export type ActiveGame =
   | "feud"
@@ -367,6 +369,7 @@ function normalizePriceGuesserState(
     label: typeof raw.label === "string" ? raw.label : defaults.label,
     price: finitePrice(raw.price),
     priceRevealed: Boolean(raw.priceRevealed),
+    photoFit: normalizePhotoFit(raw.photoFit),
   };
 }
 
@@ -383,6 +386,7 @@ function normalizePriceOrderItem(
     label: typeof raw.label === "string" ? raw.label : "",
     price: finitePrice(raw.price),
     priceRevealed: Boolean(raw.priceRevealed),
+    photoFit: normalizePhotoFit(raw.photoFit),
   };
 }
 
@@ -397,15 +401,11 @@ function normalizePriceOrderState(
         .map((item, index) => normalizePriceOrderItem(item, index))
         .filter((item): item is PriceOrderItem => item != null)
     : defaults.items;
-  const knownIds = new Set(items.map((item) => item.id));
-  const order = Array.isArray(raw.order)
-    ? raw.order.filter(
-        (id, index, list): id is string =>
-          typeof id === "string" &&
-          knownIds.has(id) &&
-          list.indexOf(id) === index,
-      )
-    : [];
+  const visible = items.filter((item) => item.imageUrl);
+  const order = syncPriceOrderSlots(
+    Array.isArray(raw.order) ? raw.order : [],
+    visible,
+  );
   return { items, order };
 }
 
