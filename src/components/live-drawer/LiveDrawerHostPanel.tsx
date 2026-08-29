@@ -1,11 +1,15 @@
 "use client";
 
 import { Minus, Plus } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useSuite } from "@/lib/suite-provider";
 import {
   LIVE_DRAWER_COLORS,
   getLiveDrawerColor,
+  liveDrawerFillStyle,
+  liveDrawerNeedsLightSurface,
+  liveDrawerOutlineClass,
+  type LiveDrawerColor,
 } from "@/lib/live-drawer/types";
 import {
   clampColorCount,
@@ -113,6 +117,23 @@ function revealedChipClass(number: string): string {
   if (digits >= 3) return "h-14 min-w-14 px-1 text-base";
   if (digits === 2) return "h-14 min-w-14 px-1 text-xl";
   return "h-14 min-w-14 text-2xl";
+}
+
+function usesTokenChipOnDark(color: LiveDrawerColor): boolean {
+  return liveDrawerNeedsLightSurface(color.hex) || color.id === "white";
+}
+
+function tokenNumberOnDarkClass(color: LiveDrawerColor): string {
+  if (!usesTokenChipOnDark(color)) return "";
+  return `inline-flex min-w-[1.15em] items-center justify-center rounded-full px-[0.28em] py-[0.12em] ${liveDrawerOutlineClass(color)}`;
+}
+
+function tokenNumberOnDarkStyle(color: LiveDrawerColor): CSSProperties {
+  const fontFamily = "var(--font-oswald), Impact, sans-serif";
+  if (usesTokenChipOnDark(color)) {
+    return { ...liveDrawerFillStyle(color), fontFamily };
+  }
+  return { color: color.hex, fontFamily };
 }
 
 export function LiveDrawerHostPanel() {
@@ -441,10 +462,12 @@ export function LiveDrawerHostPanel() {
                       key={c.id}
                       type="button"
                       onClick={() => setAddColorId(c.id)}
-                      className={`min-w-26 flex-1 rounded-md px-3 py-3 text-center text-sm font-semibold text-white ${
-                        addColorId === c.id ? "ring-2 ring-sky-400 ring-offset-1 ring-offset-neutral-800" : ""
+                      className={`min-w-26 flex-1 rounded-md px-3 py-3 text-center text-sm font-semibold ${
+                        addColorId === c.id
+                          ? "ring-2 ring-sky-400 ring-offset-1 ring-offset-neutral-800"
+                          : liveDrawerOutlineClass(c)
                       }`}
-                      style={{ backgroundColor: c.hex }}
+                      style={{ backgroundColor: c.hex, color: c.ink }}
                     >
                       {c.name}
                     </button>
@@ -484,12 +507,15 @@ export function LiveDrawerHostPanel() {
                         return (
                           <li
                             key={t.id}
-                            className={`flex items-center justify-center rounded-full font-bold text-white tabular-nums ${revealedChipClass(t.number)}`}
+                            className={`flex items-center justify-center rounded-full font-bold tabular-nums ${revealedChipClass(t.number)} ${liveDrawerOutlineClass(color)}`}
                             style={{
-                              backgroundColor: color?.hex,
+                              ...liveDrawerFillStyle(color),
                               fontFamily:
                                 "var(--font-oswald), Impact, sans-serif",
-                              textShadow: "0 1px 2px rgba(0,0,0,0.45)",
+                              textShadow:
+                                color?.ink === "#171717"
+                                  ? "none"
+                                  : "0 1px 2px rgba(0,0,0,0.45)",
                             }}
                           >
                             {t.number}
@@ -635,12 +661,15 @@ export function LiveDrawerHostPanel() {
                         <li key={c.id} className="shrink-0">
                           <span
                             title={`${c.name}: ${count}`}
-                            className={`flex h-11 w-11 items-center justify-center rounded-full font-bold text-white tabular-nums shadow-inner ${
+                            className={`flex h-11 w-11 items-center justify-center rounded-full font-bold tabular-nums shadow-inner ${
                               String(count).length >= 2 ? "text-base" : "text-lg"
-                            }`}
+                            } ${liveDrawerOutlineClass(c)}`}
                             style={{
-                              backgroundColor: c.hex,
-                              textShadow: "0 1px 2px rgba(0,0,0,0.45)",
+                              ...liveDrawerFillStyle(c),
+                              textShadow:
+                                c.ink === "#171717"
+                                  ? "none"
+                                  : "0 1px 2px rgba(0,0,0,0.45)",
                             }}
                           >
                             {count}
@@ -697,12 +726,8 @@ export function LiveDrawerHostPanel() {
                                   className="inline-flex flex-col items-center gap-0.5"
                                 >
                                   <span
-                                    className="text-4xl font-bold tabular-nums leading-none"
-                                    style={{
-                                      color: color.hex,
-                                      fontFamily:
-                                        "var(--font-oswald), Impact, sans-serif",
-                                    }}
+                                    className={`text-4xl font-bold tabular-nums leading-none ${tokenNumberOnDarkClass(color)}`}
+                                    style={tokenNumberOnDarkStyle(color)}
                                   >
                                     {t.number}
                                   </span>
@@ -739,16 +764,12 @@ export function LiveDrawerHostPanel() {
                                     type="button"
                                     onClick={() => toggleSelect(t.id)}
                                     title={`Select ${t.number}`}
-                                    className={`text-4xl font-bold tabular-nums leading-none transition ${
+                                    className={`text-4xl font-bold tabular-nums leading-none transition ${tokenNumberOnDarkClass(color)} ${
                                       selected
                                         ? "underline decoration-2 underline-offset-4"
                                         : "hover:opacity-80"
                                     }`}
-                                    style={{
-                                      color: color.hex,
-                                      fontFamily:
-                                        "var(--font-oswald), Impact, sans-serif",
-                                    }}
+                                    style={tokenNumberOnDarkStyle(color)}
                                   >
                                     {t.number}
                                   </button>

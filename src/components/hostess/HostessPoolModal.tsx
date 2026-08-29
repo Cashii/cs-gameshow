@@ -7,6 +7,9 @@ import type { LiveDrawerToken } from "@/lib/live-drawer/types";
 import {
   LIVE_DRAWER_COLORS,
   getLiveDrawerColor,
+  liveDrawerFillStyle,
+  liveDrawerNeedsLightSurface,
+  liveDrawerOutlineClass,
 } from "@/lib/live-drawer/types";
 
 type HostessPoolModalProps = {
@@ -86,6 +89,19 @@ export function HostessPoolModal({
                 {sorted.map((t) => {
                   const color = getLiveDrawerColor(t.colorId);
                   const isSelected = selectedId === t.id;
+                  const filled = Boolean(
+                    color &&
+                      (liveDrawerNeedsLightSurface(color.hex) ||
+                        color.id === "white"),
+                  );
+                  const shapeClass = filled ? "rounded-full" : "rounded-lg";
+                  let stateClass = "hover:bg-neutral-900";
+                  if (filled) stateClass = liveDrawerOutlineClass(color);
+                  if (isSelected) {
+                    stateClass = filled
+                      ? "ring-2 ring-white"
+                      : "bg-neutral-800 ring-2 ring-white";
+                  }
                   return (
                     <li key={t.id} className="flex items-center justify-center">
                       <button
@@ -94,13 +110,11 @@ export function HostessPoolModal({
                           setSelectedId(isSelected ? null : t.id)
                         }
                         aria-pressed={isSelected}
-                        className={`flex aspect-square w-full items-center justify-center rounded-lg text-3xl font-bold tabular-nums transition-transform active:scale-95 ${
-                          isSelected
-                            ? "bg-neutral-800 ring-2 ring-white"
-                            : "hover:bg-neutral-900"
-                        }`}
+                        className={`flex aspect-square w-full items-center justify-center text-3xl font-bold tabular-nums transition-transform active:scale-95 ${shapeClass} ${stateClass}`}
                         style={{
-                          color: color?.hex,
+                          ...(filled
+                            ? liveDrawerFillStyle(color)
+                            : { color: color?.hex }),
                           fontFamily:
                             "var(--font-oswald), Impact, sans-serif",
                         }}

@@ -32,7 +32,7 @@ export function HostessNumberPad({
   };
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-3 grid-rows-4 gap-2">
+    <div className="grid h-full min-h-0 grid-cols-3 grid-rows-4 bg-neutral-900">
       {KEYS.flat().map((key) => {
         if (key === "back") {
           return (
@@ -40,7 +40,7 @@ export function HostessNumberPad({
               key={key}
               type="button"
               onClick={() => press(key)}
-              className="flex min-h-0 items-center justify-center rounded-lg bg-neutral-800 text-2xl font-semibold text-neutral-100 active:bg-neutral-700"
+              className="flex min-h-0 items-center justify-center bg-neutral-900 text-2xl font-semibold text-neutral-100 active:bg-neutral-800"
               aria-label="Backspace"
             >
               ⌫
@@ -53,7 +53,7 @@ export function HostessNumberPad({
               key={key}
               type="button"
               onClick={() => press(key)}
-              className="flex min-h-0 items-center justify-center rounded-lg bg-neutral-800 text-base font-semibold text-neutral-300 active:bg-neutral-700"
+              className="flex min-h-0 items-center justify-center bg-neutral-900 text-base font-semibold text-neutral-300 active:bg-neutral-800"
             >
               Clear
             </button>
@@ -64,7 +64,7 @@ export function HostessNumberPad({
             key={key}
             type="button"
             onClick={() => press(key)}
-            className="flex min-h-0 items-center justify-center rounded-lg bg-neutral-800 text-4xl font-bold text-white active:bg-neutral-700"
+            className="flex min-h-0 items-center justify-center bg-neutral-900 text-4xl font-bold text-white active:bg-neutral-800"
           >
             {key}
           </button>

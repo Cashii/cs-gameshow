@@ -14,7 +14,7 @@ Colored numbered token pool with multi-draw reveal on the spectator screen.
 
 ## Colors
 
-Red, blue, green, yellow, purple, orange, pink, teal — same presets as physical token colors.
+Red, blue, green, yellow, orange, purple, black, white — same presets as physical token colors. Black tokens use a black circle with white numbers; white tokens use a white circle with black numbers.
 
 ## Operator corrections
 

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   getLiveDrawerColor,
+  liveDrawerHexLuminance,
   type LiveDrawerGameState,
   type LiveDrawerToken,
 } from "@/lib/live-drawer/types";
@@ -165,8 +166,11 @@ function LiveDrawerFittedNumbers({
               key={token.id}
               className="live-drawer-ball"
               data-digits={String(digitCount(token.number))}
+              data-ink={color && liveDrawerHexLuminance(color.hex) > 0.55 ? "dark" : "light"}
+              data-fill={color?.id ?? "unknown"}
               style={{
                 backgroundColor: color?.hex ?? "#334155",
+                color: color?.ink ?? "#ffffff",
                 animationDelay: `${i * 120}ms`,
               }}
             >
