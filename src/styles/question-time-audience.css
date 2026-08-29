@@ -305,7 +305,7 @@
   justify-content: center;
   color: #fff7fb;
   font-family: var(--font-oswald), Impact, sans-serif;
-  font-size: min(17.4vh, 12.6vw, 10.2rem);
+  font-size: min(14.2vh, 10.2vw, 8.2rem);
   font-weight: 700;
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;

@@ -114,7 +114,7 @@ const GAME_DESCRIPTIONS: Record<Exclude<ActiveGame, "idle">, string> = {
   derby: "Pick a winner and run a 20-second race on the spectator screen.",
   jeoparody: "Set categories and clues, reveal prompts, and score contestants from the operator desk.",
   trivia: "Boolean questions on player phones. Cut the field to any remaining count.",
-  priceGuesser: "Show an item photo with a hidden price tag, then reveal the real price.",
+  priceGuesser: "Show an item photo behind a curtain, then reveal the item and the real price.",
   priceOrder: "Put up to five items on screen and build cheapest-to-most-expensive order.",
   questionTime: "Show a question, score two teams, and run a giant countdown for the room.",
   poll: "Ask a question, open voting on player phones, and show live results.",

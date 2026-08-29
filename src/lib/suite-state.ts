@@ -380,6 +380,8 @@ function normalizePriceGuesserState(
     label: typeof raw.label === "string" ? raw.label : defaults.label,
     price: finitePrice(raw.price),
     priceRevealed: Boolean(raw.priceRevealed),
+    itemRevealed:
+      typeof raw.itemRevealed === "boolean" ? raw.itemRevealed : true,
     photoFit: normalizePhotoFit(raw.photoFit),
   };
 }

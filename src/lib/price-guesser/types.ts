@@ -8,6 +8,8 @@ export type PriceGuesserState = {
   label: string;
   price: number | null;
   priceRevealed: boolean;
+  /** When false, the spectator photo sits behind a closed curtain. */
+  itemRevealed: boolean;
   photoFit: PhotoFit;
 };
 
@@ -17,6 +19,7 @@ export function createDefaultPriceGuesserState(): PriceGuesserState {
     label: "",
     price: null,
     priceRevealed: false,
+    itemRevealed: true,
     photoFit: { ...DEFAULT_PHOTO_FIT },
   };
 }

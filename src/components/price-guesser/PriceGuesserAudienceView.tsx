@@ -6,6 +6,19 @@ import { PriceShowStage } from "@/components/price/PriceShowStage";
 import { PriceTag } from "@/components/price/PriceTag";
 import "@/styles/price-audience.css";
 
+function ItemCurtain({ open }: Readonly<{ open: boolean }>) {
+  return (
+    <div
+      className={`price-curtain${open ? " price-curtain-open" : ""}`}
+      aria-hidden
+    >
+      <div className="price-curtain-valance" />
+      <div className="price-curtain-panel price-curtain-left" />
+      <div className="price-curtain-panel price-curtain-right" />
+    </div>
+  );
+}
+
 export function PriceGuesserAudienceView({
   game,
 }: Readonly<{ game: PriceGuesserState }>) {
@@ -17,17 +30,24 @@ export function PriceGuesserAudienceView({
     );
   }
 
+  const itemRevealed = game.itemRevealed !== false;
+  const label = game.label.trim();
+
   return (
     <PriceShowStage>
       <div className="price-guesser-body">
-        <ItemPhoto
-          src={game.imageUrl}
-          alt={game.label || "Item"}
-          fit={game.photoFit}
-        />
-        {game.label.trim() ? (
-          <p className="price-item-label">{game.label.trim()}</p>
-        ) : null}
+        <div
+          className="price-curtain-stage"
+          aria-label={itemRevealed ? label || "Item" : "Item hidden behind curtain"}
+        >
+          <ItemPhoto
+            src={game.imageUrl}
+            alt={itemRevealed ? label || "Item" : ""}
+            fit={game.photoFit}
+          />
+          {label ? <p className="price-item-label">{label}</p> : null}
+          <ItemCurtain open={itemRevealed} />
+        </div>
         <PriceTag
           price={game.price}
           revealed={game.priceRevealed}
