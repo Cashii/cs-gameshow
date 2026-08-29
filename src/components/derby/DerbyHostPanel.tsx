@@ -5,7 +5,6 @@ import { useSuite } from "@/lib/suite-provider";
 import {
   clampDerbyRacerScale,
   createDefaultDerbyState,
-  DEFAULT_DERBY_RACER_SCALE,
   DERBY_DURATION_MS,
   DERBY_THEME_OPTIONS,
   getDerbyRacer,
@@ -99,19 +98,77 @@ export function DerbyHostPanel() {
 
   const picked = game.winnerId ? getDerbyRacer(game.winnerId, theme) : null;
   const racerNoun = theme === "wonderbar" ? "Toy" : "Horse";
-  const title =
-    theme === "wonderbar" ? "Wonderbar's Dildo Derby" : "Derby Race";
+  const sizeLabel = theme === "wonderbar" ? "Toy size" : "Horse size";
+  const racerScale = clampDerbyRacerScale(game.racerScale);
+
+  let statusText = "Pick a winner";
+  if (game.phase === "idle" && picked) {
+    statusText = `Ready — ${picked.name} wins`;
+  } else if (game.phase === "racing") {
+    statusText = `Racing — ${formatClock(remaining)} left${
+      picked ? ` · ${picked.name} (hidden)` : ""
+    }`;
+  } else if (game.phase === "finished") {
+    statusText = picked ? `Finished — ${picked.name} wins` : "Finished";
+  }
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto">
-      <div className="flex w-full flex-col gap-6 px-6 py-6">
-        <div>
-          <h2 className="text-lg font-bold text-white">{title}</h2>
-          <p className="mt-1 text-sm text-neutral-400">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+              Status
+            </p>
+            <p className="truncate text-sm font-semibold text-white">
+              {statusText}
+            </p>
+          </div>
+          <div className="flex min-w-48 max-w-72 flex-1 items-center gap-2">
+            <span className="shrink-0 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+              Size
+            </span>
+            <input
+              type="range"
+              min={MIN_DERBY_RACER_SCALE}
+              max={MAX_DERBY_RACER_SCALE}
+              step={0.05}
+              value={racerScale}
+              aria-label={sizeLabel}
+              onChange={(e) =>
+                updateDerby((prev) => ({
+                  ...prev,
+                  racerScale: clampDerbyRacerScale(
+                    Number.parseFloat(e.target.value),
+                  ),
+                }))
+              }
+              className="min-w-0 flex-1 accent-sky-500"
+            />
+            <span className="w-10 shrink-0 text-right text-sm font-semibold tabular-nums text-white">
+              {Math.round(racerScale * 100)}%
+            </span>
+          </div>
+          <div className="ml-auto w-64 shrink-0">
+            <Select
+              compact
+              aria-label="Derby theme"
+              value={theme}
+              onValueChange={(value) => {
+                if (isDerbyTheme(value)) setTheme(value);
+              }}
+              options={DERBY_THEME_OPTIONS}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-auto">
+        <div className="flex w-full flex-col gap-6 px-6 py-6">
+          <p className="text-sm text-neutral-400">
             Pick the winner, then start a 20-second race on the spectator
             screen. The audience should not see the pick until the finish.
           </p>
-        </div>
 
         {!spectatorShowingDerby && (
           <OperatorNotice>
@@ -119,64 +176,6 @@ export function DerbyHostPanel() {
             the projector shows the race.
           </OperatorNotice>
         )}
-
-        <div>
-          <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-            Theme
-          </p>
-          <Select
-            aria-label="Derby theme"
-            value={theme}
-            onValueChange={(value) => {
-              if (isDerbyTheme(value)) setTheme(value);
-            }}
-            options={DERBY_THEME_OPTIONS}
-          />
-        </div>
-
-        <div>
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-              {theme === "wonderbar" ? "Toy size" : "Horse size"}
-            </p>
-            <span className="text-sm font-semibold tabular-nums text-white">
-              {Math.round(clampDerbyRacerScale(game.racerScale) * 100)}%
-            </span>
-          </div>
-          <input
-            type="range"
-            min={MIN_DERBY_RACER_SCALE}
-            max={MAX_DERBY_RACER_SCALE}
-            step={0.05}
-            value={clampDerbyRacerScale(game.racerScale)}
-            aria-label={theme === "wonderbar" ? "Toy size" : "Horse size"}
-            onChange={(e) =>
-              updateDerby((prev) => ({
-                ...prev,
-                racerScale: clampDerbyRacerScale(
-                  Number.parseFloat(e.target.value),
-                ),
-              }))
-            }
-            className="w-full accent-sky-500"
-          />
-          <div className="mt-1 flex justify-between text-xs text-neutral-500">
-            <span>{Math.round(MIN_DERBY_RACER_SCALE * 100)}%</span>
-            <button
-              type="button"
-              onClick={() =>
-                updateDerby((prev) => ({
-                  ...prev,
-                  racerScale: DEFAULT_DERBY_RACER_SCALE,
-                }))
-              }
-              className="font-medium text-sky-400 hover:text-sky-300"
-            >
-              Reset to default
-            </button>
-            <span>{Math.round(MAX_DERBY_RACER_SCALE * 100)}%</span>
-          </div>
-        </div>
 
         <div>
           <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
@@ -214,29 +213,6 @@ export function DerbyHostPanel() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-4">
-          <p className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-            Status
-          </p>
-          {game.phase === "idle" && (
-            <p className="mt-1 text-lg font-semibold text-white">
-              {picked ? `Ready — ${picked.name} wins` : "Pick a winner"}
-            </p>
-          )}
-          {game.phase === "racing" && (
-            <p className="mt-1 text-lg font-semibold text-white">
-              Racing — {formatClock(remaining)} left
-              {picked ? ` · ${picked.name} (hidden)` : ""}
-            </p>
-          )}
-          {game.phase === "finished" && (
-            <p className="mt-1 text-lg font-semibold text-white">
-              Finished
-              {picked ? ` — ${picked.name} wins` : ""}
-            </p>
-          )}
-        </div>
-
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
@@ -253,6 +229,7 @@ export function DerbyHostPanel() {
           >
             Reset
           </button>
+        </div>
         </div>
       </div>
     </div>

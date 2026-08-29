@@ -622,11 +622,7 @@ function OperatorContent() {
               <TakeItOrLeaveItHostPanel />
             </div>
           )}
-          {state.activeGame === "derby" && (
-            <div className="min-h-0 flex-1 overflow-auto">
-              <DerbyHostPanel />
-            </div>
-          )}
+          {state.activeGame === "derby" && <DerbyHostPanel />}
           {state.activeGame === "jeoparody" && <JeoparodyHostPanel />}
           {state.activeGame === "trivia" && <TriviaHostPanel />}
           {state.activeGame === "priceGuesser" && <PriceGuesserHostPanel />}

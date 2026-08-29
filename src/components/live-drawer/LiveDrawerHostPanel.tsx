@@ -7,7 +7,6 @@ import {
   LIVE_DRAWER_COLORS,
   getLiveDrawerColor,
   liveDrawerFillStyle,
-  liveDrawerNeedsLightSurface,
   liveDrawerOutlineClass,
   type LiveDrawerColor,
 } from "@/lib/live-drawer/types";
@@ -119,21 +118,19 @@ function revealedChipClass(number: string): string {
   return "h-14 min-w-14 text-2xl";
 }
 
-function usesTokenChipOnDark(color: LiveDrawerColor): boolean {
-  return liveDrawerNeedsLightSurface(color.hex) || color.id === "white";
+function summaryTokenClass(number: string): string {
+  const digits = number.trim().length;
+  if (digits >= 3) return "size-14 text-base";
+  if (digits === 2) return "size-12 text-lg";
+  return "size-12 text-xl";
 }
 
-function tokenNumberOnDarkClass(color: LiveDrawerColor): string {
-  if (!usesTokenChipOnDark(color)) return "";
-  return `inline-flex min-w-[1.15em] items-center justify-center rounded-full px-[0.28em] py-[0.12em] ${liveDrawerOutlineClass(color)}`;
-}
-
-function tokenNumberOnDarkStyle(color: LiveDrawerColor): CSSProperties {
-  const fontFamily = "var(--font-oswald), Impact, sans-serif";
-  if (usesTokenChipOnDark(color)) {
-    return { ...liveDrawerFillStyle(color), fontFamily };
-  }
-  return { color: color.hex, fontFamily };
+function summaryTokenStyle(color: LiveDrawerColor): CSSProperties {
+  return {
+    ...liveDrawerFillStyle(color),
+    fontFamily: "var(--font-oswald), Impact, sans-serif",
+    textShadow: color.ink === "#171717" ? "none" : "0 1px 2px rgba(0, 0, 0, 0.45)",
+  };
 }
 
 export function LiveDrawerHostPanel() {
@@ -622,32 +619,42 @@ export function LiveDrawerHostPanel() {
                 Token Summary
               </h2>
               <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-neutral-700 bg-neutral-800">
-                <div className="flex flex-wrap items-center gap-3 border-b border-neutral-700 p-4">
-                  <div className="flex rounded-lg border border-neutral-600 p-0.5">
+                <div className="flex flex-wrap items-center gap-3 border-b border-neutral-700 px-4 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="flex rounded-lg border border-neutral-600 p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setListTab("pool")}
+                        className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
+                          listTab === "pool"
+                            ? "bg-teal-600 text-white"
+                            : "text-neutral-400 hover:text-white"
+                        }`}
+                      >
+                        In pool ({poolTokens.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setListTab("called")}
+                        className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
+                          listTab === "called"
+                            ? "bg-teal-600 text-white"
+                            : "text-neutral-400 hover:text-white"
+                        }`}
+                      >
+                        Called ({calledTokens.length})
+                      </button>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => setListTab("pool")}
-                      className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
-                        listTab === "pool"
-                          ? "bg-teal-600 text-white"
-                          : "text-neutral-400 hover:text-white"
-                      }`}
+                      disabled={selectedIds.size === 0}
+                      onClick={() => setSelectedIds(new Set())}
+                      className="inline-flex h-8 shrink-0 items-center rounded-md px-3 text-sm font-semibold text-neutral-400 hover:bg-neutral-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      In pool ({poolTokens.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setListTab("called")}
-                      className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
-                        listTab === "called"
-                          ? "bg-teal-600 text-white"
-                          : "text-neutral-400 hover:text-white"
-                      }`}
-                    >
-                      Called ({calledTokens.length})
+                      Clear selected
                     </button>
                   </div>
-                  <div className="flex min-w-0 flex-1 flex-nowrap items-center justify-center gap-2 overflow-x-auto">
+                  <div className="flex min-w-0 flex-1 flex-nowrap items-center justify-center gap-2 overflow-x-auto py-0.5">
                     <span className="shrink-0 text-sm font-semibold tracking-wide text-neutral-300 uppercase">
                       Total
                     </span>
@@ -661,9 +668,9 @@ export function LiveDrawerHostPanel() {
                         <li key={c.id} className="shrink-0">
                           <span
                             title={`${c.name}: ${count}`}
-                            className={`flex h-11 w-11 items-center justify-center rounded-full font-bold tabular-nums shadow-inner ${
+                            className={`box-border flex h-11 w-11 items-center justify-center rounded-full font-bold tabular-nums ${
                               String(count).length >= 2 ? "text-base" : "text-lg"
-                            } ${liveDrawerOutlineClass(c)}`}
+                            } ${c.id === "black" || c.id === "white" ? "" : "shadow-inner"} ${liveDrawerOutlineClass(c)}`}
                             style={{
                               ...liveDrawerFillStyle(c),
                               textShadow:
@@ -711,23 +718,23 @@ export function LiveDrawerHostPanel() {
                   )}
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-auto p-4">
+                <div className="min-h-0 flex-1 overflow-auto px-4 pt-2 pb-3">
                   {listTab === "called" ? (
                     calledRows.length === 0 ? (
                       <p className="text-neutral-400">No called numbers</p>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="space-y-1">
                         {calledRows.map(({ color, tokens }) => (
                           <div key={color.id} aria-label={color.name}>
-                            <ul className="flex flex-wrap items-start gap-x-5 gap-y-4">
+                            <ul className="flex flex-wrap items-start gap-x-2 gap-y-1">
                               {tokens.map((t) => (
                                 <li
                                   key={t.id}
-                                  className="inline-flex flex-col items-center gap-0.5"
+                                  className="inline-flex flex-col items-center"
                                 >
                                   <span
-                                    className={`text-4xl font-bold tabular-nums leading-none ${tokenNumberOnDarkClass(color)}`}
-                                    style={tokenNumberOnDarkStyle(color)}
+                                    className={`inline-flex items-center justify-center rounded-full font-bold tabular-nums leading-none ${summaryTokenClass(t.number)} ${liveDrawerOutlineClass(color)}`}
+                                    style={summaryTokenStyle(color)}
                                   >
                                     {t.number}
                                   </span>
@@ -735,7 +742,7 @@ export function LiveDrawerHostPanel() {
                                     type="button"
                                     onClick={() => handleRemove(t)}
                                     title={`Remove ${t.number}`}
-                                    className="text-2xl leading-none text-neutral-400 hover:text-sky-400"
+                                    className="text-lg leading-none text-neutral-400 hover:text-sky-400"
                                   >
                                     ×
                                   </button>
@@ -749,27 +756,28 @@ export function LiveDrawerHostPanel() {
                   ) : poolRows.length === 0 ? (
                     <p className="text-neutral-400">No tokens in pool</p>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-1">
                       {poolRows.map(({ color, tokens }) => (
                         <div key={color.id} aria-label={color.name}>
-                          <ul className="flex flex-wrap items-start gap-x-5 gap-y-4">
+                          <ul className="flex flex-wrap items-start gap-x-2 gap-y-1">
                             {tokens.map((t) => {
                               const selected = selectedIds.has(t.id);
                               return (
                                 <li
                                   key={t.id}
-                                  className="inline-flex flex-col items-center gap-0.5"
+                                  className="inline-flex flex-col items-center"
                                 >
                                   <button
                                     type="button"
                                     onClick={() => toggleSelect(t.id)}
                                     title={`Select ${t.number}`}
-                                    className={`text-4xl font-bold tabular-nums leading-none transition ${tokenNumberOnDarkClass(color)} ${
+                                    aria-pressed={selected}
+                                    className={`inline-flex items-center justify-center rounded-full font-bold tabular-nums leading-none outline-none transition ${summaryTokenClass(t.number)} ${
                                       selected
-                                        ? "underline decoration-2 underline-offset-4"
-                                        : "hover:opacity-80"
+                                        ? "ring-4 ring-sky-400 ring-offset-2 ring-offset-neutral-800"
+                                        : `${liveDrawerOutlineClass(color)} hover:opacity-90`
                                     }`}
-                                    style={tokenNumberOnDarkStyle(color)}
+                                    style={summaryTokenStyle(color)}
                                   >
                                     {t.number}
                                   </button>
@@ -777,7 +785,7 @@ export function LiveDrawerHostPanel() {
                                     type="button"
                                     onClick={() => handleRemove(t)}
                                     title={`Remove ${t.number}`}
-                                    className="text-2xl leading-none text-neutral-400 hover:text-red-400"
+                                    className="text-lg leading-none text-neutral-400 hover:text-red-400"
                                   >
                                     ×
                                   </button>

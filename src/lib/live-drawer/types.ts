@@ -30,7 +30,7 @@ export const LIVE_DRAWER_COLORS: LiveDrawerColor[] = [
   { id: "red", name: "Red", hex: "#dc2626", ink: INK_LIGHT },
   { id: "blue", name: "Blue", hex: "#2563eb", ink: INK_LIGHT },
   { id: "green", name: "Green", hex: "#16a34a", ink: INK_LIGHT },
-  { id: "yellow", name: "Yellow", hex: "#ca8a04", ink: INK_LIGHT },
+  { id: "yellow", name: "Yellow", hex: "#ffd000", ink: INK_DARK },
   { id: "orange", name: "Orange", hex: "#ea580c", ink: INK_LIGHT },
   { id: "purple", name: "Purple", hex: "#9333ea", ink: INK_LIGHT },
   { id: "black", name: "Black", hex: "#111111", ink: INK_LIGHT },
@@ -93,8 +93,8 @@ export function liveDrawerNeedsLightSurface(hex: string): boolean {
 export function liveDrawerOutlineClass(
   color: LiveDrawerColor | null | undefined,
 ): string {
-  if (color?.id === "white") return "ring-1 ring-neutral-400";
-  if (color?.id === "black") return "ring-1 ring-neutral-500";
+  if (color?.id === "white") return "border-2 border-[#475569]";
+  if (color?.id === "black") return "border-2 border-[#cbd5e1]";
   return "";
 }
 
