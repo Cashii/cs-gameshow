@@ -550,21 +550,310 @@
   color: rgba(255, 246, 216, 0.55);
 }
 
-.price-result-banner {
-  align-self: center;
-  padding: 0.55rem 1.4rem;
-  border-radius: 9999px;
-  font-size: clamp(1rem, 2vw, 1.6rem);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  border: 2px solid var(--price-gold);
-  background: rgba(0, 0, 0, 0.45);
-  color: var(--price-gold);
+.price-result-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.price-result-banner.wrong {
-  border-color: #f87171;
+.price-result-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 2, 8, 0.72);
+  animation: price-result-mask-in 0.35s ease both;
+}
+
+.price-result-overlay.win .price-result-mask {
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(242, 194, 90, 0.22) 0%, transparent 42%),
+    rgba(8, 3, 6, 0.7);
+}
+
+.price-result-overlay.lose .price-result-mask {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(227, 28, 35, 0.28) 0%, transparent 48%),
+    rgba(6, 2, 4, 0.78);
+}
+
+.price-result-message {
+  position: relative;
+  z-index: 3;
+  margin: 0;
+  padding: 0 6vw;
+  text-align: center;
+  font-size: clamp(3.4rem, 11vw, 10rem);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 0.92;
+  text-transform: uppercase;
+}
+
+.price-result-overlay.win .price-result-message {
+  color: #fff6d8;
+  text-shadow:
+    0 4px 0 #8b1e2d,
+    0 8px 0 #5a1218,
+    0 0 28px rgba(255, 209, 0, 0.7),
+    0 0 64px rgba(242, 194, 90, 0.45);
+  animation: price-result-win-message 0.85s cubic-bezier(0.22, 1.35, 0.32, 1) both;
+}
+
+.price-result-overlay.lose .price-result-message {
   color: #fecaca;
+  text-shadow:
+    0 5px 0 #4a0a0a,
+    0 0 28px rgba(227, 28, 35, 0.55);
+  animation: price-result-lose-message 1.1s cubic-bezier(0.22, 0.8, 0.25, 1) both;
+}
+
+.price-result-burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(72vw, 42rem);
+  height: min(72vw, 42rem);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.price-result-burst span {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 6px solid rgba(255, 209, 0, 0.7);
+  animation: price-result-burst-ring 1.15s ease-out both;
+}
+
+.price-result-burst span:nth-child(2) {
+  animation-delay: 0.12s;
+  border-color: rgba(255, 246, 216, 0.45);
+}
+
+.price-result-burst span:nth-child(3) {
+  animation-delay: 0.24s;
+  border-color: rgba(255, 107, 0, 0.55);
+}
+
+.price-result-confetti,
+.price-result-floaters,
+.price-result-ash {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.price-result-floaters {
+  perspective: 700px;
+}
+
+.price-result-confetti-piece {
+  position: absolute;
+  top: -8%;
+  display: block;
+  animation: price-result-confetti-fall linear both;
+  transform: rotate(var(--confetti-rot, 0deg));
+}
+
+.price-result-confetti-piece.circle {
+  border-radius: 9999px;
+}
+
+.price-result-floater {
+  position: absolute;
+  top: -12%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.35));
+}
+
+.price-result-floater.star {
+  animation: price-result-star-fall 2.4s ease-in both;
+}
+
+.price-result-floater.coin {
+  animation: price-result-coin-fall 2.2s linear both;
+}
+
+.price-result-floater.sparkle {
+  animation: price-result-sparkle-fall 1.9s ease-in both;
+}
+
+.price-result-x {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.price-result-x img {
+  width: min(52vw, 28rem);
+  height: min(52vw, 28rem);
+  animation: price-result-buzz-slam 0.7s cubic-bezier(0.22, 0.8, 0.25, 1) both;
+  filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.55));
+}
+
+.price-result-ash span {
+  position: absolute;
+  top: -6%;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: rgba(254, 202, 202, 0.45);
+  animation: price-result-ash-fall linear both;
+}
+
+@keyframes price-result-mask-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes price-result-win-message {
+  0% {
+    opacity: 0;
+    transform: scale(0.35) rotate(-8deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.12) rotate(2deg);
+  }
+  78% {
+    transform: scale(0.96) rotate(-1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes price-result-lose-message {
+  0% {
+    opacity: 0;
+    transform: translateY(-18vh) rotate(-6deg) scale(1.2);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(4vh) rotate(3deg) scale(1.05);
+  }
+  32% {
+    transform: translateY(-1.5vh) rotate(-1deg) scale(0.98);
+  }
+  48% {
+    transform: translateY(0.4vh) rotate(0.5deg) scale(1.02);
+  }
+  70%,
+  100% {
+    opacity: 1;
+    transform: translateY(6vh) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes price-result-burst-ring {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.15);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes price-result-confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--confetti-rot, 0deg));
+  }
+  100% {
+    opacity: 0.85;
+    transform: translateY(112vh) rotate(calc(var(--confetti-rot, 0deg) + 420deg));
+  }
+}
+
+@keyframes price-result-star-fall {
+  0% {
+    opacity: 0;
+    transform: translateY(0) rotate(-20deg) scale(0.4);
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(118vh) rotate(220deg) scale(1);
+  }
+}
+
+@keyframes price-result-coin-fall {
+  0% {
+    opacity: 0;
+    transform: translateY(0) rotateY(0deg) scale(0.6);
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(118vh) rotateY(720deg) scale(1);
+  }
+}
+
+@keyframes price-result-sparkle-fall {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.2);
+  }
+  14% {
+    opacity: 1;
+    transform: translateY(12vh) scale(1.15);
+  }
+  100% {
+    opacity: 0.7;
+    transform: translateY(110vh) scale(0.85);
+  }
+}
+
+@keyframes price-result-buzz-slam {
+  0% {
+    opacity: 0;
+    transform: translate(-18vw, 10vh) rotate(-28deg) scale(0.2);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(4vw, -3vh) rotate(12deg) scale(1.35);
+  }
+  32% {
+    transform: translate(-1.5vw, 1vh) rotate(-6deg) scale(0.82);
+  }
+  46% {
+    transform: translate(0.6vw, -0.4vh) rotate(2deg) scale(1.12);
+  }
+  60%,
+  100% {
+    opacity: 0.55;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes price-result-ash-fall {
+  0% {
+    opacity: 0.7;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(110vh);
+  }
 }
 
 .price-stage.price-stage-show {
@@ -1117,6 +1406,26 @@
   .price-curtain-valance,
   .price-curtain-panel {
     transition: none;
+  }
+
+  .price-result-mask,
+  .price-result-message,
+  .price-result-burst span,
+  .price-result-confetti-piece,
+  .price-result-floater,
+  .price-result-x img,
+  .price-result-ash span {
+    animation: none;
+  }
+
+  .price-result-confetti-piece,
+  .price-result-floater,
+  .price-result-ash span {
+    opacity: 0;
+  }
+
+  .price-result-overlay.lose .price-result-message {
+    transform: translateY(4vh);
   }
 
   .price-tpir-sparkle,

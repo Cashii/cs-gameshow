@@ -39,12 +39,15 @@ import {
 } from "@/lib/trivia/types";
 import {
   createDefaultPriceGuesserState,
+  parsePriceGuesserResult,
+  withSyncedPriceGuesserResult,
   type PriceGuesserState,
 } from "@/lib/price-guesser/types";
 import {
   createDefaultPriceOrderState,
   PRICE_ORDER_MAX_ITEMS,
   syncPriceOrderSlots,
+  withSyncedPriceOrderResult,
   type PriceOrderItem,
   type PriceOrderState,
 } from "@/lib/price-order/types";
@@ -375,7 +378,7 @@ function normalizePriceGuesserState(
 ): PriceGuesserState {
   const defaults = createDefaultPriceGuesserState();
   if (!raw || typeof raw !== "object") return defaults;
-  return {
+  return withSyncedPriceGuesserResult({
     imageUrl: typeof raw.imageUrl === "string" ? raw.imageUrl : defaults.imageUrl,
     label: typeof raw.label === "string" ? raw.label : defaults.label,
     price: finitePrice(raw.price),
@@ -383,7 +386,8 @@ function normalizePriceGuesserState(
     itemRevealed:
       typeof raw.itemRevealed === "boolean" ? raw.itemRevealed : true,
     photoFit: normalizePhotoFit(raw.photoFit),
-  };
+    resultOverlay: parsePriceGuesserResult(raw.resultOverlay),
+  });
 }
 
 function normalizePriceOrderItem(
@@ -462,7 +466,11 @@ function normalizePriceOrderState(
     Array.isArray(raw.order) ? raw.order : [],
     visible,
   );
-  return { items, order };
+  return withSyncedPriceOrderResult({
+    items,
+    order,
+    resultShown: Boolean(raw.resultShown),
+  });
 }
 
 const JEOPARODY_PHASES = new Set<JeoparodyPhase>(["board", "clue", "answer"]);

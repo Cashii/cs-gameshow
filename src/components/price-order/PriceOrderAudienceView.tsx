@@ -2,9 +2,7 @@
 
 import type { CSSProperties } from "react";
 import {
-  allPlacedPricesRevealed,
   isPlayerOrderCorrect,
-  isPriceOrderComplete,
   priceOrderSlots,
   unplacedPriceOrderItems,
   visiblePriceOrderItems,
@@ -13,6 +11,7 @@ import {
 import { ItemPhoto } from "@/components/price/ItemPhoto";
 import { PriceShowStage } from "@/components/price/PriceShowStage";
 import { PriceTag } from "@/components/price/PriceTag";
+import { PriceResultOverlay } from "@/components/price/PriceResultOverlay";
 import { usePriceItemLayoutAnimation } from "@/components/price-order/usePriceItemLayoutAnimation";
 import "@/styles/price-audience.css";
 
@@ -23,13 +22,11 @@ export function PriceOrderAudienceView({
   const shelf = unplacedPriceOrderItems(game);
   const slots = priceOrderSlots(game);
   const slotCount = Math.max(slots.length, 1);
-  const showResult =
-    isPriceOrderComplete(game) && allPlacedPricesRevealed(game);
-  const correct = showResult && isPlayerOrderCorrect(game);
   const layoutKey = `${shelf.map((item) => item.id).join(",")}|${slots
     .map((item) => item?.id ?? "-")
     .join(",")}`;
   const bodyRef = usePriceItemLayoutAnimation(layoutKey);
+  const resultCorrect = isPlayerOrderCorrect(game);
 
   if (visible.length === 0) {
     return (
@@ -110,12 +107,14 @@ export function PriceOrderAudienceView({
           <span>Least</span>
           <span>Most</span>
         </div>
-        {showResult && (
-          <div className={`price-result-banner${correct ? "" : " wrong"}`}>
-            {correct ? "Perfect order" : "Not quite"}
-          </div>
-        )}
       </div>
+      {game.resultShown && (
+        <PriceResultOverlay
+          key={resultCorrect ? "win" : "lose"}
+          correct={resultCorrect}
+          message={resultCorrect ? "Perfect order" : "Not quite"}
+        />
+      )}
     </PriceShowStage>
   );
 }

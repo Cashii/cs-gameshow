@@ -4,6 +4,7 @@ import { RotateCcw } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import {
   createDefaultPriceGuesserState,
+  type PriceGuesserResult,
   type PriceGuesserState,
 } from "@/lib/price-guesser/types";
 import { parsePriceInput, priceInputValue } from "@/lib/price/format";
@@ -13,52 +14,8 @@ import { DEFAULT_PHOTO_FIT } from "@/lib/price/photo-fit";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { OperatorNotice } from "@/components/operator/OperatorNotice";
+import { StatusSwitch } from "@/components/operator/StatusSwitch";
 import { useEffect, useState } from "react";
-
-function StatusSwitch({
-  checked,
-  disabled,
-  labelOn,
-  labelOff,
-  ariaLabel,
-  onToggle,
-}: Readonly<{
-  checked: boolean;
-  disabled: boolean;
-  labelOn: string;
-  labelOff: string;
-  ariaLabel: string;
-  onToggle: () => void;
-}>) {
-  return (
-    <div className="flex items-center gap-2">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-label={ariaLabel}
-        disabled={disabled}
-        onClick={onToggle}
-        className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-40 ${
-          checked ? "bg-emerald-500" : "bg-neutral-500"
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
-            checked ? "translate-x-5" : "translate-x-0"
-          }`}
-        />
-      </button>
-      <span
-        className={`text-sm font-semibold ${
-          checked ? "text-emerald-700" : "text-red-600"
-        }`}
-      >
-        {checked ? labelOn : labelOff}
-      </span>
-    </div>
-  );
-}
 
 export function PriceGuesserHostPanel() {
   const { state, updatePriceGuesser } = useSuite();
@@ -83,6 +40,14 @@ export function PriceGuesserHostPanel() {
 
   const itemShowing = game.itemRevealed !== false;
   const priceShowing = Boolean(game.priceRevealed);
+  const hasItem = Boolean(game.imageUrl);
+
+  const toggleResult = (kind: PriceGuesserResult) => {
+    patch((prev) => ({
+      ...prev,
+      resultOverlay: prev.resultOverlay === kind ? null : kind,
+    }));
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -111,6 +76,30 @@ export function PriceGuesserHostPanel() {
               patch((prev) => ({ ...prev, priceRevealed: !prev.priceRevealed }))
             }
           />
+          <button
+            type="button"
+            disabled={!hasItem && game.resultOverlay !== "correct"}
+            onClick={() => toggleResult("correct")}
+            className={`inline-flex h-10 items-center rounded-md border px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500 ${
+              game.resultOverlay === "correct"
+                ? "border-teal-500 bg-teal-600 hover:bg-teal-500"
+                : "border-green-500 bg-green-600 hover:bg-green-700"
+            }`}
+          >
+            {game.resultOverlay === "correct" ? "Hide result" : "Show Correct"}
+          </button>
+          <button
+            type="button"
+            disabled={!hasItem && game.resultOverlay !== "wrong"}
+            onClick={() => toggleResult("wrong")}
+            className={`inline-flex h-10 items-center rounded-md border px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500 ${
+              game.resultOverlay === "wrong"
+                ? "border-teal-500 bg-teal-600 hover:bg-teal-500"
+                : "border-red-500 bg-red-600 hover:bg-red-700"
+            }`}
+          >
+            {game.resultOverlay === "wrong" ? "Hide result" : "Show Not quite"}
+          </button>
           <button
             type="button"
             onClick={() => setConfirmReset(true)}
@@ -181,6 +170,7 @@ export function PriceGuesserHostPanel() {
                     imageUrl: url,
                     priceRevealed: false,
                     itemRevealed: false,
+                    resultOverlay: null,
                     photoFit: { ...DEFAULT_PHOTO_FIT },
                   }))
                 }

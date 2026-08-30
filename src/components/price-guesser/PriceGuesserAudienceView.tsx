@@ -4,6 +4,7 @@ import type { PriceGuesserState } from "@/lib/price-guesser/types";
 import { ItemPhoto } from "@/components/price/ItemPhoto";
 import { PriceShowStage } from "@/components/price/PriceShowStage";
 import { PriceTag } from "@/components/price/PriceTag";
+import { PriceResultOverlay } from "@/components/price/PriceResultOverlay";
 import "@/styles/price-audience.css";
 
 function ItemCurtain({ open }: Readonly<{ open: boolean }>) {
@@ -54,6 +55,15 @@ export function PriceGuesserAudienceView({
           size="xl"
         />
       </div>
+      {game.resultOverlay && (
+        <PriceResultOverlay
+          key={game.resultOverlay}
+          correct={game.resultOverlay === "correct"}
+          message={
+            game.resultOverlay === "correct" ? "Correct" : "Not quite"
+          }
+        />
+      )}
     </PriceShowStage>
   );
 }

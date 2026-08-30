@@ -11,10 +11,11 @@ There is no player phone board.
 3. Upload a photo, optionally name the item, and enter the real price. A new photo starts behind a closed curtain.
 4. Click **Reveal item** to part the curtain on the spectator screen, showing the photo and name together. **Hide behind curtain** covers them again.
 5. After guesses, click **Reveal price**. **Hide price** covers it again.
-6. **Clear item** removes the photo and price for the next round.
+6. **Show Correct** or **Show Not quite** puts a masked result overlay on the spectator screen. Click the same button again to hide it.
+7. **Clear item** removes the photo and price for the next round.
 
 Photos are stored in MongoDB (`media`) and referenced from game state. Replacing or clearing an item deletes the previous photo.
 
 ## Spectator
 
-Shows the current photo, optional name, and a price tag. A red velvet curtain covers the photo and name until the operator reveals them together. The tag reads `???` until the operator reveals the price.
+Shows the current photo, optional name, and a price tag. A red velvet curtain covers the photo and name until the operator reveals them together. The tag reads `???` until the operator reveals the price. The operator can then show a **Correct** or **Not quite** overlay over a darkened mask.

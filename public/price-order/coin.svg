@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <circle cx="32" cy="32" r="29" fill="#C7922A" />
+  <circle cx="32" cy="32" r="25" fill="#FFD100" />
+  <circle cx="32" cy="32" r="20" fill="none" stroke="#C7922A" stroke-width="2.5" />
+  <text
+    x="32"
+    y="42"
+    text-anchor="middle"
+    font-family="Impact, Arial Black, sans-serif"
+    font-size="28"
+    font-weight="700"
+    fill="#8B1E2D"
+  >$</text>
+</svg>

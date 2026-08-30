@@ -19,10 +19,12 @@ export type PriceOrderState = {
   items: PriceOrderItem[];
   /** Slot ids from cheapest to most expensive. `null` is an empty slot. */
   order: Array<string | null>;
+  /** Spectator result overlay. Host shows it after prices are revealed. */
+  resultShown: boolean;
 };
 
 export function createDefaultPriceOrderState(): PriceOrderState {
-  return { items: [], order: [] };
+  return { items: [], order: [], resultShown: false };
 }
 
 export function createEmptyPriceOrderItem(): PriceOrderItem {
@@ -112,6 +114,19 @@ export function isPriceOrderComplete(state: PriceOrderState): boolean {
 export function allPlacedPricesRevealed(state: PriceOrderState): boolean {
   const ordered = orderedPriceOrderItems(state);
   return ordered.length > 0 && ordered.every((item) => item.priceRevealed);
+}
+
+export function priceOrderResultReady(state: PriceOrderState): boolean {
+  return isPriceOrderComplete(state) && allPlacedPricesRevealed(state);
+}
+
+export function withSyncedPriceOrderResult(
+  state: PriceOrderState,
+): PriceOrderState {
+  if (state.resultShown && !priceOrderResultReady(state)) {
+    return { ...state, resultShown: false };
+  }
+  return state;
 }
 
 /** True when placed items are in non-decreasing price order. */

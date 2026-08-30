@@ -44,10 +44,12 @@ import type { JeoparodyGameState } from "@/lib/jeoparody/types";
 import { createSampleJeoparodyGame } from "@/lib/jeoparody/defaults";
 import {
   createDefaultPriceGuesserState,
+  withSyncedPriceGuesserResult,
   type PriceGuesserState,
 } from "@/lib/price-guesser/types";
 import {
   createDefaultPriceOrderState,
+  withSyncedPriceOrderResult,
   type PriceOrderState,
 } from "@/lib/price-order/types";
 import {
@@ -485,8 +487,8 @@ export function SuiteProvider({
     (updater: (game: PriceGuesserState) => PriceGuesserState) => {
       applyLocalSuite((prev) => ({
         ...prev,
-        priceGuesser: updater(
-          prev.priceGuesser ?? createDefaultPriceGuesserState(),
+        priceGuesser: withSyncedPriceGuesserResult(
+          updater(prev.priceGuesser ?? createDefaultPriceGuesserState()),
         ),
       }));
     },
@@ -497,7 +499,9 @@ export function SuiteProvider({
     (updater: (game: PriceOrderState) => PriceOrderState) => {
       applyLocalSuite((prev) => ({
         ...prev,
-        priceOrder: updater(prev.priceOrder ?? createDefaultPriceOrderState()),
+        priceOrder: withSyncedPriceOrderResult(
+          updater(prev.priceOrder ?? createDefaultPriceOrderState()),
+        ),
       }));
     },
     [applyLocalSuite],

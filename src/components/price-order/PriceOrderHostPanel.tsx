@@ -4,18 +4,19 @@ import { useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
-  Eye,
-  EyeOff,
   Plus,
   RotateCcw,
   Trash2,
+  X,
 } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import {
   PRICE_ORDER_MAX_ITEMS,
   createDefaultPriceOrderState,
   createEmptyPriceOrderItem,
+  isPlayerOrderCorrect,
   orderedPriceOrderItems,
+  priceOrderResultReady,
   priceOrderSlots,
   syncPriceOrderSlots,
   unplacedPriceOrderItems,
@@ -23,7 +24,11 @@ import {
   type PriceOrderItem,
   type PriceOrderState,
 } from "@/lib/price-order/types";
-import { parsePriceInput, priceInputValue } from "@/lib/price/format";
+import {
+  formatPrice,
+  parsePriceInput,
+  priceInputValue,
+} from "@/lib/price/format";
 import {
   DEFAULT_PHOTO_FIT,
   photoFitStyle,
@@ -34,6 +39,7 @@ import { SquarePhotoEditor } from "@/components/price/SquarePhotoEditor";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { OperatorNotice } from "@/components/operator/OperatorNotice";
+import { StatusSwitch } from "@/components/operator/StatusSwitch";
 
 export function PriceOrderHostPanel() {
   const { state, updatePriceOrder } = useSuite();
@@ -82,6 +88,7 @@ export function PriceOrderHostPanel() {
     patch((prev) => {
       const items = prev.items.filter((entry) => entry.id !== id);
       return {
+        ...prev,
         items,
         order: syncPriceOrderSlots(
           prev.order.map((entryId) => (entryId === id ? null : entryId)),
@@ -131,10 +138,18 @@ export function PriceOrderHostPanel() {
     updateItem(id, (item) => ({ ...item, priceRevealed: revealed }));
   };
 
-  const revealAll = (revealed: boolean) => {
+  const resultReady = priceOrderResultReady(game);
+  const resultCorrect = resultReady && isPlayerOrderCorrect(game);
+  const resultAction = resultButton(
+    Boolean(game.resultShown),
+    resultReady,
+    resultCorrect,
+  );
+
+  const hideAll = () => {
     patch((prev) => ({
       ...prev,
-      items: prev.items.map((item) => ({ ...item, priceRevealed: revealed })),
+      items: prev.items.map((item) => ({ ...item, priceRevealed: false })),
     }));
   };
 
@@ -165,18 +180,20 @@ export function PriceOrderHostPanel() {
           <button
             type="button"
             disabled={ordered.length === 0}
-            onClick={() => revealAll(true)}
-            className="inline-flex h-10 items-center rounded-md border border-green-500 bg-green-600 px-4 text-sm font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500"
-          >
-            Reveal all prices
-          </button>
-          <button
-            type="button"
-            disabled={ordered.length === 0}
-            onClick={() => revealAll(false)}
+            onClick={hideAll}
             className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Hide all prices
+          </button>
+          <button
+            type="button"
+            disabled={!resultReady && !game.resultShown}
+            onClick={() =>
+              patch((prev) => ({ ...prev, resultShown: !prev.resultShown }))
+            }
+            className={`inline-flex h-10 items-center rounded-md border px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500 ${resultAction.className}`}
+          >
+            {resultAction.label}
           </button>
           <button
             type="button"
@@ -264,14 +281,24 @@ export function PriceOrderHostPanel() {
                         className="h-12 w-12 rounded"
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-white">
-                          {item.label.trim() || "Untitled"}
-                        </p>
-                        <p className="text-xs text-neutral-500">
-                          {item.priceRevealed
-                            ? priceInputValue(item.price) || "No price"
-                            : "Price hidden"}
-                        </p>
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p className="truncate text-sm font-semibold text-white">
+                            {item.label.trim() || "Untitled"}
+                          </p>
+                          <p className="shrink-0 text-sm font-semibold tabular-nums text-amber-300">
+                            {formatPrice(item.price)}
+                          </p>
+                        </div>
+                        <StatusSwitch
+                          checked={item.priceRevealed}
+                          disabled={item.price == null}
+                          labelOn="Price showing"
+                          labelOff="Price hidden"
+                          ariaLabel={`${item.label.trim() || "Item"} price`}
+                          onToggle={() =>
+                            revealItem(item.id, !item.priceRevealed)
+                          }
+                        />
                       </div>
                       <div className="flex shrink-0 items-center gap-1">
                         <button
@@ -294,28 +321,11 @@ export function PriceOrderHostPanel() {
                         </button>
                         <button
                           type="button"
-                          disabled={item.price == null}
-                          onClick={() =>
-                            revealItem(item.id, !item.priceRevealed)
-                          }
-                          className="rounded-md p-1.5 text-neutral-300 hover:bg-neutral-800 disabled:opacity-30"
-                          aria-label={
-                            item.priceRevealed ? "Hide price" : "Reveal price"
-                          }
-                        >
-                          {item.priceRevealed ? (
-                            <EyeOff size={16} />
-                          ) : (
-                            <Eye size={16} />
-                          )}
-                        </button>
-                        <button
-                          type="button"
                           onClick={() => removeFromOrder(item.id)}
                           className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-800 hover:text-red-300"
-                          aria-label="Remove from list"
+                          aria-label="Clear from list"
                         >
-                          <Trash2 size={16} />
+                          <X size={16} />
                         </button>
                       </div>
                     </div>
@@ -454,6 +464,35 @@ export function PriceOrderHostPanel() {
       />
     </div>
   );
+}
+
+function resultButton(
+  shown: boolean,
+  ready: boolean,
+  correct: boolean,
+): { label: string; className: string } {
+  if (shown) {
+    return {
+      label: "Hide result",
+      className: "border-teal-500 bg-teal-600 hover:bg-teal-500",
+    };
+  }
+  if (correct) {
+    return {
+      label: "Show Perfect order",
+      className: "border-green-500 bg-green-600 hover:bg-green-700",
+    };
+  }
+  if (ready) {
+    return {
+      label: "Show Not quite",
+      className: "border-red-500 bg-red-600 hover:bg-red-700",
+    };
+  }
+  return {
+    label: "Show result",
+    className: "border-neutral-600 bg-neutral-700 text-neutral-500",
+  };
 }
 
 function CroppedThumb({
