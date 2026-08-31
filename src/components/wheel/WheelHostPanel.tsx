@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { OperatorNotice } from "@/components/operator/OperatorNotice";
 import { useSound } from "@/lib/feud/useSound";
 import { phraseHasLetter } from "@/lib/wheel/types";
 
@@ -152,6 +153,7 @@ function PhraseRevealRow({
 export function WheelHostPanel() {
   const { state, updateWheel } = useSuite();
   const wheel = state.wheel;
+  const spectatorLive = state.spectatorGame === "wheel";
   const sounds = useSound();
   const [phraseInput, setPhraseInput] = useState(wheel.phrase);
   const [topicInput, setTopicInput] = useState(wheel.topic);
@@ -313,7 +315,14 @@ export function WheelHostPanel() {
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="w-full p-6">
           <div className="space-y-6">
-            <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
+            {!spectatorLive && (
+              <OperatorNotice>
+                Spectator is not on Wheel of Riches. Use the Spectator screen
+                list so the projector shows the board.
+              </OperatorNotice>
+            )}
+
+            <div className="rounded-lg border border-neutral-700 bg-white p-6 shadow-lg">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-xl font-bold text-white">Current phrase</h2>
                 {locked && (
@@ -396,7 +405,7 @@ export function WheelHostPanel() {
               )}
             </div>
 
-            <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
+            <div className="rounded-lg border border-neutral-700 bg-white p-6 shadow-lg">
               <h2 className="mb-4 text-xl font-bold text-white">Letter Controls</h2>
               <div className="flex flex-wrap gap-3">
                 {ALPHABET.map((letter) => {

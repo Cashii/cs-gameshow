@@ -165,17 +165,17 @@ export function DerbyHostPanel() {
 
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex w-full flex-col gap-6 px-6 py-6">
+          {!spectatorShowingDerby && (
+            <OperatorNotice>
+              Spectator is not on Derby Race. Use the Spectator screen dropdown so
+              the projector shows the race.
+            </OperatorNotice>
+          )}
+
           <p className="text-sm text-neutral-400">
             Pick the winner, then start a 20-second race on the spectator
             screen. The audience should not see the pick until the finish.
           </p>
-
-        {!spectatorShowingDerby && (
-          <OperatorNotice>
-            Spectator is not on Derby Race. Use the Spectator screen dropdown so
-            the projector shows the race.
-          </OperatorNotice>
-        )}
 
         <div>
           <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">

@@ -4,10 +4,11 @@ Letter board phrase reveal (Wheel of Fortune style).
 
 ## Operator controls
 
-- Set the phrase
-- Set a topic banner shown above the spectator board
-- Reveal individual letters from the alphabet, or by clicking a letter in the current phrase
-- Toggle letter legend on spectator
+1. Select **Wheel of Riches** in the left nav.
+2. Put **Wheel of Riches** on the Spectator screen so the projector shows the board.
+3. Set the phrase and an optional topic banner.
+4. Reveal individual letters from the alphabet, or by clicking a letter in the current phrase.
+5. Toggle letter legend on spectator.
 
 ## Spectator
 

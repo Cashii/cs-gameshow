@@ -40,6 +40,7 @@ function triviaStatusClass(
 export function TriviaHostPanel() {
   const { state, refreshSnapshot } = useSuite();
   const trivia = state.trivia;
+  const spectatorLive = state.spectatorGame === "trivia";
   const [question, setQuestion] = useState(trivia.question || "");
   const [optionA, setOptionA] = useState(trivia.optionA || "True");
   const [optionB, setOptionB] = useState(trivia.optionB || "False");
@@ -108,6 +109,12 @@ export function TriviaHostPanel() {
 
   return (
     <div className="min-h-0 flex-1 overflow-auto px-6 py-6">
+      {!spectatorLive && (
+        <OperatorNotice className="mb-6">
+          Spectator is not on Elimination Trivia. Use the Spectator screen list
+          so the projector shows the question.
+        </OperatorNotice>
+      )}
       {!settingUpNext && !questionClosed ? (
         <div className="mb-4">
           <p

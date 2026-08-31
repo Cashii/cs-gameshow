@@ -154,7 +154,7 @@ export function TakeItOrLeaveItHostPanel() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-6">
-      <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
+      <div className="rounded-lg border border-neutral-700 bg-white p-6 shadow-lg">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold text-white">Game Status</h2>
@@ -194,7 +194,7 @@ export function TakeItOrLeaveItHostPanel() {
       </div>
 
       {game.phase === "setup" && (
-        <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
+        <div className="rounded-lg border border-neutral-700 bg-white p-6 shadow-lg">
           <h2 className="mb-2 text-xl font-bold text-white">Prize Amounts</h2>
           <p className="mb-4 text-sm text-neutral-400">
             Edit the nine prize amounts. Without shuffling, each amount stays
