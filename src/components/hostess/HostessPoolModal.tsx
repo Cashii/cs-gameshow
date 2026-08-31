@@ -16,7 +16,7 @@ type HostessPoolModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tokens: LiveDrawerToken[];
-  onRemove: (tokenId: string) => Promise<void>;
+  onRemove: (tokenId: string) => void;
 };
 
 function sortTokens(tokens: LiveDrawerToken[]): LiveDrawerToken[] {
@@ -39,20 +39,14 @@ export function HostessPoolModal({
   onRemove,
 }: Readonly<HostessPoolModalProps>) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [removing, setRemoving] = useState(false);
 
   const sorted = useMemo(() => sortTokens(tokens), [tokens]);
   const selected = tokens.find((t) => t.id === selectedId);
 
-  const handleRemove = async () => {
+  const handleRemove = () => {
     if (!selectedId) return;
-    setRemoving(true);
-    try {
-      await onRemove(selectedId);
-      setSelectedId(null);
-    } finally {
-      setRemoving(false);
-    }
+    onRemove(selectedId);
+    setSelectedId(null);
   };
 
   return (
@@ -140,9 +134,8 @@ export function HostessPoolModal({
                 </button>
                 <button
                   type="button"
-                  onClick={() => void handleRemove()}
-                  disabled={removing}
-                  className="flex-1 rounded-lg bg-red-600 py-3 font-semibold text-white disabled:opacity-50"
+                  onClick={handleRemove}
+                  className="flex-1 rounded-lg bg-red-600 py-3 font-semibold text-white"
                 >
                   Remove
                 </button>

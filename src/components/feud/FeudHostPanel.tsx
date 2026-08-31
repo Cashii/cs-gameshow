@@ -29,7 +29,7 @@ const ghostIconButtonStyle: CSSProperties = {
   padding: 0,
   border: "none",
   background: "transparent",
-  color: "#a3a3a3",
+  color: "var(--color-neutral-400)",
 };
 
 export function FeudHostPanel() {
@@ -278,8 +278,8 @@ export function FeudHostPanel() {
       >
         <div
           style={{
-            borderRight: "1px solid #3a3a3a",
-            background: "#1a1a1a",
+            borderRight: "1px solid var(--color-neutral-700)",
+            background: "var(--color-neutral-900)",
             display: "flex",
             flexDirection: "column",
             minWidth: 0,
@@ -290,7 +290,7 @@ export function FeudHostPanel() {
           <div
             style={{
               padding: "16px 24px",
-              borderBottom: "1px solid #3a3a3a",
+              borderBottom: "1px solid var(--color-neutral-700)",
             }}
           >
             <div
@@ -301,7 +301,7 @@ export function FeudHostPanel() {
                 marginBottom: 12,
               }}
             >
-              <div style={{ fontWeight: 600, fontSize: 16, color: "#e5e5e5" }}>
+              <div style={{ fontWeight: 600, fontSize: 16, color: "var(--color-white)" }}>
                 Teams
               </div>
               <Tooltip
@@ -342,7 +342,7 @@ export function FeudHostPanel() {
                         style={{
                           width: 1,
                           alignSelf: "stretch",
-                          background: "#3a3a3a",
+                          background: "var(--color-neutral-700)",
                         }}
                       />
                     )}
@@ -362,7 +362,7 @@ export function FeudHostPanel() {
                             fontWeight: 600,
                             letterSpacing: "0.04em",
                             textTransform: "uppercase",
-                            color: "#a3a3a3",
+                            color: "var(--color-neutral-400)",
                           }}
                         >
                           Name
@@ -387,7 +387,7 @@ export function FeudHostPanel() {
                             fontWeight: 600,
                             letterSpacing: "0.04em",
                             textTransform: "uppercase",
-                            color: "#a3a3a3",
+                            color: "var(--color-neutral-400)",
                           }}
                         >
                           Score
@@ -418,10 +418,10 @@ export function FeudHostPanel() {
           <div
             style={{
               padding: "16px 24px",
-              borderBottom: "1px solid #3a3a3a",
+              borderBottom: "1px solid var(--color-neutral-700)",
             }}
           >
-            <div style={{ fontWeight: 600, fontSize: 16, color: "#e5e5e5", marginBottom: 8 }}>
+            <div style={{ fontWeight: 600, fontSize: 16, color: "var(--color-white)", marginBottom: 8 }}>
               Strikes
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -430,7 +430,7 @@ export function FeudHostPanel() {
                   <span
                     key={index}
                     style={{
-                      color: index < (round.strikes || 0) ? "#ef4444" : "#4a4a4a",
+                      color: index < (round.strikes || 0) ? "#ef4444" : "var(--color-neutral-600)",
                     }}
                   >
                     X
@@ -473,7 +473,7 @@ export function FeudHostPanel() {
                   marginBottom: 8,
                 }}
               >
-                <div style={{ fontWeight: 600, fontSize: 16, color: "#e5e5e5" }}>
+                <div style={{ fontWeight: 600, fontSize: 16, color: "var(--color-white)" }}>
                   Answers
                 </div>
                 <Tooltip content="Add Answer">
@@ -491,7 +491,7 @@ export function FeudHostPanel() {
                     fontWeight: 600,
                     letterSpacing: "0.04em",
                     textTransform: "uppercase",
-                    color: "#a3a3a3",
+                    color: "var(--color-neutral-400)",
                     whiteSpace: "nowrap",
                   }}
                 >
@@ -518,13 +518,13 @@ export function FeudHostPanel() {
                           ? side === "left"
                             ? "1px solid #fb7185"
                             : "1px solid #60a5fa"
-                          : "1px solid #3a3a3a",
+                          : "1px solid var(--color-neutral-700)",
                         background: selected
                           ? side === "left"
-                            ? "#3f1d27"
-                            : "#1e3a5f"
-                          : "#2a2a2a",
-                        color: selected ? "#e5e5e5" : "#a3a3a3",
+                            ? "#fce7ea"
+                            : "#e0f2fe"
+                          : "var(--color-neutral-800)",
+                        color: selected ? "var(--color-white)" : "var(--color-neutral-400)",
                         fontSize: 12,
                         fontWeight: 600,
                         cursor: "pointer",
@@ -609,7 +609,7 @@ export function FeudHostPanel() {
                           width: 14,
                           border: "none",
                           background: "transparent",
-                          color: "#a3a3a3",
+                          color: "var(--color-neutral-400)",
                           cursor: "grab",
                           padding: 0,
                           margin: 0,
@@ -629,9 +629,9 @@ export function FeudHostPanel() {
                           lineHeight: 1,
                           color: a.revealed
                             ? a.awardedTo === "right"
-                              ? "#93c5fd"
-                              : "#fda4af"
-                            : "#a3a3a3",
+                              ? "#2563eb"
+                              : "#e11d48"
+                            : "var(--color-neutral-400)",
                           textAlign: "center",
                         }}
                       >
@@ -716,7 +716,7 @@ export function FeudHostPanel() {
                   </div>
                 ))}
                 {round.answers.length === 0 && (
-                  <div style={{ textAlign: "center", color: "#666", padding: "40px 20px" }}>
+                  <div style={{ textAlign: "center", color: "var(--color-neutral-500)", padding: "40px 20px" }}>
                     No answers yet. Click the add button to add one.
                   </div>
                 )}
@@ -732,7 +732,7 @@ export function FeudHostPanel() {
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
-            background: "#0f0f0f",
+            background: "var(--color-neutral-950)",
             padding: 20,
           }}
         >

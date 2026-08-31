@@ -11,6 +11,7 @@ import {
   liveDrawerOutlineClass,
   type LiveDrawerToken,
 } from "@/lib/live-drawer/types";
+import { parseNumberRange } from "@/lib/live-drawer/draw";
 import { HostessPoolModal } from "@/components/hostess/HostessPoolModal";
 import { HostessNumberPad } from "@/components/hostess/HostessNumberPad";
 
@@ -32,6 +33,7 @@ function HostessContent() {
   const [poolOpen, setPoolOpen] = useState(false);
   const [recentLine, setRecentLine] = useState<LiveDrawerToken[]>([]);
   const [poolCountBump, setPoolCountBump] = useState(0);
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(() => new Set());
 
   const serverRecent = useMemo(
     () => poolTokens.slice(0, LOG_SLOTS),
@@ -43,29 +45,54 @@ function HostessContent() {
     setPoolCountBump(0);
   }, [serverRecent]);
 
-  const displayPoolCount = poolTokens.length + poolCountBump;
+  useEffect(() => {
+    const serverIds = new Set(poolTokens.map((t) => t.id));
+    setHiddenIds((prev) => {
+      const next = new Set([...prev].filter((id) => serverIds.has(id)));
+      if (next.size === prev.size) return prev;
+      return next;
+    });
+  }, [poolTokens]);
+
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(() => setMessage(""), 3000);
+    return () => window.clearTimeout(timer);
+  }, [message]);
+
+  const visibleTokens = useMemo(
+    () => poolTokens.filter((t) => !hiddenIds.has(t.id)),
+    [poolTokens, hiddenIds],
+  );
+  const displayPoolCount = visibleTokens.length + poolCountBump;
 
   const handleAdd = () => {
-    const n = number.trim();
-    if (!n) return;
+    const numbers = parseNumberRange(number);
+    if (numbers.length === 0) {
+      if (number.trim()) setMessage("Use 1,2,3 or a range like 1-10");
+      return;
+    }
 
-    const optimistic = createOptimisticToken(n, colorId);
-    setRecentLine((prev) => [optimistic, ...prev].slice(0, LOG_SLOTS));
-    setPoolCountBump((b) => b + 1);
+    const optimistic = numbers.map((n) => createOptimisticToken(n, colorId));
+    const optimisticIds = new Set(optimistic.map((t) => t.id));
+    setRecentLine((prev) => [...optimistic, ...prev].slice(0, LOG_SLOTS));
+    setPoolCountBump((b) => b + numbers.length);
     setNumber("");
-    setMessage("Added");
+    setMessage(numbers.length === 1 ? "Added" : `Added ${numbers.length}`);
 
     void (async () => {
       const revert = () => {
-        setRecentLine((prev) => prev.filter((t) => t.id !== optimistic.id));
-        setPoolCountBump((b) => Math.max(0, b - 1));
+        setRecentLine((prev) => prev.filter((t) => !optimisticIds.has(t.id)));
+        setPoolCountBump((b) => Math.max(0, b - numbers.length));
       };
 
       try {
         const res = await fetch("/api/tokens", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tokens: [{ number: n, colorId }] }),
+          body: JSON.stringify({
+            tokens: numbers.map((n) => ({ number: n, colorId })),
+          }),
         });
         const data = (await res.json()) as {
           error?: string;
@@ -73,10 +100,15 @@ function HostessContent() {
           skipped?: number;
         };
         if (!res.ok) throw new Error(data.error ?? "Failed to add");
-        if ((data.skipped ?? 0) > 0) {
+        const added = data.added ?? 0;
+        const skipped = data.skipped ?? 0;
+        if (added === 0 && skipped > 0) {
           revert();
           setMessage("Already in pool");
           return;
+        }
+        if (skipped > 0) {
+          setMessage(`Added ${added}, skipped ${skipped}`);
         }
         void refreshSnapshot();
       } catch (e) {
@@ -86,21 +118,55 @@ function HostessContent() {
     })();
   };
 
-  const handleRemove = async (tokenId: string) => {
-    const res = await fetch(`/api/tokens/${tokenId}`, { method: "DELETE" });
-    const data = (await res.json()) as { error?: string };
-    if (!res.ok) throw new Error(data.error ?? "Failed to remove");
-    await refreshSnapshot();
+  const handleRemove = (tokenId: string) => {
+    const token =
+      poolTokens.find((t) => t.id === tokenId) ??
+      recentLine.find((t) => t.id === tokenId);
+    setHiddenIds((prev) => {
+      const next = new Set(prev);
+      next.add(tokenId);
+      return next;
+    });
+    setRecentLine((prev) => prev.filter((t) => t.id !== tokenId));
+    setMessage("Removed");
+
+    void (async () => {
+      try {
+        const res = await fetch(`/api/tokens/${tokenId}`, { method: "DELETE" });
+        const data = (await res.json()) as { error?: string };
+        if (!res.ok) throw new Error(data.error ?? "Failed to remove");
+        void refreshSnapshot();
+      } catch (e) {
+        setHiddenIds((prev) => {
+          const next = new Set(prev);
+          next.delete(tokenId);
+          return next;
+        });
+        if (token) {
+          setRecentLine((prev) =>
+            prev.some((t) => t.id === token.id)
+              ? prev
+              : [token, ...prev].slice(0, LOG_SLOTS),
+          );
+        }
+        setMessage(e instanceof Error ? e.message : "Failed");
+      }
+    })();
   };
 
   const messageClass =
-    message === "Added"
+    message === "Added" ||
+    message.startsWith("Added ") ||
+    message === "Removed"
       ? "text-emerald-400"
       : message
         ? "text-amber-300"
         : "text-transparent";
 
-  const slots = Array.from({ length: LOG_SLOTS }, (_, i) => recentLine[i] ?? null);
+  const slots = Array.from(
+    { length: LOG_SLOTS },
+    (_, i) => recentLine.filter((t) => !hiddenIds.has(t.id))[i] ?? null,
+  );
   const selectedColor = getLiveDrawerColor(colorId);
   const lightEntry = selectedColor
     ? liveDrawerNeedsLightSurface(selectedColor.hex)
@@ -123,7 +189,11 @@ function HostessContent() {
             aria-label="Number entry"
           >
             <span
-              className="truncate text-5xl font-bold tracking-wider tabular-nums"
+              className={`truncate font-bold tabular-nums ${
+                number.length > 8
+                  ? "text-3xl tracking-wide"
+                  : "text-5xl tracking-wider"
+              }`}
               style={{ color: entryColor }}
             >
               {number || "—"}
@@ -166,19 +236,21 @@ function HostessContent() {
             Add
           </button>
 
-          <p className={`h-3.5 text-center text-[11px] font-medium ${messageClass}`}>
-            {message || "—"}
-          </p>
-
           <div className="flex h-16 flex-col pt-1">
-            <div className="flex h-4 shrink-0 items-center justify-between gap-2">
-              <p className="text-[10px] font-semibold tracking-wide text-neutral-500 uppercase">
+            <div className="flex h-4 shrink-0 items-center gap-2">
+              <p className="shrink-0 text-[10px] font-semibold tracking-wide text-neutral-500 uppercase">
                 Last added
+              </p>
+              <p
+                className={`min-w-0 flex-1 truncate text-center text-[11px] font-medium ${messageClass}`}
+                aria-live="polite"
+              >
+                {message || "—"}
               </p>
               <button
                 type="button"
                 onClick={() => setPoolOpen(true)}
-                className="text-[11px] font-medium text-sky-400 hover:text-sky-300"
+                className="shrink-0 text-[11px] font-medium text-sky-400 hover:text-sky-300"
               >
                 Pool ({displayPoolCount})
               </button>
@@ -214,7 +286,7 @@ function HostessContent() {
       <HostessPoolModal
         open={poolOpen}
         onOpenChange={setPoolOpen}
-        tokens={poolTokens}
+        tokens={visibleTokens}
         onRemove={handleRemove}
       />
     </>

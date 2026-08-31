@@ -2,7 +2,7 @@ import { ObjectId, type Collection, type Db } from "mongodb";
 import { getDb } from "@/lib/db/mongo";
 import { hashPin } from "@/lib/auth/session";
 import { publishSnapshot } from "@/lib/event/pubsub"; // live event fan-out
-import { sampleTokensByColor } from "@/lib/live-drawer/draw";
+import { sampleTokensByColor, normalizeTokenNumber } from "@/lib/live-drawer/draw";
 import type { LiveDrawerToken, PoolSummary } from "@/lib/live-drawer/types";
 import { createEmptyPoll, type PollState, type PollVoteLogEntry } from "@/lib/poll/types";
 import {
@@ -370,7 +370,7 @@ export async function addTokens(
   let skipped = 0;
   let restored = 0;
   for (const entry of entries) {
-    const number = entry.number.trim();
+    const number = normalizeTokenNumber(entry.number);
     if (!number) continue;
     const existing = await col.findOne({
       eventId: EVENT_ID,

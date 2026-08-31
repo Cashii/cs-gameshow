@@ -341,15 +341,15 @@ function OperatorContent() {
         }`}
       >
         <div
-          className={`flex items-center overflow-visible border-b border-neutral-800 ${
+          className={`flex h-14 shrink-0 items-center overflow-visible border-b border-neutral-800 ${
             sidebarCollapsed
-              ? "min-h-16 justify-center px-1.5"
-              : "min-h-16 justify-between gap-1.5 px-3 py-3"
+              ? "justify-center px-1.5"
+              : "justify-between gap-1.5 px-3"
           }`}
         >
           {!sidebarCollapsed && (
             <p
-              className="min-w-0 whitespace-nowrap py-1.5 text-[1.2rem] leading-none text-teal-600"
+              className="min-w-0 whitespace-nowrap text-[1.2rem] leading-none text-teal-600"
               style={{ fontFamily: "var(--font-pacifico), cursive" }}
             >
               Cash&apos;s Gameshow
@@ -521,8 +521,8 @@ function OperatorContent() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
-          <div>
+        <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-neutral-800 bg-neutral-900 px-6">
+          <div className="min-w-0 leading-tight">
             <h1 className="text-lg font-bold text-white">
               {ACTIVE_GAME_LABELS[state.activeGame]}
             </h1>
@@ -546,16 +546,18 @@ function OperatorContent() {
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {state.activeGame === "idle" && (
             <div className="@container mx-auto w-full max-w-6xl overflow-auto px-6 py-6">
-              <div className="mb-6">
+              <div className="mb-6 text-center">
                 <h2
                   className="text-3xl tracking-tight text-teal-700 sm:text-4xl"
                   style={{ fontFamily: "var(--font-pacifico), cursive" }}
                 >
                   Welcome to Cash&apos;s Gameshow App
                 </h2>
-                <p className="mt-2 max-w-2xl text-sm text-neutral-400">
-                  Choose a game to open its controls and put it on the spectator
-                  display.
+                <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-neutral-400">
+                  Pick a game below or from the left sidebar to open its
+                  operator controls. The rail on the right controls the
+                  spectator screen — choose what the audience sees, independently
+                  of the game you are running at this desk.
                 </p>
               </div>
 
@@ -612,6 +614,53 @@ function OperatorContent() {
                   );
                 })}
               </div>
+
+              <div className="mt-6 grid grid-cols-1 gap-3 @md:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={openHostess}
+                  className="group flex h-full flex-col rounded-2xl border border-neutral-700 bg-neutral-900 p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-400 hover:shadow-md"
+                >
+                  <span className="flex items-center gap-3">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500 text-white">
+                      <UserRound size={20} aria-hidden />
+                    </span>
+                    <span className="text-base font-bold text-white">
+                      Hostess Controls
+                    </span>
+                  </span>
+                  <span className="mt-2 flex-1 text-sm leading-snug text-neutral-400">
+                    Open the hostess desk for live drawer tokens and the number
+                    pad.
+                  </span>
+                  <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-violet-600">
+                    Open Hostess
+                    <ChevronRight size={16} />
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={openPlayer}
+                  className="group flex h-full flex-col rounded-2xl border border-neutral-700 bg-neutral-900 p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-md"
+                >
+                  <span className="flex items-center gap-3">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white">
+                      <Smartphone size={20} aria-hidden />
+                    </span>
+                    <span className="text-base font-bold text-white">
+                      Player Controls
+                    </span>
+                  </span>
+                  <span className="mt-2 flex-1 text-sm leading-snug text-neutral-400">
+                    Open the player phone screen for polls, trivia, and
+                    on-device play.
+                  </span>
+                  <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-emerald-600">
+                    Open Player
+                    <ChevronRight size={16} />
+                  </span>
+                </button>
+              </div>
             </div>
           )}
           {state.activeGame === "feud" && <FeudHostPanel />}
@@ -638,6 +687,11 @@ function OperatorContent() {
       </div>
 
       <aside className="flex h-full min-h-0 w-20 shrink-0 flex-col overflow-hidden border-l border-neutral-800 bg-neutral-900">
+        <div className="flex h-14 shrink-0 items-center justify-center border-b border-neutral-800 px-1.5">
+          <h2 className="text-center text-[11px] font-bold leading-tight text-white">
+            Spectator Screen
+          </h2>
+        </div>
         <nav className="flex flex-1 flex-col gap-0.5 overflow-auto p-2">
           {SPECTATOR_SCREENS.map((screen) => (
             <SpectatorNavItem

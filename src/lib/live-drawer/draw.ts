@@ -71,6 +71,12 @@ function shuffle<T>(arr: T[]): T[] {
   return copy;
 }
 
+export function normalizeTokenNumber(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!/^\d+$/.test(trimmed)) return null;
+  return String(Number(trimmed));
+}
+
 export function parseNumberRange(input: string): string[] {
   const trimmed = input.trim();
   if (!trimmed) return [];
@@ -94,7 +100,9 @@ export function parseNumberRange(input: string): string[] {
       for (let i = start; i <= end; i++) nums.push(String(i));
       continue;
     }
-    nums.push(part);
+    const normalized = normalizeTokenNumber(part);
+    if (!normalized) return [];
+    nums.push(normalized);
   }
 
   return nums;
