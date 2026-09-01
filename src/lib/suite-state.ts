@@ -24,10 +24,13 @@ import {
 import {
   clampDerbyRacerScale,
   createDefaultDerbyState,
+  DERBY_RACER_IDS,
+  DERBY_THEMES,
   isDerbyRacerId,
   isDerbyTheme,
   type DerbyGameState,
   type DerbyPhase,
+  type DerbyRacerId,
 } from "@/lib/derby/types";
 import { createSampleJeoparodyGame } from "@/lib/jeoparody/defaults";
 import type { JeoparodyGameState, JeoparodyPhase } from "@/lib/jeoparody/types";
@@ -350,6 +353,7 @@ function normalizeDerbyState(
     racerScale: clampDerbyRacerScale(
       raw.racerScale ?? (raw as { horseScale?: unknown }).horseScale,
     ),
+    racerNames: normalizeDerbyRacerNames(raw.racerNames),
     winnerId,
     raceId: typeof raw.raceId === "string" ? raw.raceId : null,
     startedAt,
@@ -365,6 +369,24 @@ function normalizeDerbyState(
         ? raw.sequence
         : defaults.sequence,
   };
+}
+
+function normalizeDerbyRacerNames(
+  raw: DerbyGameState["racerNames"] | undefined,
+): DerbyGameState["racerNames"] {
+  if (!raw || typeof raw !== "object") return {};
+  const next: DerbyGameState["racerNames"] = {};
+  for (const theme of DERBY_THEMES) {
+    const themeNames = raw[theme];
+    if (!themeNames || typeof themeNames !== "object") continue;
+    const cleaned: Partial<Record<DerbyRacerId, string>> = {};
+    for (const id of DERBY_RACER_IDS) {
+      const value = themeNames[id];
+      if (typeof value === "string") cleaned[id] = value;
+    }
+    if (Object.keys(cleaned).length > 0) next[theme] = cleaned;
+  }
+  return next;
 }
 
 function finitePrice(value: unknown): number | null {
@@ -412,10 +434,8 @@ function normalizeQuestionTimeTeam(
   fallback: QuestionTimeTeam,
 ): QuestionTimeTeam {
   return {
-    name:
-      typeof raw?.name === "string" && raw.name.trim()
-        ? raw.name
-        : fallback.name,
+    // Allow empty while typing — audience view falls back to a label.
+    name: typeof raw?.name === "string" ? raw.name : fallback.name,
     score: clampQuestionTimeScore(raw?.score),
   };
 }
@@ -439,6 +459,8 @@ function normalizeQuestionTimeState(
       ? Math.max(0, Math.round(raw.timerRemainingMs))
       : timerDurationMs;
   return {
+    title:
+      typeof raw.title === "string" ? raw.title : defaults.title,
     question:
       typeof raw.question === "string" ? raw.question : defaults.question,
     leftTeam: normalizeQuestionTimeTeam(raw.leftTeam, defaults.leftTeam),

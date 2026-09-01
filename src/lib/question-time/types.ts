@@ -4,6 +4,8 @@ export type QuestionTimeTeam = {
 };
 
 export type QuestionTimeState = {
+  /** Audience header title. */
+  title: string;
   question: string;
   leftTeam: QuestionTimeTeam;
   rightTeam: QuestionTimeTeam;
@@ -16,6 +18,8 @@ export type QuestionTimeState = {
   timerEndsAt: number | null;
 };
 
+export const DEFAULT_QUESTION_TIME_TITLE = "Question Time";
+
 export const QUESTION_TIME_DURATION_PRESETS_MS = [
   10_000, 15_000, 20_000, 30_000, 45_000, 60_000, 90_000, 120_000,
 ] as const;
@@ -26,6 +30,7 @@ export const MAX_QUESTION_TIME_DURATION_MS = 10 * 60_000;
 
 export function createDefaultQuestionTimeState(): QuestionTimeState {
   return {
+    title: DEFAULT_QUESTION_TIME_TITLE,
     question: "",
     leftTeam: { name: "Team 1", score: 0 },
     rightTeam: { name: "Team 2", score: 0 },

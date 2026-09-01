@@ -105,6 +105,7 @@ export function QuestionTimeHostPanel() {
   const resetGame = () => {
     patch((prev) => ({
       ...createDefaultQuestionTimeState(),
+      title: prev.title,
       leftTeam: { ...prev.leftTeam, score: 0 },
       rightTeam: { ...prev.rightTeam, score: 0 },
       timerDurationMs: prev.timerDurationMs,
@@ -147,6 +148,21 @@ export function QuestionTimeHostPanel() {
           )}
 
           <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
+            <section className="flex h-full min-w-0 flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4 md:col-span-2">
+              <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+                Title
+              </h3>
+              <input
+                type="text"
+                value={game.title}
+                onChange={(event) =>
+                  patch((prev) => ({ ...prev, title: event.target.value }))
+                }
+                placeholder="Question Time"
+                className="h-10 w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
+              />
+            </section>
+
             <section className="flex h-full min-w-0 flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4">
               <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
                 Question
@@ -356,7 +372,7 @@ export function QuestionTimeHostPanel() {
         open={confirmReset}
         onOpenChange={setConfirmReset}
         title="Reset Question Time?"
-        message="This clears the question, scores, and clock. Team names and the timer length stay."
+        message="This clears the question, scores, and clock. Title, team names, and the timer length stay."
         confirmLabel="Reset"
         variant="danger"
         onConfirm={resetGame}

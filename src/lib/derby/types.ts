@@ -43,6 +43,8 @@ export type DerbyGameState = {
   theme: DerbyTheme;
   /** Spectator sprite size. 1 is the default horse/toy size. */
   racerScale: number;
+  /** Optional display-name overrides per theme and racer. */
+  racerNames: Partial<Record<DerbyTheme, Partial<Record<DerbyRacerId, string>>>>;
   /** Operator pick — do not show on spectator until finished. */
   winnerId: DerbyRacerId | null;
   /** Stable id for a single race (later bets / certificates). */
@@ -58,6 +60,7 @@ export function createDefaultDerbyState(): DerbyGameState {
     phase: "idle",
     theme: "wonderbar",
     racerScale: DEFAULT_DERBY_RACER_SCALE,
+    racerNames: {},
     winnerId: null,
     raceId: null,
     startedAt: null,
@@ -78,21 +81,43 @@ export function isDerbyTheme(value: unknown): value is DerbyTheme {
   return value === "horses" || value === "wonderbar";
 }
 
-export function getDerbyRacers(theme: DerbyTheme = "wonderbar"): DerbyRacer[] {
-  return theme === "wonderbar" ? WONDERBAR_RACERS : DERBY_RACERS;
+export function getDerbyRacers(
+  theme: DerbyTheme = "wonderbar",
+  nameOverrides?: Partial<Record<DerbyRacerId, string>> | null,
+): DerbyRacer[] {
+  const base = theme === "wonderbar" ? WONDERBAR_RACERS : DERBY_RACERS;
+  if (!nameOverrides) return base;
+  let changed = false;
+  const next = base.map((racer) => {
+    const custom = nameOverrides[racer.id];
+    if (typeof custom !== "string" || !custom.trim()) return racer;
+    changed = true;
+    return { ...racer, name: custom.trim() };
+  });
+  return changed ? next : base;
 }
 
 export function getDerbyRacer(
   id: DerbyRacerId,
   theme: DerbyTheme = "wonderbar",
+  nameOverrides?: Partial<Record<DerbyRacerId, string>> | null,
 ): DerbyRacer {
-  const racer = getDerbyRacers(theme).find((item) => item.id === id);
+  const racer = getDerbyRacers(theme, nameOverrides).find((item) => item.id === id);
   if (!racer) throw new Error(`Unknown derby racer: ${id}`);
   return racer;
 }
 
 export function getDerbyTheme(game: { theme?: DerbyTheme | null }): DerbyTheme {
   return isDerbyTheme(game.theme) ? game.theme : "wonderbar";
+}
+
+export function getDerbyRacerNameOverrides(
+  game: Pick<DerbyGameState, "racerNames" | "theme"> | null | undefined,
+  theme?: DerbyTheme,
+): Partial<Record<DerbyRacerId, string>> {
+  const resolvedTheme = theme ?? getDerbyTheme(game ?? {});
+  const names = game?.racerNames?.[resolvedTheme];
+  return names && typeof names === "object" ? names : {};
 }
 
 export function clampDerbyRacerScale(value: unknown): number {

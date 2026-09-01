@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  DEFAULT_QUESTION_TIME_TITLE,
   formatQuestionTimeClock,
   questionTimeRemainingMs,
   type QuestionTimeState,
@@ -156,6 +157,7 @@ export function QuestionTimeAudienceView({
 
   const remainingMs =
     now == null ? game.timerRemainingMs : questionTimeRemainingMs(game, now);
+  const title = game.title.trim() || DEFAULT_QUESTION_TIME_TITLE;
 
   return (
     <div className="qt-stage">
@@ -167,7 +169,7 @@ export function QuestionTimeAudienceView({
       <span className="qt-bokeh qt-bokeh-c" aria-hidden />
       <span className="qt-bokeh qt-bokeh-d" aria-hidden />
 
-      <h1 className="qt-title">Question Time</h1>
+      <h1 className="qt-title">{title}</h1>
 
       <div className="qt-body">
         <div className="qt-question">

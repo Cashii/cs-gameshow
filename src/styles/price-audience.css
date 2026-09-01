@@ -873,9 +873,10 @@
 .price-tpir-rays {
   position: absolute;
   left: 50%;
-  top: 48%;
-  width: 190vmax;
-  height: 190vmax;
+  top: 50%;
+  width: 280vmax;
+  height: 280vmax;
+  border-radius: 50%;
   transform: translate(-50%, -50%);
   background: repeating-conic-gradient(
     from 6deg,
@@ -892,9 +893,10 @@
 .price-tpir-shimmer {
   position: absolute;
   left: 50%;
-  top: 48%;
-  width: 160vmax;
-  height: 160vmax;
+  top: 50%;
+  width: 260vmax;
+  height: 260vmax;
+  border-radius: 50%;
   transform: translate(-50%, -50%);
   background: conic-gradient(
     from 0deg,

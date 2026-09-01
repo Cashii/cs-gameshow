@@ -1,5 +1,6 @@
 "use client";
 
+import { LoaderCircle } from "lucide-react";
 import type { TriviaChoiceId, TriviaGameState, TriviaMe } from "@/lib/trivia/types";
 
 export function PlayerTriviaPanel({
@@ -79,16 +80,18 @@ export function PlayerTriviaPanel({
               type="button"
               disabled={loading}
               onClick={() => onVote("a")}
-              className="w-full rounded-2xl border-2 border-orange-300 bg-orange-100 px-4 py-5 text-xl font-semibold text-orange-950 hover:bg-orange-200 disabled:opacity-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-orange-300 bg-orange-100 px-4 py-5 text-xl font-semibold text-orange-950 hover:bg-orange-200 disabled:opacity-50"
             >
+              {loading ? <LoaderCircle className="animate-spin" size={22} /> : null}
               {trivia.optionA}
             </button>
             <button
               type="button"
               disabled={loading}
               onClick={() => onVote("b")}
-              className="w-full rounded-2xl border-2 border-sky-300 bg-sky-100 px-4 py-5 text-xl font-semibold text-sky-950 hover:bg-sky-200 disabled:opacity-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-sky-300 bg-sky-100 px-4 py-5 text-xl font-semibold text-sky-950 hover:bg-sky-200 disabled:opacity-50"
             >
+              {loading ? <LoaderCircle className="animate-spin" size={22} /> : null}
               {trivia.optionB}
             </button>
           </div>

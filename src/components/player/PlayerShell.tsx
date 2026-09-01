@@ -90,8 +90,22 @@ function PlayerContent() {
   }, [poll.id, poll.status, deviceId]);
 
   const handleTriviaVote = async (choiceId: TriviaChoiceId) => {
-    setLoading(true);
     setMessage("");
+    const previousMe = me;
+    // Optimistic lock so the player sees instant feedback.
+    setMe((prev) =>
+      prev
+        ? { ...prev, voted: true, canVote: false, choiceId }
+        : {
+            role: "active",
+            canVote: false,
+            voted: true,
+            choiceId,
+            remainingCount: trivia.remainingCount,
+            winner: false,
+          },
+    );
+    setLoading(true);
     try {
       const res = await fetch("/api/trivia", {
         method: "POST",
@@ -106,12 +120,8 @@ function PlayerContent() {
       const data = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Vote failed");
       await refreshSnapshot();
-      setMe((prev) =>
-        prev
-          ? { ...prev, voted: true, canVote: false, choiceId }
-          : prev,
-      );
     } catch (e) {
+      setMe(previousMe);
       setMessage(e instanceof Error ? e.message : "Vote failed");
     } finally {
       setLoading(false);

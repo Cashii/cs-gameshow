@@ -9,12 +9,15 @@ import {
   DERBY_THEME_OPTIONS,
   getDerbyRacer,
   getDerbyRacers,
+  getDerbyRacerNameOverrides,
   getDerbyTheme,
   isDerbyTheme,
   MAX_DERBY_RACER_SCALE,
   MIN_DERBY_RACER_SCALE,
   type DerbyRacerId,
   type DerbyTheme,
+  WONDERBAR_RACERS,
+  DERBY_RACERS,
 } from "@/lib/derby/types";
 import { Select } from "@/components/ui/Select";
 import { OperatorNotice } from "@/components/operator/OperatorNotice";
@@ -37,7 +40,8 @@ export function DerbyHostPanel() {
   const { state, updateDerby } = useSuite();
   const game = state.derby ?? createDefaultDerbyState();
   const theme = getDerbyTheme(game);
-  const racers = getDerbyRacers(theme);
+  const nameOverrides = getDerbyRacerNameOverrides(game, theme);
+  const racers = getDerbyRacers(theme, nameOverrides);
   const [now, setNow] = useState(() => Date.now());
   const racing = game.phase === "racing";
   const spectatorShowingDerby = state.spectatorGame === "derby";
@@ -87,8 +91,26 @@ export function DerbyHostPanel() {
       ...createDefaultDerbyState(),
       theme: getDerbyTheme(prev),
       racerScale: clampDerbyRacerScale(prev.racerScale),
+      racerNames: prev.racerNames ?? {},
       sequence: prev.sequence,
     }));
+  };
+
+  const setRacerName = (id: DerbyRacerId, name: string) => {
+    updateDerby((prev) => {
+      const currentTheme = getDerbyTheme(prev);
+      const prevThemeNames = {
+        ...(prev.racerNames?.[currentTheme] ?? {}),
+        [id]: name,
+      };
+      return {
+        ...prev,
+        racerNames: {
+          ...(prev.racerNames ?? {}),
+          [currentTheme]: prevThemeNames,
+        },
+      };
+    });
   };
 
   const remaining =
@@ -96,7 +118,9 @@ export function DerbyHostPanel() {
       ? Math.max(0, game.durationMs - (now - game.startedAt))
       : game.durationMs;
 
-  const picked = game.winnerId ? getDerbyRacer(game.winnerId, theme) : null;
+  const picked = game.winnerId
+    ? getDerbyRacer(game.winnerId, theme, nameOverrides)
+    : null;
   const racerNoun = theme === "wonderbar" ? "Toy" : "Horse";
   const sizeLabel = theme === "wonderbar" ? "Toy size" : "Horse size";
   const racerScale = clampDerbyRacerScale(game.racerScale);
@@ -105,9 +129,9 @@ export function DerbyHostPanel() {
   if (game.phase === "idle" && picked) {
     statusText = `Ready — ${picked.name} wins`;
   } else if (game.phase === "racing") {
-    statusText = `Racing — ${formatClock(remaining)} left${
-      picked ? ` · ${picked.name} (hidden)` : ""
-    }`;
+    statusText = picked
+      ? `Racing — ${picked.name} (hidden from audience)`
+      : "Racing";
   } else if (game.phase === "finished") {
     statusText = picked ? `Finished — ${picked.name} wins` : "Finished";
   }
@@ -124,6 +148,21 @@ export function DerbyHostPanel() {
               {statusText}
             </p>
           </div>
+          {racing ? (
+            <div className="shrink-0 text-right">
+              <p className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                Time left
+              </p>
+              <p
+                className={`text-3xl font-bold tabular-nums ${
+                  remaining <= 5_000 ? "text-amber-300" : "text-white"
+                }`}
+                aria-live="polite"
+              >
+                {formatClock(remaining)}
+              </p>
+            </div>
+          ) : null}
           <div className="flex min-w-48 max-w-72 flex-1 items-center gap-2">
             <span className="shrink-0 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
               Size
@@ -184,30 +223,53 @@ export function DerbyHostPanel() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {racers.map((racer) => {
               const selected = game.winnerId === racer.id;
+              const defaultName =
+                (theme === "wonderbar" ? WONDERBAR_RACERS : DERBY_RACERS).find(
+                  (item) => item.id === racer.id,
+                )?.name ?? racer.name;
               return (
-                <button
+                <div
                   key={racer.id}
-                  type="button"
-                  disabled={racing}
-                  onClick={() => pickWinner(racer.id)}
-                  className={`rounded-xl border px-3 py-4 text-center transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                  className={`rounded-xl border px-3 py-4 text-center transition-colors ${
                     selected
                       ? "border-white bg-neutral-800 ring-2 ring-white/80"
-                      : "border-neutral-700 bg-neutral-900 hover:border-neutral-500"
+                      : "border-neutral-700 bg-neutral-900"
                   }`}
                 >
-                  <span
-                    className="mx-auto mb-2 block h-8 w-8 rounded-full border border-black/30 shadow-inner"
-                    style={{ background: racer.hex }}
-                    aria-hidden
-                  />
-                  <span className="block text-sm font-bold text-white">
-                    {racer.name}
-                  </span>
-                  <span className="text-xs text-neutral-500">
-                    {racerNoun} {racer.number}
-                  </span>
-                </button>
+                  <button
+                    type="button"
+                    disabled={racing}
+                    onClick={() => pickWinner(racer.id)}
+                    className="w-full disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <span
+                      className="mx-auto mb-2 block h-8 w-8 rounded-full border border-black/30 shadow-inner"
+                      style={{ background: racer.hex }}
+                      aria-hidden
+                    />
+                    <span className="block text-sm font-bold text-white">
+                      {racer.name}
+                    </span>
+                    <span className="text-xs text-neutral-500">
+                      {racerNoun} {racer.number}
+                    </span>
+                  </button>
+                  <label className="mt-3 block text-left">
+                    <span className="sr-only">
+                      {racerNoun} {racer.number} name
+                    </span>
+                    <input
+                      type="text"
+                      value={nameOverrides[racer.id] ?? defaultName}
+                      disabled={racing}
+                      onChange={(event) =>
+                        setRacerName(racer.id, event.target.value)
+                      }
+                      placeholder={defaultName}
+                      className="mt-1 h-9 w-full rounded-lg border border-neutral-700 bg-neutral-950 px-2 text-center text-sm text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none disabled:opacity-60"
+                    />
+                  </label>
+                </div>
               );
             })}
           </div>

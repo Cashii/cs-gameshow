@@ -4,8 +4,10 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import {
   clampDerbyRacerScale,
   createDefaultDerbyState,
+  DERBY_RACER_IDS,
   getDerbyRacer,
   getDerbyRacers,
+  getDerbyRacerNameOverrides,
   getDerbyTheme,
   type DerbyGameState,
   type DerbyRacerId,
@@ -36,7 +38,8 @@ export function DerbyAudienceView({
 }: Readonly<{ game: DerbyGameState }>) {
   const game = gameProp ?? createDefaultDerbyState();
   const theme = getDerbyTheme(game);
-  const racers = getDerbyRacers(theme);
+  const nameOverrides = getDerbyRacerNameOverrides(game, theme);
+  const racers = getDerbyRacers(theme, nameOverrides);
   const horseRefs = useRef<
     Partial<Record<DerbyRacerId, HTMLDivElement | null>>
   >({});
@@ -50,20 +53,17 @@ export function DerbyAudienceView({
   useEffect(() => {
     const apply = (t: number, hopping: boolean) => {
       const frame = sampler ? sampler(t) : IDLE_FRAME;
-      for (const racer of racers) {
-        const el = horseRefs.current[racer.id];
+      for (const id of DERBY_RACER_IDS) {
+        const el = horseRefs.current[id];
         if (!el) continue;
-        el.style.setProperty(
-          "--derby-progress",
-          String(frame.positions[racer.id]),
-        );
+        el.style.setProperty("--derby-progress", String(frame.positions[id]));
         if (theme === "wonderbar") {
           el.style.setProperty("--derby-wiggle", "0");
           el.style.setProperty("--derby-hop", "0");
         } else {
           const hops = 22;
           const hop = hopping
-            ? Math.max(0, Math.sin(frame.positions[racer.id] * hops * Math.PI))
+            ? Math.max(0, Math.sin(frame.positions[id] * hops * Math.PI))
             : 0;
           el.style.setProperty("--derby-hop", hop.toFixed(3));
           el.style.setProperty("--derby-wiggle", "0");
@@ -108,11 +108,12 @@ export function DerbyAudienceView({
     game.sequence,
     sampler,
     theme,
-    racers,
   ]);
 
   const winner =
-    showWinner && game.winnerId ? getDerbyRacer(game.winnerId, theme) : null;
+    showWinner && game.winnerId
+      ? getDerbyRacer(game.winnerId, theme, nameOverrides)
+      : null;
   const racing = game.phase === "racing" && !showWinner;
 
   return (
