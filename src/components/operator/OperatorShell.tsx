@@ -526,12 +526,8 @@ function OperatorContent() {
             <h1 className="text-lg font-bold text-white">
               {ACTIVE_GAME_LABELS[state.activeGame]}
             </h1>
-            {state.activeGame !== "idle" && (
-              <p className="text-sm text-neutral-500">
-                {state.activeGame === "poll"
-                  ? "Player voting controls"
-                  : "Operator controls"}
-              </p>
+            {state.activeGame === "poll" && (
+              <p className="text-sm text-neutral-500">Player voting controls</p>
             )}
           </div>
           {state.activeGame === "liveDrawer" && <LiveDrawerHeaderSettings />}
@@ -545,7 +541,8 @@ function OperatorContent() {
 
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {state.activeGame === "idle" && (
-            <div className="@container mx-auto w-full max-w-6xl overflow-auto px-6 py-6">
+            <div className="min-h-0 flex-1 overflow-auto">
+              <div className="@container mx-auto w-full max-w-6xl px-6 py-6">
               <div className="mb-6 text-center">
                 <h2
                   className="text-3xl tracking-tight text-teal-700 sm:text-4xl"
@@ -660,6 +657,7 @@ function OperatorContent() {
                     <ChevronRight size={16} />
                   </span>
                 </button>
+              </div>
               </div>
             </div>
           )}

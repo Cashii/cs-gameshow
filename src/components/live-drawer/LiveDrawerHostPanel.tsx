@@ -435,8 +435,8 @@ export function LiveDrawerHostPanel() {
         <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto p-6 xl:overflow-hidden">
             <div className="flex shrink-0 flex-col gap-6 xl:flex-row xl:items-stretch">
             <div className="flex w-full shrink-0 flex-col xl:w-80">
-              <div className="flex flex-1 flex-col rounded-lg border border-neutral-700 bg-neutral-800 p-5">
-                <h2 className="text-lg font-bold text-white">Add token</h2>
+              <div className="flex flex-1 flex-col rounded-lg border border-neutral-700 bg-white p-6 shadow-lg">
+                <h2 className="text-xl font-bold text-white">Add token</h2>
                 <input
                   value={addNumber}
                   onChange={(e) => setAddNumber(e.target.value)}
@@ -447,7 +447,7 @@ export function LiveDrawerHostPanel() {
                     }
                   }}
                   placeholder="1-10"
-                  className="mt-2 h-20 w-full rounded-lg border-2 border-neutral-600 bg-neutral-700 px-4 text-4xl font-bold tabular-nums text-white placeholder:text-2xl placeholder:font-normal placeholder:text-neutral-500 focus:border-teal-500 focus:outline-none"
+                  className="mt-2 h-20 w-full rounded-lg border border-neutral-600 bg-neutral-700 px-4 text-4xl font-bold tabular-nums text-white placeholder:text-2xl placeholder:font-normal placeholder:text-neutral-500 focus:ring-2 focus:ring-teal-500 focus:outline-none"
                 />
                 <p className="mt-1.5 text-xs text-neutral-400">
                   One number, a comma list, or a range like 1-10. All use the
@@ -461,7 +461,7 @@ export function LiveDrawerHostPanel() {
                       onClick={() => setAddColorId(c.id)}
                       className={`min-w-26 flex-1 rounded-md px-3 py-3 text-center text-sm font-semibold ${
                         addColorId === c.id
-                          ? "ring-2 ring-sky-400 ring-offset-1 ring-offset-neutral-800"
+                          ? "ring-2 ring-sky-400 ring-offset-1 ring-offset-white"
                           : liveDrawerOutlineClass(c)
                       }`}
                       style={{ backgroundColor: c.hex, color: c.ink }}
@@ -482,10 +482,10 @@ export function LiveDrawerHostPanel() {
               </div>
             </div>
 
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-neutral-700 bg-neutral-800">
-                <div className="shrink-0 border-b border-neutral-700 p-5">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-neutral-700 bg-white shadow-lg">
+                <div className="shrink-0 border-b border-neutral-700 p-6">
                   <div className="flex items-start justify-between gap-3">
-                    <h2 className="text-lg font-bold text-white">On Display</h2>
+                    <h2 className="text-xl font-bold text-white">On Display</h2>
                     <button
                       type="button"
                       disabled={loading}
@@ -522,8 +522,8 @@ export function LiveDrawerHostPanel() {
                     </ul>
                   )}
                 </div>
-                <div className="@container flex flex-1 flex-col p-5">
-                  <h2 className="text-lg font-bold text-white">Draw controls</h2>
+                <div className="@container flex flex-1 flex-col p-6">
+                  <h2 className="text-xl font-bold text-white">Draw controls</h2>
                   <p className="mt-1 text-sm text-neutral-400">
                     Random draw by color count or select specific tokens below.
                   </p>
@@ -615,10 +615,10 @@ export function LiveDrawerHostPanel() {
             </div>
 
             <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-              <h2 className="mb-3 text-lg font-bold text-white">
+              <h2 className="mb-3 text-xl font-bold text-white">
                 Token Summary
               </h2>
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-neutral-700 bg-neutral-800">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-neutral-700 bg-white shadow-lg">
                 <div className="flex flex-wrap items-center gap-3 border-b border-neutral-700 px-4 py-2.5">
                   <div className="flex items-center gap-2">
                     <div className="flex rounded-lg border border-neutral-600 p-0.5">
@@ -774,7 +774,7 @@ export function LiveDrawerHostPanel() {
                                     aria-pressed={selected}
                                     className={`inline-flex items-center justify-center rounded-full font-bold tabular-nums leading-none outline-none transition ${summaryTokenClass(t.number)} ${
                                       selected
-                                        ? "ring-4 ring-sky-400 ring-offset-2 ring-offset-neutral-800"
+                                        ? "ring-4 ring-sky-400 ring-offset-2 ring-offset-white"
                                         : `${liveDrawerOutlineClass(color)} hover:opacity-90`
                                     }`}
                                     style={summaryTokenStyle(color)}
