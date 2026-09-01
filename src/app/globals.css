@@ -51,7 +51,7 @@ body {
   font-size: 16px;
 }
 
-/* Light studio theme: operator + player. Hostess and spectator stay dark. */
+/* Light studio theme (html.studio-ui). Hostess and spectator stay dark. */
 .studio-ui,
 html.studio-ui {
   --studio-ink: #16324a;
@@ -222,6 +222,24 @@ html.studio-ui *::-webkit-scrollbar-thumb:hover {
   }
 }
 
+@keyframes live-drawer-token-arrive {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.45;
+    filter: brightness(1.35);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+.live-drawer-token-arrive {
+  animation: live-drawer-token-arrive 0.75s cubic-bezier(0.22, 1.7, 0.36, 1)
+    both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .audience-page-transition {
     transition-duration: 0.01ms;
@@ -229,6 +247,10 @@ html.studio-ui *::-webkit-scrollbar-thumb:hover {
 
   .audience-page-transition--enter {
     animation-duration: 0.01ms;
+  }
+
+  .live-drawer-token-arrive {
+    animation: none;
   }
 }
 

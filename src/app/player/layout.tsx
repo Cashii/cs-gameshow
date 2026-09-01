@@ -4,9 +4,8 @@ export default function PlayerLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="studio-ui h-dvh max-h-dvh overflow-hidden overscroll-none">
-      <StudioTheme />
-      {children}
+    <div className="h-dvh max-h-dvh overflow-hidden overscroll-none">
+      <StudioTheme>{children}</StudioTheme>
     </div>
   );
 }

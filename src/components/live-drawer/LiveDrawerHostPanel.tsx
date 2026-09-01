@@ -154,7 +154,9 @@ export function LiveDrawerHostPanel() {
   const [clearPoolOpen, setClearPoolOpen] = useState(false);
   const [returnCalledOpen, setReturnCalledOpen] = useState(false);
   const [clearCalledOpen, setClearCalledOpen] = useState(false);
+  const [arrivingIds, setArrivingIds] = useState<Set<string>>(() => new Set());
   const addInFlightRef = useRef(false);
+  const seenPoolKeysRef = useRef<Set<string> | null>(null);
 
   useEffect(() => {
     setColorCounts((prev) => {
@@ -168,6 +170,45 @@ export function LiveDrawerHostPanel() {
       return changed ? next : prev;
     });
   }, [poolSummary]);
+
+  useEffect(() => {
+    if (!snapshot) return;
+
+    const nextKeys = new Set(
+      poolTokens.map((token) => `${token.colorId}:${token.number}`),
+    );
+
+    if (seenPoolKeysRef.current === null) {
+      seenPoolKeysRef.current = nextKeys;
+      return;
+    }
+
+    const seen = seenPoolKeysRef.current;
+    const newcomers = poolTokens.filter(
+      (token) => !seen.has(`${token.colorId}:${token.number}`),
+    );
+    seenPoolKeysRef.current = nextKeys;
+
+    if (newcomers.length === 0) return;
+
+    setListTab("pool");
+    const newIds = newcomers.map((token) => token.id);
+    setArrivingIds((prev) => {
+      const merged = new Set(prev);
+      for (const id of newIds) merged.add(id);
+      return merged;
+    });
+
+    const timer = window.setTimeout(() => {
+      setArrivingIds((prev) => {
+        const next = new Set(prev);
+        for (const id of newIds) next.delete(id);
+        return next.size === prev.size ? prev : next;
+      });
+    }, 800);
+
+    return () => window.clearTimeout(timer);
+  }, [snapshot, poolTokens]);
 
   const poolRows = useMemo(() => {
     const byColor = new Map<string, typeof poolTokens>();
@@ -435,7 +476,7 @@ export function LiveDrawerHostPanel() {
         <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto p-6 xl:overflow-hidden">
             <div className="flex shrink-0 flex-col gap-6 xl:flex-row xl:items-stretch">
             <div className="flex w-full shrink-0 flex-col xl:w-80">
-              <div className="flex flex-1 flex-col rounded-lg border border-neutral-700 bg-white p-6 shadow-lg">
+              <div className="flex flex-1 flex-col rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
                 <h2 className="text-xl font-bold text-white">Add token</h2>
                 <input
                   value={addNumber}
@@ -461,7 +502,7 @@ export function LiveDrawerHostPanel() {
                       onClick={() => setAddColorId(c.id)}
                       className={`min-w-26 flex-1 rounded-md px-3 py-3 text-center text-sm font-semibold ${
                         addColorId === c.id
-                          ? "ring-2 ring-sky-400 ring-offset-1 ring-offset-white"
+                          ? "ring-2 ring-sky-400 ring-offset-1 ring-offset-neutral-800"
                           : liveDrawerOutlineClass(c)
                       }`}
                       style={{ backgroundColor: c.hex, color: c.ink }}
@@ -482,7 +523,7 @@ export function LiveDrawerHostPanel() {
               </div>
             </div>
 
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-neutral-700 bg-white shadow-lg">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-neutral-700 bg-neutral-800 shadow-lg">
                 <div className="shrink-0 border-b border-neutral-700 p-6">
                   <div className="flex items-start justify-between gap-3">
                     <h2 className="text-xl font-bold text-white">On Display</h2>
@@ -618,7 +659,7 @@ export function LiveDrawerHostPanel() {
               <h2 className="mb-3 text-xl font-bold text-white">
                 Token Summary
               </h2>
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-neutral-700 bg-white shadow-lg">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-neutral-700 bg-neutral-800 shadow-lg">
                 <div className="flex flex-wrap items-center gap-3 border-b border-neutral-700 px-4 py-2.5">
                   <div className="flex items-center gap-2">
                     <div className="flex rounded-lg border border-neutral-600 p-0.5">
@@ -762,6 +803,7 @@ export function LiveDrawerHostPanel() {
                           <ul className="flex flex-wrap items-start gap-x-2 gap-y-1">
                             {tokens.map((t) => {
                               const selected = selectedIds.has(t.id);
+                              const arriving = arrivingIds.has(t.id);
                               return (
                                 <li
                                   key={t.id}
@@ -772,9 +814,13 @@ export function LiveDrawerHostPanel() {
                                     onClick={() => toggleSelect(t.id)}
                                     title={`Select ${t.number}`}
                                     aria-pressed={selected}
-                                    className={`inline-flex items-center justify-center rounded-full font-bold tabular-nums leading-none outline-none transition ${summaryTokenClass(t.number)} ${
+                                    className={`inline-flex items-center justify-center rounded-full font-bold tabular-nums leading-none outline-none ${
+                                      arriving
+                                        ? "live-drawer-token-arrive"
+                                        : "transition"
+                                    } ${summaryTokenClass(t.number)} ${
                                       selected
-                                        ? "ring-4 ring-sky-400 ring-offset-2 ring-offset-white"
+                                        ? "ring-4 ring-sky-400 ring-offset-2 ring-offset-neutral-800"
                                         : `${liveDrawerOutlineClass(color)} hover:opacity-90`
                                     }`}
                                     style={summaryTokenStyle(color)}

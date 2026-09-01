@@ -94,7 +94,7 @@ export function liveDrawerOutlineClass(
   color: LiveDrawerColor | null | undefined,
 ): string {
   if (color?.id === "white") return "border-2 border-[#475569]";
-  if (color?.id === "black") return "border-2 border-[#cbd5e1]";
+  if (color?.id === "black") return "border-2 border-[#737373]";
   return "";
 }
 

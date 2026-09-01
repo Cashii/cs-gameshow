@@ -10,11 +10,13 @@ import {
   Home,
   KeyRound,
   Megaphone,
+  Moon,
   PanelLeftClose,
   PanelLeftOpen,
   Presentation,
   Settings,
   Smartphone,
+  Sun,
   Ticket,
   Upload,
   UserRound,
@@ -54,6 +56,7 @@ import { PriceOrderHostPanel } from "@/components/price-order/PriceOrderHostPane
 import { QuestionTimeHostPanel } from "@/components/question-time/QuestionTimeHostPanel";
 import { PinSettingsPanel } from "@/components/operator/PinSettingsPanel";
 import { PinGate } from "@/components/auth/PinGate";
+import { useStudioTheme } from "@/components/studio/StudioTheme";
 
 const NAV_TOP: ActiveGame[] = ["idle"];
 const NAV_GAMES: ActiveGame[] = [
@@ -259,6 +262,7 @@ function OperatorContent() {
     setActiveGame,
     setSpectatorGame,
   } = useSuite();
+  const { theme, setTheme } = useStudioTheme();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showPinSettings, setShowPinSettings] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -471,10 +475,25 @@ function OperatorContent() {
                   type="button"
                   role="menuitem"
                   onClick={() => {
+                    setTheme(theme === "dark" ? "light" : "dark");
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-neutral-100 hover:bg-neutral-800"
+                >
+                  {theme === "dark" ? (
+                    <Sun size={16} className="shrink-0" />
+                  ) : (
+                    <Moon size={16} className="shrink-0" />
+                  )}
+                  {theme === "dark" ? "Light mode" : "Dark mode"}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
                     openHostess();
                     setSettingsOpen(false);
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-violet-700 hover:bg-violet-100"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-violet-300 hover:bg-violet-500/15"
                 >
                   <UserRound size={16} className="shrink-0" />
                   Open Hostess
@@ -486,7 +505,7 @@ function OperatorContent() {
                     openPlayer();
                     setSettingsOpen(false);
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-emerald-700 hover:bg-emerald-100"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-emerald-300 hover:bg-emerald-500/15"
                 >
                   <Smartphone size={16} className="shrink-0" />
                   Open Player
@@ -705,7 +724,7 @@ function OperatorContent() {
           <button
             type="button"
             onClick={openSpectator}
-            className="inline-flex w-full flex-col items-center justify-center gap-1 rounded-md bg-blue-600 px-1 py-2 font-normal text-white hover:bg-blue-500"
+            className="inline-flex w-full flex-col items-center justify-center gap-1 rounded-md bg-teal-600 px-1 py-2 font-normal text-white hover:bg-teal-500"
           >
             <Presentation size={18} strokeWidth={1.5} className="shrink-0" />
             <span className="w-full text-center text-[9px] leading-tight font-medium">

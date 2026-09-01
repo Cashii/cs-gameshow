@@ -1,14 +1,13 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import type { LiveDrawerToken } from "@/lib/live-drawer/types";
 import {
   LIVE_DRAWER_COLORS,
   getLiveDrawerColor,
   liveDrawerFillStyle,
-  liveDrawerNeedsLightSurface,
   liveDrawerOutlineClass,
 } from "@/lib/live-drawer/types";
 
@@ -16,7 +15,7 @@ type HostessPoolModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tokens: LiveDrawerToken[];
-  onRemove: (tokenId: string) => void;
+  onRemove: (tokenIds: string[]) => void;
 };
 
 function sortTokens(tokens: LiveDrawerToken[]): LiveDrawerToken[] {
@@ -32,21 +31,45 @@ function sortTokens(tokens: LiveDrawerToken[]): LiveDrawerToken[] {
   });
 }
 
+function tokenCircleClass(number: string): string {
+  const digits = number.trim().length;
+  if (digits >= 3) return "size-14 text-base";
+  if (digits === 2) return "size-12 text-lg";
+  return "size-12 text-xl";
+}
+
 export function HostessPoolModal({
   open,
   onOpenChange,
   tokens,
   onRemove,
 }: Readonly<HostessPoolModalProps>) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
   const sorted = useMemo(() => sortTokens(tokens), [tokens]);
-  const selected = tokens.find((t) => t.id === selectedId);
+  const selectedCount = selectedIds.size;
+
+  useEffect(() => {
+    const valid = new Set(tokens.map((t) => t.id));
+    setSelectedIds((prev) => {
+      const next = new Set([...prev].filter((id) => valid.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [tokens]);
+
+  const toggleSelect = (tokenId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(tokenId)) next.delete(tokenId);
+      else next.add(tokenId);
+      return next;
+    });
+  };
 
   const handleRemove = () => {
-    if (!selectedId) return;
-    onRemove(selectedId);
-    setSelectedId(null);
+    if (selectedIds.size === 0) return;
+    onRemove([...selectedIds]);
+    setSelectedIds(new Set());
   };
 
   return (
@@ -54,7 +77,7 @@ export function HostessPoolModal({
       open={open}
       onOpenChange={(next) => {
         onOpenChange(next);
-        if (!next) setSelectedId(null);
+        if (!next) setSelectedIds(new Set());
       }}
     >
       <Dialog.Portal>
@@ -75,42 +98,33 @@ export function HostessPoolModal({
             </Dialog.Close>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-auto px-4 pb-28">
+          <div className="min-h-0 flex-1 overflow-auto px-4 pt-3 pb-28">
             {sorted.length === 0 ? (
               <p className="py-12 text-center text-neutral-500">Pool is empty</p>
             ) : (
-              <ul className="grid grid-cols-5 gap-x-2 gap-y-4">
+              <ul className="flex flex-wrap content-start justify-center gap-x-3 gap-y-4 py-1">
                 {sorted.map((t) => {
                   const color = getLiveDrawerColor(t.colorId);
-                  const isSelected = selectedId === t.id;
-                  const filled = Boolean(
-                    color &&
-                      (liveDrawerNeedsLightSurface(color.hex) ||
-                        color.id === "white"),
-                  );
-                  const shapeClass = filled ? "rounded-full" : "rounded-lg";
-                  let stateClass = "hover:bg-neutral-900";
-                  if (filled) stateClass = liveDrawerOutlineClass(color);
-                  if (isSelected) {
-                    stateClass = filled
-                      ? "ring-2 ring-white"
-                      : "bg-neutral-800 ring-2 ring-white";
-                  }
+                  const isSelected = selectedIds.has(t.id);
                   return (
-                    <li key={t.id} className="flex items-center justify-center">
+                    <li key={t.id}>
                       <button
                         type="button"
-                        onClick={() =>
-                          setSelectedId(isSelected ? null : t.id)
-                        }
+                        onClick={() => toggleSelect(t.id)}
                         aria-pressed={isSelected}
-                        className={`flex aspect-square w-full items-center justify-center text-3xl font-bold tabular-nums transition-transform active:scale-95 ${shapeClass} ${stateClass}`}
+                        title={`${color?.name ?? t.colorId} ${t.number}`}
+                        className={`inline-flex items-center justify-center rounded-full font-bold tabular-nums leading-none outline-none transition-transform active:scale-95 ${tokenCircleClass(t.number)} ${
+                          isSelected
+                            ? "ring-4 ring-sky-400 ring-offset-2 ring-offset-neutral-950"
+                            : liveDrawerOutlineClass(color)
+                        }`}
                         style={{
-                          ...(filled
-                            ? liveDrawerFillStyle(color)
-                            : { color: color?.hex }),
-                          fontFamily:
-                            "var(--font-oswald), Impact, sans-serif",
+                          ...liveDrawerFillStyle(color),
+                          fontFamily: "var(--font-oswald), Impact, sans-serif",
+                          textShadow:
+                            color?.ink === "#171717"
+                              ? "none"
+                              : "0 1px 2px rgba(0,0,0,0.45)",
                         }}
                       >
                         {t.number}
@@ -122,22 +136,22 @@ export function HostessPoolModal({
             )}
           </div>
 
-          {selected && (
+          {selectedCount > 0 && (
             <div className="fixed inset-x-0 bottom-0 z-1002 bg-neutral-950/95 p-4">
               <div className="mx-auto flex max-w-lg gap-3">
                 <button
                   type="button"
-                  onClick={() => setSelectedId(null)}
+                  onClick={() => setSelectedIds(new Set())}
                   className="flex-1 rounded-lg border border-neutral-700 py-3 font-semibold text-neutral-200"
                 >
-                  Cancel
+                  Clear ({selectedCount})
                 </button>
                 <button
                   type="button"
                   onClick={handleRemove}
                   className="flex-1 rounded-lg bg-red-600 py-3 font-semibold text-white"
                 >
-                  Remove
+                  Remove {selectedCount}
                 </button>
               </div>
             </div>

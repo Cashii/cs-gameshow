@@ -11,12 +11,12 @@ export function StandbyScreen({
 }>) {
   const titleSize =
     size === "player"
-      ? "text-5xl"
-      : "text-5xl sm:text-7xl md:text-8xl";
+      ? "pb-[0.4em] text-5xl leading-none"
+      : "pb-[0.4em] text-5xl leading-none sm:text-7xl md:text-8xl";
   const subtitleClass =
     size === "player"
-      ? "mt-4 text-lg text-neutral-400"
-      : "mt-5 text-lg tracking-[0.28em] text-neutral-400 uppercase sm:text-2xl";
+      ? "mt-2 text-lg text-neutral-400"
+      : "mt-2 text-lg tracking-[0.28em] text-neutral-400 uppercase sm:text-2xl";
 
   return (
     <div className="studio-ui flex h-full w-full flex-col items-center justify-center px-4 text-center">

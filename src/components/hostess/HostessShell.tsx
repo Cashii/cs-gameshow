@@ -15,7 +15,7 @@ import { parseNumberRange } from "@/lib/live-drawer/draw";
 import { HostessPoolModal } from "@/components/hostess/HostessPoolModal";
 import { HostessNumberPad } from "@/components/hostess/HostessNumberPad";
 
-const LOG_SLOTS = 5;
+const LOG_SLOTS = 10;
 
 function createOptimisticToken(number: string, colorId: string): LiveDrawerToken {
   return {
@@ -118,46 +118,76 @@ function HostessContent() {
     })();
   };
 
-  const handleRemove = (tokenId: string) => {
-    const token =
-      poolTokens.find((t) => t.id === tokenId) ??
-      recentLine.find((t) => t.id === tokenId);
+  const handleRemove = (tokenIds: string[]) => {
+    if (tokenIds.length === 0) return;
+
+    const idSet = new Set(tokenIds);
+    const removedTokens = tokenIds
+      .map(
+        (id) =>
+          poolTokens.find((t) => t.id === id) ??
+          recentLine.find((t) => t.id === id),
+      )
+      .filter((t): t is LiveDrawerToken => Boolean(t));
+
     setHiddenIds((prev) => {
       const next = new Set(prev);
-      next.add(tokenId);
+      for (const id of tokenIds) next.add(id);
       return next;
     });
-    setRecentLine((prev) => prev.filter((t) => t.id !== tokenId));
-    setMessage("Removed");
+    setRecentLine((prev) => prev.filter((t) => !idSet.has(t.id)));
+    setMessage(tokenIds.length === 1 ? "Removed" : `Removed ${tokenIds.length}`);
 
     void (async () => {
-      try {
-        const res = await fetch(`/api/tokens/${tokenId}`, { method: "DELETE" });
-        const data = (await res.json()) as { error?: string };
-        if (!res.ok) throw new Error(data.error ?? "Failed to remove");
+      const failedIds: string[] = [];
+      await Promise.all(
+        tokenIds.map(async (tokenId) => {
+          try {
+            const res = await fetch(`/api/tokens/${tokenId}`, {
+              method: "DELETE",
+            });
+            const data = (await res.json()) as { error?: string };
+            if (!res.ok) throw new Error(data.error ?? "Failed to remove");
+          } catch {
+            failedIds.push(tokenId);
+          }
+        }),
+      );
+
+      if (failedIds.length === 0) {
         void refreshSnapshot();
-      } catch (e) {
-        setHiddenIds((prev) => {
-          const next = new Set(prev);
-          next.delete(tokenId);
-          return next;
-        });
-        if (token) {
-          setRecentLine((prev) =>
-            prev.some((t) => t.id === token.id)
-              ? prev
-              : [token, ...prev].slice(0, LOG_SLOTS),
-          );
-        }
-        setMessage(e instanceof Error ? e.message : "Failed");
+        return;
       }
+
+      const failedSet = new Set(failedIds);
+      setHiddenIds((prev) => {
+        const next = new Set(prev);
+        for (const id of failedIds) next.delete(id);
+        return next;
+      });
+      const restored = removedTokens.filter((t) => failedSet.has(t.id));
+      if (restored.length > 0) {
+        setRecentLine((prev) => {
+          const existing = new Set(prev.map((t) => t.id));
+          const toAdd = restored.filter((t) => !existing.has(t.id));
+          return [...toAdd, ...prev].slice(0, LOG_SLOTS);
+        });
+      }
+      const removed = tokenIds.length - failedIds.length;
+      setMessage(
+        removed > 0
+          ? `Removed ${removed}, failed ${failedIds.length}`
+          : "Failed",
+      );
+      void refreshSnapshot();
     })();
   };
 
   const messageClass =
     message === "Added" ||
     message.startsWith("Added ") ||
-    message === "Removed"
+    message === "Removed" ||
+    message.startsWith("Removed ")
       ? "text-emerald-400"
       : message
         ? "text-amber-300"
@@ -236,7 +266,7 @@ function HostessContent() {
             Add
           </button>
 
-          <div className="flex h-16 flex-col pt-1">
+          <div className="flex flex-col pt-1">
             <div className="flex h-4 shrink-0 items-center gap-2">
               <p className="shrink-0 text-[10px] font-semibold tracking-wide text-neutral-500 uppercase">
                 Last added
@@ -255,7 +285,7 @@ function HostessContent() {
                 Pool ({displayPoolCount})
               </button>
             </div>
-            <ul className="mt-1 flex min-h-0 flex-1 items-center gap-1">
+            <ul className="mt-1 flex items-center gap-1">
               {slots.map((t, i) => {
                 if (!t) {
                   return (
@@ -270,7 +300,7 @@ function HostessContent() {
                 return (
                   <li
                     key={t.id}
-                    className={`flex h-6 min-w-0 flex-1 items-center justify-center rounded-full text-xs font-semibold tabular-nums ${liveDrawerOutlineClass(color)}`}
+                    className={`flex h-6 min-w-0 flex-1 items-center justify-center rounded-full text-[10px] font-semibold tabular-nums ${liveDrawerOutlineClass(color)}`}
                     style={liveDrawerFillStyle(color)}
                     title={`${color?.name} ${t.number}`}
                   >

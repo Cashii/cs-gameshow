@@ -12,9 +12,8 @@ export default function OperatorLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className={`${sourceSans.className} operator-ui studio-ui h-full min-h-0`}>
-      <StudioTheme />
-      {children}
+    <div className={`${sourceSans.className} operator-ui h-full min-h-0`}>
+      <StudioTheme>{children}</StudioTheme>
     </div>
   );
 }

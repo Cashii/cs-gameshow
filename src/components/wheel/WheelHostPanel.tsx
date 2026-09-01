@@ -322,7 +322,7 @@ export function WheelHostPanel() {
               </OperatorNotice>
             )}
 
-            <div className="rounded-lg border border-neutral-700 bg-white p-6 shadow-lg">
+            <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-xl font-bold text-white">Current phrase</h2>
                 {locked && (
@@ -405,7 +405,7 @@ export function WheelHostPanel() {
               )}
             </div>
 
-            <div className="rounded-lg border border-neutral-700 bg-white p-6 shadow-lg">
+            <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
               <h2 className="mb-4 text-xl font-bold text-white">Letter Controls</h2>
               <div className="flex flex-wrap gap-3">
                 {ALPHABET.map((letter) => {
