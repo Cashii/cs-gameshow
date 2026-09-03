@@ -520,10 +520,10 @@ export function FeudHostPanel() {
                           : "1px solid var(--color-neutral-700)",
                         background: selected
                           ? side === "left"
-                            ? "#fce7ea"
-                            : "#e0f2fe"
+                            ? "#fb7185"
+                            : "#60a5fa"
                           : "var(--color-neutral-800)",
-                        color: selected ? "var(--color-white)" : "var(--color-neutral-400)",
+                        color: selected ? "#fff" : "var(--color-neutral-400)",
                         fontSize: 12,
                         fontWeight: 600,
                         cursor: "pointer",

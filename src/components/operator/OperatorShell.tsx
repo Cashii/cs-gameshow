@@ -27,6 +27,7 @@ import {
   Heart,
   Pencil,
   ScrollText,
+  ArrowRight,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -62,6 +63,8 @@ import { NAV_ACTIVE } from "@/components/operator/gameIconTheme";
 import { PinGate } from "@/components/auth/PinGate";
 import { useStudioTheme } from "@/components/studio/StudioTheme";
 import { GameshowLogo } from "@/components/studio/GameshowLogo";
+import { ChangelogItemIcons } from "@/components/operator/changelogIcons";
+import { parseChangelogMarkdown } from "@/lib/changelog";
 
 const NAV_TOP: ActiveGame[] = ["idle"];
 const NAV_GAMES: ActiveGame[] = [
@@ -213,14 +216,14 @@ function SpectatorNavItem({
       onClick={() => onSelect(screen)}
       aria-label={beta ? `${label} beta` : label}
       aria-current={active ? "true" : undefined}
-      className={`flex w-full flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-left font-normal transition-colors ${
+      className={`flex w-full flex-col items-center justify-center gap-1 rounded-md px-1.5 py-2 text-left font-normal transition-colors ${
         active
           ? `${NAV_ACTIVE[screen]} shadow-sm`
           : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
       }`}
     >
       <Icon size={18} strokeWidth={1.5} className="shrink-0" aria-hidden />
-      <span className="w-full text-center text-[9px] leading-tight font-medium">
+      <span className="w-full text-center text-[10px] leading-tight font-medium">
         {label}
       </span>
       {beta && <BetaTag compact inverted={active} />}
@@ -228,7 +231,9 @@ function SpectatorNavItem({
   );
 }
 
-function OperatorContent() {
+function OperatorContent({
+  changelogMarkdown,
+}: Readonly<{ changelogMarkdown: string }>) {
   const {
     state,
     setActiveGame,
@@ -243,6 +248,7 @@ function OperatorContent() {
   const spectatorGame = state.spectatorGame ?? state.activeGame;
   const pollLive = state.poll.status === "open";
   const triviaLive = state.trivia.status === "open";
+  const latestUpdate = parseChangelogMarkdown(changelogMarkdown).sections[0];
 
   useEffect(() => {
     if (!settingsOpen) return;
@@ -606,14 +612,37 @@ function OperatorContent() {
                     </button>
                   </div>
 
-                  <div className="mt-3 text-center">
-                    <Link
-                      href="/operator/updates"
-                      className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
-                    >
-                      Updates
-                    </Link>
-                  </div>
+                  {latestUpdate ? (
+                    <div className="mt-8 border-t border-neutral-800 pt-6">
+                      <div className="flex items-center justify-between gap-4">
+                        <p className="min-w-0 text-sm font-semibold tracking-wide text-neutral-500 uppercase">
+                          Latest update · {latestUpdate.date}
+                        </p>
+                        <Link
+                          href="/operator/updates"
+                          className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-teal-400 transition-colors hover:text-teal-300"
+                        >
+                          View all updates
+                          <ArrowRight size={14} aria-hidden />
+                        </Link>
+                      </div>
+                      <ul className="mt-2 space-y-2 text-sm text-neutral-400">
+                        {latestUpdate.items.map((item) => (
+                          <li key={`${latestUpdate.date}-${item.title}`}>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <span className="font-semibold text-neutral-200">
+                                {item.title}
+                              </span>
+                              <ChangelogItemIcons item={item} />
+                            </div>
+                            {item.detail ? (
+                              <p className="mt-0.5 leading-5">{item.detail}</p>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -646,8 +675,8 @@ function OperatorContent() {
         </main>
       </div>
 
-      <aside className="flex h-full min-h-0 w-20 shrink-0 flex-col overflow-hidden border-l border-neutral-800 bg-neutral-900">
-        <div className="flex h-14 shrink-0 items-center justify-center border-b border-neutral-800 px-1.5">
+      <aside className="flex h-full min-h-0 w-30 shrink-0 flex-col overflow-hidden border-l border-neutral-800 bg-neutral-900">
+        <div className="flex h-14 shrink-0 items-center justify-center border-b border-neutral-800 px-2">
           <h2 className="text-center text-[11px] font-bold leading-tight text-white">
             Spectator Screen
           </h2>
@@ -667,10 +696,10 @@ function OperatorContent() {
           <button
             type="button"
             onClick={openSpectator}
-            className="inline-flex w-full flex-col items-center justify-center gap-1 rounded-md bg-teal-600 px-1 py-2 font-normal text-white hover:bg-teal-500"
+            className="inline-flex w-full flex-col items-center justify-center gap-1 rounded-md bg-teal-600 px-1.5 py-2 font-normal text-white hover:bg-teal-500"
           >
             <Presentation size={18} strokeWidth={1.5} className="shrink-0" />
-            <span className="w-full text-center text-[9px] leading-tight font-medium">
+            <span className="w-full text-center text-[10px] leading-tight font-medium">
               Open Spectator
             </span>
           </button>
@@ -680,12 +709,14 @@ function OperatorContent() {
   );
 }
 
-export function OperatorShell() {
+export function OperatorShell({
+  changelogMarkdown = "",
+}: Readonly<{ changelogMarkdown?: string }>) {
   return (
     <PinGate role="operator" title="Operator">
       <SuiteProvider role="operator">
         <TooltipProvider>
-          <OperatorContent />
+          <OperatorContent changelogMarkdown={changelogMarkdown} />
         </TooltipProvider>
       </SuiteProvider>
     </PinGate>
