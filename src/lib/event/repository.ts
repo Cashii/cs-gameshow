@@ -4,7 +4,7 @@ import { hashPin } from "@/lib/auth/session";
 import { publishSnapshot } from "@/lib/event/pubsub"; // live event fan-out
 import { sampleTokensByColor, normalizeTokenNumber } from "@/lib/live-drawer/draw";
 import type { LiveDrawerToken, PoolSummary } from "@/lib/live-drawer/types";
-import { createEmptyPoll, type PollState, type PollVoteLogEntry } from "@/lib/poll/types";
+import { createEmptyPoll, withArchivedPoll, type PollState, type PollVoteLogEntry } from "@/lib/poll/types";
 import {
   createDefaultSuiteState,
   EVENT_ID,
@@ -89,6 +89,10 @@ export async function ensureIndexes(): Promise<void> {
   );
   const { ensureTriviaIndexes } = await import("@/lib/trivia/store");
   await ensureTriviaIndexes();
+  const { ensureDerbyIndexes } = await import("@/lib/derby/votes");
+  await ensureDerbyIndexes();
+  const { ensureTakeItIndexes } = await import("@/lib/take-it-or-leave-it/picks");
+  await ensureTakeItIndexes();
   const { ensureMediaIndexes } = await import("@/lib/media/store");
   await ensureMediaIndexes();
   indexesReady = true;
@@ -235,10 +239,24 @@ async function persistSuite(next: SuiteState): Promise<EventSnapshot> {
   const col = await eventsCol(db);
   const { refreshTriviaCounts } = await import("@/lib/trivia/store");
   const { createDefaultTriviaState } = await import("@/lib/trivia/types");
+  const { refreshDerbyVoteTallies } = await import("@/lib/derby/votes");
+  const { createDefaultDerbyState } = await import("@/lib/derby/types");
+  const { refreshTakeItPickCounts } = await import(
+    "@/lib/take-it-or-leave-it/picks"
+  );
+  const { createDefaultTakeItState } = await import(
+    "@/lib/take-it-or-leave-it/types"
+  );
   const toSave = suiteForPersist({
     ...next,
     poll: await applyVoteCountsToPoll(next.poll),
     trivia: await refreshTriviaCounts(next.trivia ?? createDefaultTriviaState()),
+    derby: await refreshDerbyVoteTallies(
+      next.derby ?? createDefaultDerbyState(),
+    ),
+    takeIt: await refreshTakeItPickCounts(
+      next.takeIt ?? createDefaultTakeItState(),
+    ),
   });
   const doc = await col.findOneAndUpdate(
     { _id: EVENT_ID },
@@ -710,6 +728,16 @@ export async function castVote(
 export async function resetPollVotes(pollId: string): Promise<void> {
   const db = await getDb();
   await votesCol(db).then((c) => c.deleteMany({ pollId }));
+}
+
+/** Snapshot current poll tallies + vote log for history before wiping. */
+export async function snapshotPollForHistory(
+  poll: PollState,
+): Promise<PollState> {
+  if (!poll.id) return { ...poll, voteLog: poll.voteLog ?? [] };
+  const withCounts = await applyVoteCountsToPoll(poll);
+  const voteLog = await getPollVoteLog(poll.id, withCounts.choices);
+  return { ...withCounts, voteLog };
 }
 
 export async function importSuiteState(suite: SuiteState): Promise<EventSnapshot> {

@@ -1,37 +1,72 @@
-export type TakeItPhase =
-  | "setup"
-  | "pick"
-  | "playing"
-  | "offer"
-  | "final"
-  | "revealed";
+export type TakeItPhase = "setup" | "pick" | "playing";
+
+export type TakeItCard = "green" | "red";
 
 export type TakeItCase = {
   id: number;
-  value: number;
+  card: TakeItCard;
   opened: boolean;
 };
 
 export type TakeItGameState = {
   phase: TakeItPhase;
-  values: number[];
+  /** Setup deck — green = keep playing, red = eliminated. */
+  cards: TakeItCard[];
   cases: TakeItCase[];
-  playerCaseId: number | null;
-  offerAmount: number | null;
+  /** Voting / pick window id. */
+  roundId: string | null;
   lastOpenedCaseId: number | null;
-  tookIt: boolean | null;
+  /** How many phones claimed each case id (string keys). */
+  pickCounts: Record<string, number>;
 };
 
-export const DEFAULT_TAKE_IT_VALUES = [1, 5, 10, 25, 50, 100, 250, 500, 1000];
+export const MIN_TAKE_IT_CASES = 3;
+export const MAX_TAKE_IT_CASES = 16;
+
+export const DEFAULT_TAKE_IT_CARDS: TakeItCard[] = [
+  "green",
+  "green",
+  "green",
+  "green",
+  "green",
+  "red",
+  "red",
+  "red",
+  "red",
+];
 
 export function createDefaultTakeItState(): TakeItGameState {
   return {
     phase: "setup",
-    values: [...DEFAULT_TAKE_IT_VALUES],
+    cards: [...DEFAULT_TAKE_IT_CARDS],
     cases: [],
-    playerCaseId: null,
-    offerAmount: null,
+    roundId: null,
     lastOpenedCaseId: null,
-    tookIt: null,
+    pickCounts: {},
   };
+}
+
+export function isTakeItCard(value: unknown): value is TakeItCard {
+  return value === "green" || value === "red";
+}
+
+export function emptyTakeItPickCounts(): Record<string, number> {
+  return {};
+}
+
+export function clampTakeItCaseCount(count: number): number {
+  if (!Number.isFinite(count)) return DEFAULT_TAKE_IT_CARDS.length;
+  return Math.min(
+    MAX_TAKE_IT_CASES,
+    Math.max(MIN_TAKE_IT_CASES, Math.round(count)),
+  );
+}
+
+export function takeItGridColumns(caseCount: number): number {
+  const n = Math.max(1, caseCount);
+  return Math.max(2, Math.ceil(Math.sqrt(n)));
+}
+
+export function takeItCardLabel(card: TakeItCard): string {
+  return card === "green" ? "Keep playing" : "Eliminated";
 }

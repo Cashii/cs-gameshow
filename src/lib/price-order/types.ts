@@ -12,6 +12,8 @@ export type PriceOrderItem = {
   label: string;
   price: number | null;
   priceRevealed: boolean;
+  /** Spectator curtain over the photo. New uploads start closed. */
+  itemRevealed: boolean;
   photoFit: PhotoFit;
 };
 
@@ -34,6 +36,7 @@ export function createEmptyPriceOrderItem(): PriceOrderItem {
     label: "",
     price: null,
     priceRevealed: false,
+    itemRevealed: false,
     photoFit: { ...DEFAULT_PHOTO_FIT },
   };
 }

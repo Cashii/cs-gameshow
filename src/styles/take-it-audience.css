@@ -14,6 +14,23 @@
   font-family: var(--font-oswald), Impact, "Arial Black", sans-serif;
 }
 
+.tioli-audience.tioli-audience-cards {
+  grid-template-columns: 1fr;
+  place-items: center;
+}
+
+.tioli-audience.tioli-audience-cards .tioli-center {
+  width: min(96vw, 1100px);
+}
+
+.tioli-audience.tioli-audience-cards .tioli-case-grid {
+  width: min(100%, 980px, 92vh);
+}
+
+.tioli-audience .tioli-case.claimed:not(.opened) {
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.45);
+}
+
 .tioli-audience::before {
   content: "";
   position: absolute;
@@ -83,7 +100,7 @@
 
 .tioli-audience .tioli-case-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--tioli-cols, 3), minmax(0, 1fr));
   gap: clamp(0.4rem, 1vw, 1rem);
   width: min(100%, 820px, 96vh);
 }
@@ -253,12 +270,66 @@
     transform 0.9s cubic-bezier(0.2, 1.45, 0.4, 1) 0.75s;
 }
 
+.tioli-audience .tioli-card-face {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-width: 88%;
+  min-height: 70%;
+  padding: 0.45rem 0.35rem;
+  border-radius: 0.5rem;
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(40%) scale(0.55);
+  transition:
+    opacity 0.55s ease 0.85s,
+    transform 0.9s cubic-bezier(0.2, 1.45, 0.4, 1) 0.75s;
+}
+
+.tioli-audience .tioli-card-green {
+  background: linear-gradient(180deg, #34d399, #059669 55%, #047857);
+  box-shadow:
+    0 0 24px rgba(16, 185, 129, 0.55),
+    inset 0 2px 0 rgba(255, 255, 255, 0.35);
+  color: #ecfdf5;
+}
+
+.tioli-audience .tioli-card-red {
+  background: linear-gradient(180deg, #f87171, #dc2626 55%, #991b1b);
+  box-shadow:
+    0 0 24px rgba(239, 68, 68, 0.55),
+    inset 0 2px 0 rgba(255, 255, 255, 0.3);
+  color: #fef2f2;
+}
+
+.tioli-audience .tioli-card-title {
+  font-size: clamp(1.35rem, 3.2vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.tioli-audience .tioli-card-sub {
+  font-size: clamp(0.7rem, 1.4vw, 1.05rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
 .tioli-audience .tioli-case.opened .tioli-suitcase-lid {
   transform: rotateX(108deg) translateY(-7%);
   opacity: 0;
 }
 
-.tioli-audience .tioli-case.opened .tioli-case-value {
+.tioli-audience .tioli-case.opened .tioli-case-value,
+.tioli-audience .tioli-case.opened .tioli-card-face {
   opacity: 1;
   transform: translateY(0) scale(1);
 }

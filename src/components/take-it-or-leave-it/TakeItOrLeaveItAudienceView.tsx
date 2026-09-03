@@ -2,39 +2,27 @@
 
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
   type CSSProperties,
 } from "react";
 import {
   createDefaultTakeItState,
+  takeItCardLabel,
+  takeItGridColumns,
+  type TakeItCard,
   type TakeItGameState,
 } from "@/lib/take-it-or-leave-it/types";
-import {
-  formatTakeItMoney,
-  getPlayerCase,
-} from "@/lib/take-it-or-leave-it/logic";
 import "@/styles/take-it-audience.css";
 
-function MoneyColumn({
-  amounts,
-  eliminated,
-}: {
-  amounts: number[];
-  eliminated: Set<number>;
-}) {
+function CardFace({ card }: Readonly<{ card: TakeItCard }>) {
   return (
-    <div className="tioli-money-col">
-      {amounts.map((amount, index) => (
-        <div
-          key={`${amount}-${index}`}
-          className={`tioli-money-tile ${eliminated.has(amount) ? "eliminated" : ""}`}
-        >
-          {formatTakeItMoney(amount)}
-        </div>
-      ))}
-    </div>
+    <span className={`tioli-card-face tioli-card-${card}`}>
+      <span className="tioli-card-title">
+        {card === "green" ? "Green" : "Red"}
+      </span>
+      <span className="tioli-card-sub">{takeItCardLabel(card)}</span>
+    </span>
   );
 }
 
@@ -63,72 +51,50 @@ export function TakeItOrLeaveItAudienceView({
     prevOpenedRef.current = game.lastOpenedCaseId;
   }, [game.lastOpenedCaseId]);
 
-  const sortedValues = useMemo(
-    () => [...(game.values ?? [])].sort((a, b) => a - b),
-    [game.values],
-  );
-  const leftAmounts = sortedValues.slice(0, 5);
-  const rightAmounts = sortedValues.slice(5);
-
-  const eliminated = useMemo(() => {
-    const set = new Set<number>();
-    for (const c of game.cases ?? []) {
-      if (c.opened) set.add(c.value);
-    }
-    return set;
-  }, [game.cases]);
-
-  const playerCase = getPlayerCase(game);
   const featuredCase = game.cases.find((c) => c.id === flashCaseId);
+  const caseCount = game.cases?.length || game.cards?.length || 9;
+  const columns = takeItGridColumns(caseCount);
 
   const statusText = (() => {
     if (game.phase === "setup") return "Preparing the cases…";
-    if (game.phase === "pick") return "Choose your case";
-    if (game.phase === "playing") return "Open a case";
-    if (game.phase === "offer") return "Banker is calling…";
-    if (game.phase === "final") {
-      return game.tookIt ? "Take It!" : "Final case";
-    }
-    if (game.tookIt) return "Take It!";
-    return "Final reveal";
+    if (game.phase === "pick") return "Choose your case on your phone";
+    return "Opening cases";
   })();
 
-  return (
-    <div className="tioli-audience">
-      <MoneyColumn amounts={leftAmounts} eliminated={eliminated} />
+  const placeholderCases = Array.from({ length: caseCount }, (_, i) => ({
+    id: i + 1,
+    card: "green" as const,
+    opened: false,
+  }));
 
+  return (
+    <div className="tioli-audience tioli-audience-cards">
       <div className="tioli-center">
-        <div className="tioli-title">Take It or Leave It</div>
-        <div className="tioli-case-grid">
-          {(game.cases?.length
-            ? game.cases
-            : Array.from({ length: 9 }, (_, i) => ({
-                id: i + 1,
-                value: 0,
-                opened: false,
-              }))
-          ).map((c) => {
-            const isPlayer = c.id === game.playerCaseId;
+        <div
+          className="tioli-case-grid"
+          style={{ "--tioli-cols": columns } as CSSProperties}
+        >
+          {(game.cases?.length ? game.cases : placeholderCases).map((c) => {
+            const claimed = (game.pickCounts?.[String(c.id)] ?? 0) > 0;
             return (
               <div
                 key={c.id}
                 className={[
                   "tioli-case",
-                  isPlayer ? "player" : "",
+                  claimed && !c.opened ? "claimed" : "",
                   c.opened ? "opened" : "",
+                  c.opened ? `tioli-case-${c.card}` : "",
                 ]
                   .filter(Boolean)
                   .join(" ")}
               >
-                {isPlayer && !c.opened && (
-                  <span className="tioli-case-badge">Yours</span>
+                {claimed && !c.opened && (
+                  <span className="tioli-case-badge">Picked</span>
                 )}
                 <div className="tioli-suitcase-handle" aria-hidden />
                 <div className="tioli-suitcase-shell">
                   <div className="tioli-suitcase-interior">
-                    <span className="tioli-case-value">
-                      {formatTakeItMoney(c.value)}
-                    </span>
+                    {c.opened ? <CardFace card={c.card} /> : null}
                   </div>
                   <div className="tioli-suitcase-lid">
                     <span className="tioli-suitcase-trim" aria-hidden />
@@ -144,19 +110,19 @@ export function TakeItOrLeaveItAudienceView({
         <div className="tioli-status">{statusText}</div>
       </div>
 
-      <MoneyColumn amounts={rightAmounts} eliminated={eliminated} />
-
       {featuredCase && (
         <div className="tioli-case-feature" aria-hidden>
           <div
-            className="tioli-case tioli-case-featured opened just-opened"
+            className={`tioli-case tioli-case-featured opened just-opened tioli-case-${featuredCase.card}`}
             style={
               {
                 "--tioli-feature-x": `${
-                  (((featuredCase.id - 1) % 3) - 1) * 28
+                  (((featuredCase.id - 1) % columns) - (columns - 1) / 2) * 22
                 }vw`,
                 "--tioli-feature-y": `${
-                  (Math.floor((featuredCase.id - 1) / 3) - 1) * 24
+                  (Math.floor((featuredCase.id - 1) / columns) -
+                    Math.floor((caseCount - 1) / columns) / 2) *
+                  18
                 }vh`,
               } as CSSProperties
             }
@@ -164,9 +130,7 @@ export function TakeItOrLeaveItAudienceView({
             <div className="tioli-suitcase-handle" />
             <div className="tioli-suitcase-shell">
               <div className="tioli-suitcase-interior">
-                <span className="tioli-case-value">
-                  {formatTakeItMoney(featuredCase.value)}
-                </span>
+                <CardFace card={featuredCase.card} />
               </div>
               <div className="tioli-suitcase-lid">
                 <span className="tioli-suitcase-trim" />
@@ -175,46 +139,6 @@ export function TakeItOrLeaveItAudienceView({
                 <span className="tioli-suitcase-latch right" />
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {game.phase === "offer" && game.offerAmount != null && (
-        <div className="tioli-overlay">
-          <div className="tioli-offer-card">
-            <div className="tioli-offer-label">Banker Offer</div>
-            <div className="tioli-offer-amount">
-              {formatTakeItMoney(game.offerAmount)}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {game.phase === "revealed" && (
-        <div className="tioli-overlay">
-          <div className="tioli-result-card">
-            {game.tookIt && game.offerAmount != null ? (
-              <>
-                <div className="tioli-result-label">Took the Offer</div>
-                <div className="tioli-result-amount">
-                  {formatTakeItMoney(game.offerAmount)}
-                </div>
-                <div className="tioli-result-sub">
-                  Case #{game.playerCaseId} held{" "}
-                  {playerCase ? formatTakeItMoney(playerCase.value) : "—"}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="tioli-result-label">You Win</div>
-                <div className="tioli-result-amount">
-                  {playerCase ? formatTakeItMoney(playerCase.value) : "—"}
-                </div>
-                <div className="tioli-result-sub">
-                  From case #{game.playerCaseId}
-                </div>
-              </>
-            )}
           </div>
         </div>
       )}

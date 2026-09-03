@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSuite } from "@/lib/suite-provider";
 import {
   clampDerbyRacerScale,
+  emptyDerbyVoteTallies,
   createDefaultDerbyState,
   DERBY_DURATION_MS,
   DERBY_THEME_OPTIONS,
@@ -75,10 +76,11 @@ export function DerbyHostPanel() {
 
   const startRace = () => {
     if (!game.winnerId || racing) return;
+    if (game.phase === "finished") return;
     updateDerby((prev) => ({
       ...prev,
       phase: "racing",
-      raceId: newRaceId(),
+      raceId: prev.raceId || newRaceId(),
       startedAt: Date.now(),
       durationMs: DERBY_DURATION_MS,
       seed: Math.floor(Math.random() * 0x7fffffff),
@@ -86,15 +88,48 @@ export function DerbyHostPanel() {
     }));
   };
 
+  const raceAgain = () => {
+    void fetch("/api/derby", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "clearVotes" }),
+    }).catch(() => {});
+    updateDerby((prev) => ({
+      ...prev,
+      phase: "idle",
+      raceId: newRaceId(),
+      startedAt: null,
+      seed: 0,
+      voteTallies: emptyDerbyVoteTallies(),
+      sequence: prev.sequence + 1,
+    }));
+  };
+
   const reset = () => {
+    void fetch("/api/derby", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "clearVotes" }),
+    }).catch(() => {});
     updateDerby((prev) => ({
       ...createDefaultDerbyState(),
       theme: getDerbyTheme(prev),
       racerScale: clampDerbyRacerScale(prev.racerScale),
       racerNames: prev.racerNames ?? {},
       sequence: prev.sequence,
+      raceId: newRaceId(),
     }));
   };
+
+  useEffect(() => {
+    if (game.phase !== "idle") return;
+    if (game.raceId) return;
+    updateDerby((prev) =>
+      prev.phase === "idle" && !prev.raceId
+        ? { ...prev, raceId: newRaceId() }
+        : prev,
+    );
+  }, [game.phase, game.raceId, updateDerby]);
 
   const setRacerName = (id: DerbyRacerId, name: string) => {
     updateDerby((prev) => {
@@ -125,6 +160,11 @@ export function DerbyHostPanel() {
   const sizeLabel = theme === "wonderbar" ? "Toy size" : "Horse size";
   const racerScale = clampDerbyRacerScale(game.racerScale);
 
+  const voteTotal = racers.reduce(
+    (sum, racer) => sum + (game.voteTallies?.[racer.id] ?? 0),
+    0,
+  );
+
   let statusText = "Pick a winner";
   if (game.phase === "idle" && picked) {
     statusText = `Ready — ${picked.name} wins`;
@@ -146,6 +186,14 @@ export function DerbyHostPanel() {
             </p>
             <p className="truncate text-sm font-semibold text-white">
               {statusText}
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+              Phone votes
+            </p>
+            <p className="text-3xl font-bold tabular-nums text-amber-300">
+              {voteTotal}
             </p>
           </div>
           {racing ? (
@@ -212,17 +260,20 @@ export function DerbyHostPanel() {
           )}
 
           <p className="text-sm text-neutral-400">
-            Pick the winner, then start a 20-second race on the spectator
-            screen. The audience should not see the pick until the finish.
+            Phones can pick a racer while the race is idle. Live vote counts
+            show below and on each racer. Pick the winner, then start a
+            20-second race on the spectator screen. The audience should not see
+            the pick until the finish.
           </p>
 
         <div>
           <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-            Winner (operator only)
+            Racers &amp; phone votes
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {racers.map((racer) => {
               const selected = game.winnerId === racer.id;
+              const votes = game.voteTallies?.[racer.id] ?? 0;
               const defaultName =
                 (theme === "wonderbar" ? WONDERBAR_RACERS : DERBY_RACERS).find(
                   (item) => item.id === racer.id,
@@ -253,6 +304,12 @@ export function DerbyHostPanel() {
                     <span className="text-xs text-neutral-500">
                       {racerNoun} {racer.number}
                     </span>
+                    <span className="mt-3 block text-3xl font-bold tabular-nums text-amber-300">
+                      {votes}
+                    </span>
+                    <span className="text-xs text-neutral-500">
+                      {votes === 1 ? "vote" : "votes"}
+                    </span>
                   </button>
                   <label className="mt-3 block text-left">
                     <span className="sr-only">
@@ -276,14 +333,24 @@ export function DerbyHostPanel() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            disabled={!game.winnerId || racing}
-            onClick={startRace}
-            className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500"
-          >
-            {game.phase === "finished" ? "Race again" : "Start race"}
-          </button>
+          {game.phase === "finished" ? (
+            <button
+              type="button"
+              onClick={raceAgain}
+              className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
+            >
+              Race again
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={!game.winnerId || racing}
+              onClick={startRace}
+              className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500"
+            >
+              Start race
+            </button>
+          )}
           <button
             type="button"
             onClick={reset}

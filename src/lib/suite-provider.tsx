@@ -28,6 +28,11 @@ import type { WheelGameState } from "@/lib/wheel/types";
 import type { LiveDrawerGameState } from "@/lib/live-drawer/types";
 import type { PoolSummary, LiveDrawerToken } from "@/lib/live-drawer/types";
 import {
+  createDefaultDerbyState,
+  emptyDerbyVoteTallies,
+  type DerbyGameState,
+} from "@/lib/derby/types";
+import {
   createDefaultTakeItState,
   type TakeItGameState,
 } from "@/lib/take-it-or-leave-it/types";
@@ -36,10 +41,6 @@ import {
   createDefaultMessageBoardState,
   type MessageBoardState,
 } from "@/lib/message-board/types";
-import {
-  createDefaultDerbyState,
-  type DerbyGameState,
-} from "@/lib/derby/types";
 import type { JeoparodyGameState } from "@/lib/jeoparody/types";
 import { createSampleJeoparodyGame } from "@/lib/jeoparody/defaults";
 import {
@@ -152,6 +153,38 @@ function pickLiveDrawer(
   };
 }
 
+/** Keep local derby edits, but pull live phone vote tallies for the same race. */
+function mergeDerbyVotes(
+  local: DerbyGameState | undefined,
+  remote: DerbyGameState | undefined,
+): DerbyGameState {
+  const base = local ?? createDefaultDerbyState();
+  const next = remote ?? createDefaultDerbyState();
+  if (base.raceId && base.raceId === next.raceId) {
+    return {
+      ...base,
+      voteTallies: next.voteTallies ?? emptyDerbyVoteTallies(),
+    };
+  }
+  return base;
+}
+
+/** Keep local take-it edits, but pull live phone pick counts for the same round. */
+function mergeTakeItPicks(
+  local: TakeItGameState | undefined,
+  remote: TakeItGameState | undefined,
+): TakeItGameState {
+  const base = local ?? createDefaultTakeItState();
+  const next = remote ?? createDefaultTakeItState();
+  if (base.roundId && base.roundId === next.roundId) {
+    return {
+      ...base,
+      pickCounts: next.pickCounts ?? {},
+    };
+  }
+  return base;
+}
+
 async function fetchSnapshot(): Promise<EventSnapshot> {
   const res = await fetch("/api/event", { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to load event");
@@ -205,6 +238,8 @@ export function SuiteProvider({
         calledTokens: next.calledTokens ?? [],
         poll: next.poll,
         trivia: next.trivia,
+        derby: mergeDerbyVotes(base.derby, next.derby),
+        takeIt: mergeTakeItPicks(base.takeIt, next.takeIt),
         liveDrawer: pickLiveDrawer(base.liveDrawer, next.liveDrawer),
         revision: Math.max(base.revision, next.revision),
       });
@@ -230,7 +265,13 @@ export function SuiteProvider({
       }
       if (next.revision <= confirmedRevisionRef.current) {
         if ((role === "operator" || role === "player") && local) {
-          replaceSnapshot({ ...local, poll: next.poll, trivia: next.trivia });
+          replaceSnapshot({
+            ...local,
+            poll: next.poll,
+            trivia: next.trivia,
+            derby: mergeDerbyVotes(local.derby, next.derby),
+            takeIt: mergeTakeItPicks(local.takeIt, next.takeIt),
+          });
           setConnected(true);
         }
         return;

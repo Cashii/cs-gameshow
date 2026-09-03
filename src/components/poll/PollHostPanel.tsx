@@ -25,6 +25,9 @@ export function PollHostPanel() {
   );
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(
+    null,
+  );
 
   const runAction = async (body: Record<string, unknown>) => {
     setLoading(true);
@@ -72,6 +75,7 @@ export function PollHostPanel() {
 
   const votingOpen = poll.status === "open";
   const voteLog = poll.voteLog ?? [];
+  const history = state.pollHistory ?? [];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -257,6 +261,95 @@ export function PollHostPanel() {
       </div>
 
       {message && <p className="mt-3 text-sm text-neutral-400">{message}</p>}
+
+      <section className="mt-8">
+        <h3 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+          Past polls ({history.length})
+        </h3>
+        {history.length === 0 ? (
+          <p className="mt-2 text-sm text-neutral-500">
+            Closed or replaced polls appear here so you can review answers later.
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {history.map((entry) => {
+              const open = expandedHistoryId === entry.id;
+              const entryVotes = entry.choices.reduce(
+                (sum, choice) => sum + choice.votes,
+                0,
+              );
+              return (
+                <li
+                  key={`${entry.id}-${entry.closedAt}`}
+                  className="rounded-xl border border-neutral-800 bg-neutral-900"
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedHistoryId(open ? null : entry.id)
+                    }
+                    className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-white">
+                        {entry.question || "(no question)"}
+                      </p>
+                      <p className="mt-0.5 text-xs text-neutral-500">
+                        {new Date(entry.closedAt).toLocaleString()} ·{" "}
+                        {entryVotes} vote{entryVotes === 1 ? "" : "s"} ·{" "}
+                        {entry.status}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-sm text-neutral-400">
+                      {open ? "Hide" : "Review"}
+                    </span>
+                  </button>
+                  {open ? (
+                    <div className="space-y-3 border-t border-neutral-800 px-4 py-3">
+                      <ul className="space-y-1 text-sm text-neutral-300">
+                        {entry.choices.map((choice) => (
+                          <li
+                            key={choice.id}
+                            className="flex justify-between gap-3"
+                          >
+                            <span className="truncate">{choice.text}</span>
+                            <strong className="tabular-nums text-white">
+                              {choice.votes}
+                            </strong>
+                          </li>
+                        ))}
+                      </ul>
+                      {entry.voteLog.length === 0 ? (
+                        <p className="text-sm text-neutral-500">No vote log saved.</p>
+                      ) : (
+                        <ul className="max-h-48 space-y-1 overflow-auto text-sm">
+                          {entry.voteLog.map((log) => (
+                            <li
+                              key={log.id}
+                              className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-2 text-neutral-400"
+                            >
+                              <span className="tabular-nums text-neutral-500">
+                                {formatVoteTime(log.at)}
+                              </span>
+                              <span className="min-w-0 truncate">
+                                <span className="font-medium text-neutral-200">
+                                  {log.deviceCode || log.voterLabel}
+                                </span>
+                                <span className="text-neutral-500"> · </span>
+                                <span>{log.choiceText}</span>
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
       </div>
     </div>
   );

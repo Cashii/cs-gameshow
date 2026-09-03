@@ -10,11 +10,19 @@ import {
   type PoolSummary,
 } from "@/lib/live-drawer/types";
 import {
+  MIN_TAKE_IT_CASES,
+  MAX_TAKE_IT_CASES,
   createDefaultTakeItState,
+  emptyTakeItPickCounts,
+  isTakeItCard,
+  type TakeItCard,
   type TakeItGameState,
+  type TakeItPhase,
 } from "@/lib/take-it-or-leave-it/types";
 import {
   createEmptyPoll,
+  MAX_POLL_HISTORY,
+  type PollHistoryEntry,
   type PollState,
 } from "@/lib/poll/types";
 import {
@@ -24,6 +32,7 @@ import {
 } from "@/lib/message-board/types";
 import {
   clampDerbyRacerScale,
+  emptyDerbyVoteTallies,
   createDefaultDerbyState,
   DERBY_RACER_IDS,
   DERBY_THEMES,
@@ -39,6 +48,8 @@ import {
   createDefaultTriviaState,
   isTriviaChoiceId,
   type TriviaGameState,
+  type TriviaQueuedQuestion,
+  type TriviaRoundHistory,
   type TriviaStatus,
 } from "@/lib/trivia/types";
 import {
@@ -57,9 +68,12 @@ import {
 } from "@/lib/price-order/types";
 import { normalizePhotoFit } from "@/lib/price/photo-fit";
 import {
+  MIN_QUESTION_TIME_TEAMS,
+  MAX_QUESTION_TIME_TEAMS,
   clampQuestionTimeDurationMs,
   clampQuestionTimeScore,
   createDefaultQuestionTimeState,
+  createQuestionTimeTeam,
   type QuestionTimeState,
   type QuestionTimeTeam,
 } from "@/lib/question-time/types";
@@ -97,6 +111,7 @@ export type SuiteState = {
   liveDrawer: LiveDrawerGameState;
   takeIt: TakeItGameState;
   poll: PollState;
+  pollHistory: PollHistoryEntry[];
   messageBoard: MessageBoardState;
   derby: DerbyGameState;
   jeoparody: JeoparodyGameState;
@@ -179,6 +194,7 @@ export function createDefaultSuiteState(): SuiteState {
     liveDrawer: createDefaultLiveDrawerState(),
     takeIt: createDefaultTakeItState(),
     poll: createEmptyPoll(),
+    pollHistory: [],
     messageBoard: createDefaultMessageBoardState(),
     derby: createDefaultDerbyState(),
     jeoparody: createSampleJeoparodyGame(),
@@ -190,26 +206,101 @@ export function createDefaultSuiteState(): SuiteState {
   };
 }
 
+const TAKE_IT_PHASES = new Set<TakeItPhase>(["setup", "pick", "playing"]);
+
 function normalizeTakeItState(
   raw: LegacySuiteState["takeIt"] | LegacySuiteState["deal"] | undefined,
 ): TakeItGameState {
   const defaults = createDefaultTakeItState();
-  if (!raw) return defaults;
+  if (!raw || typeof raw !== "object") return defaults;
 
-  const legacyAccepted =
-    "dealAccepted" in raw ? raw.dealAccepted : undefined;
+  let cards: TakeItCard[] = [];
+  const rawAny = raw as {
+    cards?: unknown;
+    values?: unknown;
+    phase?: unknown;
+    roundId?: unknown;
+    pickCounts?: unknown;
+    cases?: unknown;
+    lastOpenedCaseId?: unknown;
+  };
+  if (Array.isArray(rawAny.cards)) {
+    cards = rawAny.cards
+      .map((card) => (isTakeItCard(card) ? card : null))
+      .filter((card): card is TakeItCard => card != null)
+      .slice(0, MAX_TAKE_IT_CASES);
+  } else if (Array.isArray(rawAny.values)) {
+    // Legacy money values → alternate green/red by index.
+    const values = rawAny.values.slice(0, MAX_TAKE_IT_CASES);
+    cards = values.map((_, index) => (index % 2 === 0 ? "green" : "red"));
+  }
+  if (cards.length < MIN_TAKE_IT_CASES) {
+    cards = [...defaults.cards];
+  }
+
+  const phaseRaw =
+    typeof rawAny.phase === "string" ? rawAny.phase : defaults.phase;
+  let phase: TakeItPhase = defaults.phase;
+  if (TAKE_IT_PHASES.has(phaseRaw as TakeItPhase)) {
+    phase = phaseRaw as TakeItPhase;
+  } else if (
+    phaseRaw === "offer" ||
+    phaseRaw === "final" ||
+    phaseRaw === "revealed"
+  ) {
+    phase = "playing";
+  }
+
+  const rawCases = Array.isArray(rawAny.cases) ? rawAny.cases : [];
+  const cases = rawCases
+    .map((c, index) => {
+      if (!c || typeof c !== "object") return null;
+      const entry = c as {
+        id?: unknown;
+        card?: unknown;
+        value?: unknown;
+        opened?: unknown;
+      };
+      const id =
+        typeof entry.id === "number" && Number.isFinite(entry.id)
+          ? entry.id
+          : index + 1;
+      let card: TakeItCard | null = isTakeItCard(entry.card) ? entry.card : null;
+      if (!card && typeof entry.value === "number") {
+        card = entry.value % 2 === 0 ? "green" : "red";
+      }
+      if (!card) return null;
+      return {
+        id,
+        card,
+        opened: Boolean(entry.opened),
+      };
+    })
+    .filter(
+      (c): c is { id: number; card: TakeItCard; opened: boolean } => c != null,
+    );
+
+  const pickCounts = emptyTakeItPickCounts();
+  if (rawAny.pickCounts && typeof rawAny.pickCounts === "object") {
+    for (const [key, value] of Object.entries(
+      rawAny.pickCounts as Record<string, unknown>,
+    )) {
+      if (typeof value === "number" && Number.isFinite(value)) {
+        pickCounts[key] = Math.max(0, Math.floor(value));
+      }
+    }
+  }
 
   return {
-    ...defaults,
-    ...raw,
-    values: raw.values?.length === 9 ? raw.values : defaults.values,
-    cases: Array.isArray(raw.cases) ? raw.cases : defaults.cases,
-    tookIt:
-      typeof raw.tookIt === "boolean" || raw.tookIt === null
-        ? raw.tookIt
-        : typeof legacyAccepted === "boolean" || legacyAccepted === null
-          ? legacyAccepted
-          : defaults.tookIt,
+    phase,
+    cards,
+    cases,
+    roundId: typeof rawAny.roundId === "string" ? rawAny.roundId || null : null,
+    lastOpenedCaseId:
+      typeof rawAny.lastOpenedCaseId === "number"
+        ? rawAny.lastOpenedCaseId
+        : null,
+    pickCounts,
   };
 }
 
@@ -283,6 +374,38 @@ function normalizePollState(raw: Partial<PollState> | undefined): PollState {
   };
 }
 
+function normalizePollHistory(
+  raw: unknown,
+): PollHistoryEntry[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry): PollHistoryEntry | null => {
+      if (!entry || typeof entry !== "object") return null;
+      const item = entry as Partial<PollHistoryEntry>;
+      if (typeof item.id !== "string" || !item.id) return null;
+      const poll = normalizePollState({
+        id: item.id,
+        question: item.question,
+        choices: item.choices,
+        status: item.status,
+        voteLog: item.voteLog,
+      });
+      return {
+        id: poll.id,
+        question: poll.question,
+        choices: poll.choices,
+        status: poll.status,
+        closedAt:
+          typeof item.closedAt === "string" && item.closedAt
+            ? item.closedAt
+            : new Date(0).toISOString(),
+        voteLog: poll.voteLog,
+      };
+    })
+    .filter((entry): entry is PollHistoryEntry => entry != null)
+    .slice(0, MAX_POLL_HISTORY);
+}
+
 function normalizeMessageBoardState(
   raw: Partial<MessageBoardState> | undefined,
 ): MessageBoardState {
@@ -301,6 +424,60 @@ const TRIVIA_STATUSES = new Set<TriviaStatus>([
   "revealed",
   "finished",
 ]);
+
+function normalizeTriviaQueuedQuestion(
+  raw: Partial<TriviaQueuedQuestion> | undefined,
+  index: number,
+): TriviaQueuedQuestion | null {
+  if (!raw || typeof raw !== "object") return null;
+  return {
+    id:
+      typeof raw.id === "string" && raw.id.trim()
+        ? raw.id
+        : `queue-${index}`,
+    question: typeof raw.question === "string" ? raw.question : "",
+    optionA: typeof raw.optionA === "string" ? raw.optionA : "True",
+    optionB: typeof raw.optionB === "string" ? raw.optionB : "False",
+  };
+}
+
+function normalizeTriviaHistoryEntry(
+  raw: Partial<TriviaRoundHistory> | undefined,
+): TriviaRoundHistory | null {
+  if (!raw || typeof raw !== "object") return null;
+  if (typeof raw.roundId !== "string" || !raw.roundId) return null;
+  return {
+    roundIndex:
+      typeof raw.roundIndex === "number" && Number.isFinite(raw.roundIndex)
+        ? Math.max(0, Math.floor(raw.roundIndex))
+        : 0,
+    roundId: raw.roundId,
+    question: typeof raw.question === "string" ? raw.question : "",
+    optionA: typeof raw.optionA === "string" ? raw.optionA : "True",
+    optionB: typeof raw.optionB === "string" ? raw.optionB : "False",
+    survivingChoiceId: isTriviaChoiceId(raw.survivingChoiceId)
+      ? raw.survivingChoiceId
+      : null,
+    choiceACount:
+      typeof raw.choiceACount === "number" && Number.isFinite(raw.choiceACount)
+        ? Math.max(0, Math.floor(raw.choiceACount))
+        : 0,
+    choiceBCount:
+      typeof raw.choiceBCount === "number" && Number.isFinite(raw.choiceBCount)
+        ? Math.max(0, Math.floor(raw.choiceBCount))
+        : 0,
+    remainingCount:
+      typeof raw.remainingCount === "number" &&
+      Number.isFinite(raw.remainingCount)
+        ? Math.max(0, Math.floor(raw.remainingCount))
+        : 0,
+    answeredCount:
+      typeof raw.answeredCount === "number" &&
+      Number.isFinite(raw.answeredCount)
+        ? Math.max(0, Math.floor(raw.answeredCount))
+        : 0,
+  };
+}
 
 function normalizeTriviaState(
   raw: Partial<TriviaGameState> | undefined,
@@ -335,6 +512,16 @@ function normalizeTriviaState(
           (raw as { winnerCode: string }).winnerCode.trim()
         ? [(raw as { winnerCode: string }).winnerCode.trim().slice(0, 8)]
         : [],
+    queue: Array.isArray(raw.queue)
+      ? raw.queue
+          .map((item, index) => normalizeTriviaQueuedQuestion(item, index))
+          .filter((item): item is TriviaQueuedQuestion => item != null)
+      : [],
+    history: Array.isArray(raw.history)
+      ? raw.history
+          .map((item) => normalizeTriviaHistoryEntry(item))
+          .filter((item): item is TriviaRoundHistory => item != null)
+      : [],
   };
 }
 
@@ -379,7 +566,22 @@ function normalizeDerbyState(
       typeof raw.sequence === "number" && Number.isFinite(raw.sequence)
         ? raw.sequence
         : defaults.sequence,
+    voteTallies: normalizeDerbyVoteTallies(raw.voteTallies),
   };
+}
+
+function normalizeDerbyVoteTallies(
+  raw: Partial<Record<DerbyRacerId, number>> | undefined,
+): Record<DerbyRacerId, number> {
+  const tallies = emptyDerbyVoteTallies();
+  if (!raw || typeof raw !== "object") return tallies;
+  for (const id of DERBY_RACER_IDS) {
+    const value = raw[id];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      tallies[id] = Math.max(0, Math.floor(value));
+    }
+  }
+  return tallies;
 }
 
 function normalizeDerbyRacerNames(
@@ -436,23 +638,34 @@ function normalizePriceOrderItem(
     label: typeof raw.label === "string" ? raw.label : "",
     price: finitePrice(raw.price),
     priceRevealed: Boolean(raw.priceRevealed),
+    itemRevealed:
+      typeof raw.itemRevealed === "boolean" ? raw.itemRevealed : true,
     photoFit: normalizePhotoFit(raw.photoFit),
   };
 }
 
 function normalizeQuestionTimeTeam(
   raw: Partial<QuestionTimeTeam> | undefined,
-  fallback: QuestionTimeTeam,
-): QuestionTimeTeam {
+  index: number,
+  fallbackName: string,
+): QuestionTimeTeam | null {
+  if (!raw || typeof raw !== "object") return null;
+  const id =
+    typeof raw.id === "string" && raw.id.trim()
+      ? raw.id
+      : `team-${index}`;
   return {
-    // Allow empty while typing — audience view falls back to a label.
-    name: typeof raw?.name === "string" ? raw.name : fallback.name,
-    score: clampQuestionTimeScore(raw?.score),
+    id,
+    name: typeof raw.name === "string" ? raw.name : fallbackName,
+    score: clampQuestionTimeScore(raw.score),
   };
 }
 
 function normalizeQuestionTimeState(
-  raw: Partial<QuestionTimeState> | undefined,
+  raw: Partial<QuestionTimeState> & {
+    leftTeam?: Partial<QuestionTimeTeam>;
+    rightTeam?: Partial<QuestionTimeTeam>;
+  } | undefined,
 ): QuestionTimeState {
   const defaults = createDefaultQuestionTimeState();
   if (!raw || typeof raw !== "object") return defaults;
@@ -469,13 +682,32 @@ function normalizeQuestionTimeState(
     Number.isFinite(raw.timerRemainingMs)
       ? Math.max(0, Math.round(raw.timerRemainingMs))
       : timerDurationMs;
+
+  let teams: QuestionTimeTeam[] = [];
+  if (Array.isArray(raw.teams) && raw.teams.length > 0) {
+    teams = raw.teams
+      .slice(0, MAX_QUESTION_TIME_TEAMS)
+      .map((team, index) =>
+        normalizeQuestionTimeTeam(team, index, `Team ${index + 1}`),
+      )
+      .filter((team): team is QuestionTimeTeam => team != null);
+  } else if (raw.leftTeam || raw.rightTeam) {
+    const left = normalizeQuestionTimeTeam(raw.leftTeam, 0, "Team 1");
+    const right = normalizeQuestionTimeTeam(raw.rightTeam, 1, "Team 2");
+    teams = [left, right].filter(
+      (team): team is QuestionTimeTeam => team != null,
+    );
+  }
+  while (teams.length < MIN_QUESTION_TIME_TEAMS) {
+    teams.push(createQuestionTimeTeam(`Team ${teams.length + 1}`));
+  }
+
   return {
     title:
       typeof raw.title === "string" ? raw.title : defaults.title,
     question:
       typeof raw.question === "string" ? raw.question : defaults.question,
-    leftTeam: normalizeQuestionTimeTeam(raw.leftTeam, defaults.leftTeam),
-    rightTeam: normalizeQuestionTimeTeam(raw.rightTeam, defaults.rightTeam),
+    teams,
     timerDurationMs,
     timerRemainingMs,
     timerRunning: timerRunning && timerEndsAt != null,
@@ -635,6 +867,7 @@ export function normalizeSuiteState(
     liveDrawer: normalizeLiveDrawerState(raw.liveDrawer ?? raw.draw),
     takeIt: normalizeTakeItState(raw.takeIt ?? raw.deal),
     poll: normalizePollState(raw.poll),
+    pollHistory: normalizePollHistory(raw.pollHistory),
     messageBoard: normalizeMessageBoardState(raw.messageBoard),
     derby: normalizeDerbyState(raw.derby),
     jeoparody: normalizeJeoparodyState(raw.jeoparody),

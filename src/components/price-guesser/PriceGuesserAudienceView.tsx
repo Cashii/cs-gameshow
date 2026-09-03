@@ -1,24 +1,12 @@
 "use client";
 
 import type { PriceGuesserState } from "@/lib/price-guesser/types";
+import { ItemCurtain } from "@/components/price/ItemCurtain";
 import { ItemPhoto } from "@/components/price/ItemPhoto";
 import { PriceShowStage } from "@/components/price/PriceShowStage";
 import { PriceTag } from "@/components/price/PriceTag";
 import { PriceResultOverlay } from "@/components/price/PriceResultOverlay";
 import "@/styles/price-audience.css";
-
-function ItemCurtain({ open }: Readonly<{ open: boolean }>) {
-  return (
-    <div
-      className={`price-curtain${open ? " price-curtain-open" : ""}`}
-      aria-hidden
-    >
-      <div className="price-curtain-valance" />
-      <div className="price-curtain-panel price-curtain-left" />
-      <div className="price-curtain-panel price-curtain-right" />
-    </div>
-  );
-}
 
 export function PriceGuesserAudienceView({
   game,

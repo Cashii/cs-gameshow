@@ -6,16 +6,19 @@ Question 1 **is** the roster: anyone who answers Q1 and is on the surviving side
 
 Stop whenever remaining count hits your target. You do not have to play down to one.
 
+You can stage several upcoming questions in a queue. Starting the next question loads the first queued item. Closed rounds stay in History for review until you reset the series.
+
 ## Operator
 
 1. Select **Elimination Trivia** in the left nav. Put **Elimination Trivia** on the Spectator screen (it sits after Jeoparody, same order as the left games list).
-2. Type the question and two labels. **Open voting**.
-3. Watch **answers in**. Operator can see the A/B split; the projector does not until you reveal.
-4. **Lock voting**, then tap **Survive A** or **Survive B**. Remaining count updates. Phones flip to still-in or out.
-5. If remaining hits **0**, **Undo reveal** and pick the other side.
-6. If remaining is still above your cut, **Next question** and repeat from step 2.
-7. When remaining is the size you want, click **Declare remaining as winners**. Those phones get the winner screen. If you play until **1**, declare that one player the same way.
-8. **Undo winners** takes you back to the last reveal if you called it too soon. **Reset series** clears votes and the player list.
+2. Optionally **Add to queue** and fill upcoming questions (reorder or delete as needed).
+3. Type the live question and two labels. **Open voting**.
+4. Watch **answers in**. Operator can see the A/B split; the projector does not until you reveal.
+5. **Lock voting**, then tap **Survive A** or **Survive B**. Remaining count updates. Phones flip to still-in or out.
+6. If remaining hits **0**, **Undo reveal** and pick the other side.
+7. If remaining is still above your cut, **Start question N** (pulls the next queued question when one exists) and repeat from step 3.
+8. When remaining is the size you want, click **Declare remaining as winners**. Those phones get the winner screen. If you play until **1**, declare that one player the same way.
+9. Review past rounds under **History**. **Undo winners** takes you back to the last reveal if you called it too soon. **Reset series** clears votes, the player list, the queue, and history.
 
 ## Player (`/player`)
 

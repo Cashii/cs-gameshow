@@ -6,14 +6,41 @@ import {
   priceOrderSlots,
   unplacedPriceOrderItems,
   visiblePriceOrderItems,
+  type PriceOrderItem,
   type PriceOrderState,
 } from "@/lib/price-order/types";
+import { ItemCurtain } from "@/components/price/ItemCurtain";
 import { ItemPhoto } from "@/components/price/ItemPhoto";
 import { PriceShowStage } from "@/components/price/PriceShowStage";
 import { PriceTag } from "@/components/price/PriceTag";
 import { PriceResultOverlay } from "@/components/price/PriceResultOverlay";
 import { usePriceItemLayoutAnimation } from "@/components/price-order/usePriceItemLayoutAnimation";
 import "@/styles/price-audience.css";
+
+function CurtainedItem({
+  item,
+}: Readonly<{
+  item: PriceOrderItem;
+}>) {
+  const itemRevealed = item.itemRevealed !== false;
+  const label = item.label.trim();
+  return (
+    <div
+      className="price-curtain-stage price-order-curtain-stage"
+      aria-label={
+        itemRevealed ? label || "Item" : "Item hidden behind curtain"
+      }
+    >
+      <ItemPhoto
+        src={item.imageUrl}
+        alt={itemRevealed ? label || "Item" : ""}
+        fit={item.photoFit}
+      />
+      <p className="price-item-label">{label || "\u00a0"}</p>
+      <ItemCurtain open={itemRevealed} />
+    </div>
+  );
+}
 
 export function PriceOrderAudienceView({
   game,
@@ -50,14 +77,7 @@ export function PriceOrderAudienceView({
                 className="price-shelf-card"
                 data-price-move={item.id}
               >
-                <ItemPhoto
-                  src={item.imageUrl}
-                  alt={item.label || "Item"}
-                  fit={item.photoFit}
-                />
-                <p className="price-item-label">
-                  {item.label.trim() || "\u00a0"}
-                </p>
+                <CurtainedItem item={item} />
               </div>
             ))
           )}
@@ -77,14 +97,7 @@ export function PriceOrderAudienceView({
                 <span className="price-order-rank">#{index + 1}</span>
                 {item ? (
                   <div className="price-order-piece" data-price-move={item.id}>
-                    <ItemPhoto
-                      src={item.imageUrl}
-                      alt={item.label || "Item"}
-                      fit={item.photoFit}
-                    />
-                    <p className="price-item-label">
-                      {item.label.trim() || "\u00a0"}
-                    </p>
+                    <CurtainedItem item={item} />
                     <PriceTag
                       price={item.price}
                       revealed={item.priceRevealed}

@@ -6,6 +6,7 @@ import {
   triviaOpen,
   triviaResetSeries,
   triviaReveal,
+  triviaSaveQueue,
   triviaSetup,
   triviaUndoReveal,
 } from "@/lib/trivia/store";
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
     optionA?: string;
     optionB?: string;
     survivingChoiceId?: string;
+    queue?: unknown;
   };
 
   if (body.action === "vote") {
@@ -78,6 +80,9 @@ export async function POST(request: Request) {
         return json(await triviaNextQuestion());
       case "declareWinners":
         return json(await triviaDeclareWinners());
+      case "saveQueue":
+        if (!Array.isArray(body.queue)) return error("queue required");
+        return json(await triviaSaveQueue(body.queue));
       case "resetSeries":
         return json(await triviaResetSeries());
       default:

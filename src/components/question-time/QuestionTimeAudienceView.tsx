@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   DEFAULT_QUESTION_TIME_TITLE,
   formatQuestionTimeClock,
@@ -14,6 +14,17 @@ const CLOCK_SIZE = 200;
 const CLOCK_STROKE = 10;
 const CLOCK_RADIUS = (CLOCK_SIZE - CLOCK_STROKE) / 2;
 const CLOCK_CIRCUMFERENCE = 2 * Math.PI * CLOCK_RADIUS;
+
+const TEAM_ACCENTS = [
+  "qt-team-accent-0",
+  "qt-team-accent-1",
+  "qt-team-accent-2",
+  "qt-team-accent-3",
+  "qt-team-accent-4",
+  "qt-team-accent-5",
+  "qt-team-accent-6",
+  "qt-team-accent-7",
+] as const;
 
 function prefersReducedMotion() {
   return (
@@ -59,16 +70,17 @@ function useAnimatedScore(value: number, duration = 700) {
 
 function TeamScore({
   team,
-  side,
+  index,
   fallback,
 }: Readonly<{
   team: QuestionTimeTeam;
-  side: "left" | "right";
+  index: number;
   fallback: string;
 }>) {
   const { display, bump } = useAnimatedScore(team.score);
+  const accent = TEAM_ACCENTS[index % TEAM_ACCENTS.length];
   return (
-    <div className={`qt-team qt-team-${side}`}>
+    <div className={`qt-team ${accent}`}>
       <div className="qt-team-name">{team.name.trim() || fallback}</div>
       <div className={`qt-team-score${bump ? " score-bump" : ""}`}>{display}</div>
     </div>
@@ -142,6 +154,7 @@ export function QuestionTimeAudienceView({
 }: Readonly<{ game: QuestionTimeState }>) {
   const [now, setNow] = useState<number | null>(null);
   const question = game.question.trim();
+  const teams = game.teams ?? [];
 
   useEffect(() => {
     setNow(Date.now());
@@ -181,9 +194,20 @@ export function QuestionTimeAudienceView({
         </div>
 
         <div className="qt-bottom">
-          <TeamScore team={game.leftTeam} side="left" fallback="Team 1" />
+          <div
+            className="qt-teams"
+            style={{ "--qt-team-count": Math.max(teams.length, 1) } as CSSProperties}
+          >
+            {teams.map((team, index) => (
+              <TeamScore
+                key={team.id}
+                team={team}
+                index={index}
+                fallback={`Team ${index + 1}`}
+              />
+            ))}
+          </div>
           <GiantClock remainingMs={remainingMs} durationMs={game.timerDurationMs} />
-          <TeamScore team={game.rightTeam} side="right" fallback="Team 2" />
         </div>
       </div>
     </div>

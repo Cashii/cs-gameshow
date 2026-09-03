@@ -2,8 +2,14 @@ import {
   updatePoll,
   resetPollVotes,
   castVote,
+  snapshotPollForHistory,
+  updateEventSuite,
+  ensureEvent,
 } from "@/lib/event/repository";
-import { createEmptyPoll } from "@/lib/poll/types";
+import {
+  createEmptyPoll,
+  withArchivedPoll,
+} from "@/lib/poll/types";
 import { error, isErrorResponse, json, requireRole } from "@/lib/api/helpers";
 
 export const dynamic = "force-dynamic";
@@ -46,42 +52,62 @@ export async function POST(request: Request) {
       case "setup": {
         const choices = (body.choices ?? []).slice(0, 6);
         if (choices.length < 2) return error("At least 2 choices required");
+        const event = await ensureEvent();
+        const archived = event.poll?.id
+          ? await snapshotPollForHistory(event.poll)
+          : null;
+        if (event.poll?.id) await resetPollVotes(event.poll.id);
         const pollId = crypto.randomUUID();
-        await resetPollVotes(pollId);
-        const snapshot = await updatePoll(() => ({
-          id: pollId,
-          question: body.question?.trim() || "Question?",
-          choices: choices.map((c, i) => ({
-            id: c.id || String.fromCharCode(97 + i),
-            text: c.text.trim() || `Option ${i + 1}`,
-            votes: 0,
-          })),
-          status: "idle",
-          voteLog: [],
+        const snapshot = await updateEventSuite((prev) => ({
+          ...prev,
+          pollHistory: archived
+            ? withArchivedPoll(prev.pollHistory, archived)
+            : prev.pollHistory ?? [],
+          poll: {
+            id: pollId,
+            question: body.question?.trim() || "Question?",
+            choices: choices.map((c, i) => ({
+              id: c.id || String.fromCharCode(97 + i),
+              text: c.text.trim() || `Option ${i + 1}`,
+              votes: 0,
+            })),
+            status: "idle",
+            voteLog: [],
+          },
         }));
         return json(snapshot);
       }
       case "open": {
-        const { ensureEvent } = await import("@/lib/event/repository");
         const event = await ensureEvent();
         const incomingChoices = (body.choices ?? []).slice(0, 6);
+        const archived = event.poll?.id
+          ? await snapshotPollForHistory(event.poll)
+          : null;
         if (event.poll?.id) await resetPollVotes(event.poll.id);
-        const snapshot = await updatePoll((prev) => {
+        const snapshot = await updateEventSuite((prev) => {
           const hasIncoming = incomingChoices.length >= 2;
           const nextId = crypto.randomUUID();
           return {
-            id: nextId,
-            question:
-              body.question?.trim() || prev.question.trim() || "Question?",
-            choices: hasIncoming
-              ? incomingChoices.map((c, i) => ({
-                  id: c.id || String.fromCharCode(97 + i),
-                  text: c.text.trim() || `Option ${i + 1}`,
-                  votes: 0,
-                }))
-              : prev.choices.map((c) => ({ ...c, votes: 0 })),
-            status: "open" as const,
-            voteLog: [],
+            ...prev,
+            pollHistory: archived
+              ? withArchivedPoll(prev.pollHistory, archived)
+              : prev.pollHistory ?? [],
+            poll: {
+              id: nextId,
+              question:
+                body.question?.trim() ||
+                prev.poll.question.trim() ||
+                "Question?",
+              choices: hasIncoming
+                ? incomingChoices.map((c, i) => ({
+                    id: c.id || String.fromCharCode(97 + i),
+                    text: c.text.trim() || `Option ${i + 1}`,
+                    votes: 0,
+                  }))
+                : prev.poll.choices.map((c) => ({ ...c, votes: 0 })),
+              status: "open" as const,
+              voteLog: [],
+            },
           };
         });
         return json(snapshot);
@@ -101,7 +127,18 @@ export async function POST(request: Request) {
         return json(snapshot);
       }
       case "clear": {
-        const snapshot = await updatePoll(() => createEmptyPoll());
+        const event = await ensureEvent();
+        const archived = event.poll?.id
+          ? await snapshotPollForHistory(event.poll)
+          : null;
+        if (event.poll?.id) await resetPollVotes(event.poll.id);
+        const snapshot = await updateEventSuite((prev) => ({
+          ...prev,
+          pollHistory: archived
+            ? withArchivedPoll(prev.pollHistory, archived)
+            : prev.pollHistory ?? [],
+          poll: createEmptyPoll(),
+        }));
         return json(snapshot);
       }
       default:

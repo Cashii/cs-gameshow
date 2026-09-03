@@ -47,13 +47,19 @@ export type DerbyGameState = {
   racerNames: Partial<Record<DerbyTheme, Partial<Record<DerbyRacerId, string>>>>;
   /** Operator pick — do not show on spectator until finished. */
   winnerId: DerbyRacerId | null;
-  /** Stable id for a single race (later bets / certificates). */
+  /** Stable id for a single race / voting window. */
   raceId: string | null;
   startedAt: number | null;
   durationMs: number;
   seed: number;
   sequence: number;
+  /** Public vote tallies for the current raceId (counts only). */
+  voteTallies: Record<DerbyRacerId, number>;
 };
+
+export function emptyDerbyVoteTallies(): Record<DerbyRacerId, number> {
+  return { red: 0, blue: 0, green: 0, yellow: 0 };
+}
 
 export function createDefaultDerbyState(): DerbyGameState {
   return {
@@ -67,6 +73,7 @@ export function createDefaultDerbyState(): DerbyGameState {
     durationMs: DERBY_DURATION_MS,
     seed: 0,
     sequence: 0,
+    voteTallies: emptyDerbyVoteTallies(),
   };
 }
 

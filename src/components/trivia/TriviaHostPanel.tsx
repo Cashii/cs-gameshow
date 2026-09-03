@@ -2,8 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useSuite } from "@/lib/suite-provider";
-import type { TriviaChoiceId, TriviaStatus } from "@/lib/trivia/types";
+import { createTriviaQueuedQuestion } from "@/lib/trivia/types";
+import type {
+  TriviaChoiceId,
+  TriviaQueuedQuestion,
+  TriviaStatus,
+} from "@/lib/trivia/types";
 import { OperatorNotice } from "@/components/operator/OperatorNotice";
+import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 
 function triviaStatusLabel(
   status: TriviaStatus,
@@ -47,6 +53,9 @@ export function TriviaHostPanel() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [roster, setRoster] = useState<string[]>([]);
+  const [queueDraft, setQueueDraft] = useState<TriviaQueuedQuestion[]>(
+    () => trivia.queue ?? [],
+  );
 
   const runAction = async (body: Record<string, unknown>) => {
     setLoading(true);
@@ -66,6 +75,11 @@ export function TriviaHostPanel() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    setQueueDraft(trivia.queue ?? []);
+  }, [trivia.queue]);
+
 
   useEffect(() => {
     if (trivia.status === "idle" && trivia.roundIndex === 0) {
@@ -95,7 +109,7 @@ export function TriviaHostPanel() {
     setQuestion(trivia.question || "");
     setOptionA(trivia.optionA || "True");
     setOptionB(trivia.optionB || "False");
-  }, [trivia.roundIndex, trivia.status]);
+  }, [trivia.roundIndex, trivia.status, trivia.question, trivia.optionA, trivia.optionB]);
 
   const statusLabel = triviaStatusLabel(
     trivia.status,
@@ -106,6 +120,21 @@ export function TriviaHostPanel() {
   const survive = (survivingChoiceId: TriviaChoiceId) => {
     void runAction({ action: "reveal", survivingChoiceId });
   };
+
+  const saveQueue = (queue: TriviaQueuedQuestion[]) => {
+    setQueueDraft(queue);
+    void runAction({ action: "saveQueue", queue });
+  };
+
+  const persistQueueDraft = () => {
+    setQueueDraft((current) => {
+      void runAction({ action: "saveQueue", queue: current });
+      return current;
+    });
+  };
+
+  const queue = queueDraft;
+  const history = trivia.history ?? [];
 
   return (
     <div className="min-h-0 flex-1 overflow-auto px-6 py-6">
@@ -136,7 +165,9 @@ export function TriviaHostPanel() {
           title={`Set up question ${questionNumber}`}
         >
           Previous question is closed. {trivia.remainingCount} remaining.
-          Enter the next question, then open voting.
+          {queue[0]?.question.trim()
+            ? " The next queued question is loaded — open voting when ready."
+            : " Enter the next question, then open voting."}
         </OperatorNotice>
       ) : null}
 
@@ -146,7 +177,9 @@ export function TriviaHostPanel() {
           title={`Question ${trivia.roundIndex} closed`}
         >
           {trivia.remainingCount} remaining. Start question{" "}
-          {trivia.roundIndex + 1} or declare winners if this is your cut.
+          {trivia.roundIndex + 1}
+          {queue.length > 0 ? " (next queued question will load)" : ""} or
+          declare winners if this is your cut.
         </OperatorNotice>
       ) : null}
 
@@ -287,6 +320,173 @@ export function TriviaHostPanel() {
             </button>
           </div>
           {message ? <p className="text-sm text-neutral-400">{message}</p> : null}
+
+          <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                Upcoming questions ({queue.length})
+              </h3>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() =>
+                  saveQueue([...queue, createTriviaQueuedQuestion()])
+                }
+                className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
+              >
+                <Plus size={14} />
+                Add to queue
+              </button>
+            </div>
+            {queue.length === 0 ? (
+              <p className="text-sm text-neutral-500">
+                Stage questions ahead of time. Starting the next question pulls
+                the first queued item.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {queue.map((item, index) => (
+                  <article
+                    key={item.id}
+                    className="rounded-lg border border-neutral-700 bg-neutral-950 p-3"
+                  >
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-neutral-500">
+                        Queued #{index + 1}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={loading || index === 0}
+                          onClick={() => {
+                            const next = [...queue];
+                            const tmp = next[index - 1];
+                            next[index - 1] = next[index];
+                            next[index] = tmp;
+                            saveQueue(next);
+                          }}
+                          className="rounded-md p-1 text-neutral-400 hover:bg-neutral-800 disabled:opacity-30"
+                          aria-label="Move up"
+                        >
+                          <ChevronUp size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={loading || index === queue.length - 1}
+                          onClick={() => {
+                            const next = [...queue];
+                            const tmp = next[index + 1];
+                            next[index + 1] = next[index];
+                            next[index] = tmp;
+                            saveQueue(next);
+                          }}
+                          className="rounded-md p-1 text-neutral-400 hover:bg-neutral-800 disabled:opacity-30"
+                          aria-label="Move down"
+                        >
+                          <ChevronDown size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={loading}
+                          onClick={() =>
+                            saveQueue(queue.filter((entry) => entry.id !== item.id))
+                          }
+                          className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-red-300 disabled:opacity-40"
+                          aria-label="Remove from queue"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                    <input
+                      value={item.question}
+                      onChange={(e) => {
+                        setQueueDraft((prev) =>
+                          prev.map((entry) =>
+                            entry.id === item.id
+                              ? { ...entry, question: e.target.value }
+                              : entry,
+                          ),
+                        );
+                      }}
+                      onBlur={persistQueueDraft}
+                      placeholder="Queued question"
+                      className="mb-2 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
+                    />
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <input
+                        value={item.optionA}
+                        onChange={(e) => {
+                          setQueueDraft((prev) =>
+                            prev.map((entry) =>
+                              entry.id === item.id
+                                ? { ...entry, optionA: e.target.value }
+                                : entry,
+                            ),
+                          );
+                        }}
+                        onBlur={persistQueueDraft}
+                        placeholder="Side A"
+                        className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
+                      />
+                      <input
+                        value={item.optionB}
+                        onChange={(e) => {
+                          setQueueDraft((prev) =>
+                            prev.map((entry) =>
+                              entry.id === item.id
+                                ? { ...entry, optionB: e.target.value }
+                                : entry,
+                            ),
+                          );
+                        }}
+                        onBlur={persistQueueDraft}
+                        placeholder="Side B"
+                        className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
+                      />
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+            <h3 className="mb-3 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+              History ({history.length})
+            </h3>
+            {history.length === 0 ? (
+              <p className="text-sm text-neutral-500">
+                Closed questions appear here after you start the next one or
+                declare winners.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {[...history].reverse().map((entry) => (
+                  <li
+                    key={entry.roundId}
+                    className="rounded-lg border border-neutral-700 bg-neutral-950 p-3 text-sm"
+                  >
+                    <p className="font-semibold text-white">
+                      Q{entry.roundIndex}: {entry.question || "(blank)"}
+                    </p>
+                    <p className="mt-1 text-neutral-400">
+                      Survived{" "}
+                      {entry.survivingChoiceId === "a"
+                        ? `A · ${entry.optionA}`
+                        : entry.survivingChoiceId === "b"
+                          ? `B · ${entry.optionB}`
+                          : "—"}
+                      {" · "}
+                      A {entry.choiceACount} / B {entry.choiceBCount}
+                      {" · "}
+                      {entry.remainingCount} remaining
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
 
         <div className="space-y-4">

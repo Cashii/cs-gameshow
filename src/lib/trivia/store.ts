@@ -5,6 +5,7 @@ import { getDeviceCode } from "@/lib/player/device-id";
 import {
   createDefaultTriviaState,
   isTriviaChoiceId,
+  withTriviaHistoryAppended,
   type TriviaChoiceId,
   type TriviaGameState,
   type TriviaMe,
@@ -438,15 +439,21 @@ export async function triviaDeclareWinners(): Promise<EventSnapshot> {
   if (winnerCodes.length < 1) {
     throw new Error("No remaining players to declare");
   }
-  return updateEventSuite((prev) => ({
-    ...prev,
-    trivia: {
-      ...prev.trivia,
-      status: "finished",
-      remainingCount: winnerCodes.length,
-      winnerCodes,
-    },
-  }));
+  return updateEventSuite((prev) => {
+    const t = prev.trivia ?? createDefaultTriviaState();
+    const history =
+      t.status === "revealed" ? withTriviaHistoryAppended(t) : t.history ?? [];
+    return {
+      ...prev,
+      trivia: {
+        ...t,
+        status: "finished",
+        remainingCount: winnerCodes.length,
+        winnerCodes,
+        history,
+      },
+    };
+  });
 }
 
 export async function triviaNextQuestion(): Promise<EventSnapshot> {
@@ -454,6 +461,9 @@ export async function triviaNextQuestion(): Promise<EventSnapshot> {
     const t = prev.trivia ?? createDefaultTriviaState();
     if (t.status !== "revealed") throw new Error("Reveal a surviving side first");
     if (t.remainingCount <= 1) throw new Error("Series is over");
+    const history = withTriviaHistoryAppended(t);
+    const queue = [...(t.queue ?? [])];
+    const next = queue.shift();
     return {
       ...prev,
       trivia: {
@@ -461,12 +471,53 @@ export async function triviaNextQuestion(): Promise<EventSnapshot> {
         status: "idle",
         roundId: "",
         roundIndex: t.roundIndex + 1,
-        question: "",
+        question: next?.question ?? "",
+        optionA: next?.optionA ?? t.optionA,
+        optionB: next?.optionB ?? t.optionB,
         survivingChoiceId: null,
         answeredCount: 0,
         choiceACount: 0,
         choiceBCount: 0,
         winnerCodes: [],
+        queue,
+        history,
+      },
+    };
+  });
+}
+
+export async function triviaSaveQueue(
+  queue: Array<{
+    id?: string;
+    question?: string;
+    optionA?: string;
+    optionB?: string;
+  }>,
+): Promise<EventSnapshot> {
+  return updateEventSuite((prev) => {
+    const t = prev.trivia ?? createDefaultTriviaState();
+    const normalized = queue
+      .filter((item) => item && typeof item === "object")
+      .map((item, index) => ({
+        id:
+          typeof item.id === "string" && item.id.trim()
+            ? item.id
+            : `queue-${index}-${Date.now()}`,
+        question: typeof item.question === "string" ? item.question : "",
+        optionA:
+          typeof item.optionA === "string" && item.optionA.trim()
+            ? item.optionA
+            : "True",
+        optionB:
+          typeof item.optionB === "string" && item.optionB.trim()
+            ? item.optionB
+            : "False",
+      }));
+    return {
+      ...prev,
+      trivia: {
+        ...t,
+        queue: normalized,
       },
     };
   });

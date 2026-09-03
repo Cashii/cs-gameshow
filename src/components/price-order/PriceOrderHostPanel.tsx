@@ -187,6 +187,37 @@ export function PriceOrderHostPanel() {
           </button>
           <button
             type="button"
+            disabled={visiblePriceOrderItems(game).length === 0}
+            onClick={() =>
+              patch((prev) => ({
+                ...prev,
+                items: prev.items.map((item) =>
+                  item.imageUrl ? { ...item, itemRevealed: true } : item,
+                ),
+              }))
+            }
+            className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Reveal all items
+          </button>
+          <button
+            type="button"
+            disabled={visiblePriceOrderItems(game).length === 0}
+            onClick={() =>
+              patch((prev) => ({
+                ...prev,
+                items: prev.items.map((item) => ({
+                  ...item,
+                  itemRevealed: false,
+                })),
+              }))
+            }
+            className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Close all curtains
+          </button>
+          <button
+            type="button"
             disabled={!resultReady && !game.resultShown}
             onClick={() =>
               patch((prev) => ({ ...prev, resultShown: !prev.resultShown }))
@@ -287,6 +318,18 @@ export function PriceOrderHostPanel() {
                             {formatPrice(item.price)}
                           </p>
                         </div>
+                        <StatusSwitch
+                          checked={item.itemRevealed !== false}
+                          labelOn="Curtain open"
+                          labelOff="Curtain closed"
+                          ariaLabel={`${item.label.trim() || "Item"} curtain`}
+                          onToggle={() =>
+                            updateItem(item.id, (prev) => ({
+                              ...prev,
+                              itemRevealed: !(prev.itemRevealed !== false),
+                            }))
+                          }
+                        />
                         <StatusSwitch
                           checked={item.priceRevealed}
                           disabled={item.price == null}
@@ -414,6 +457,7 @@ export function PriceOrderHostPanel() {
                           ...prev,
                           imageUrl: url,
                           priceRevealed: false,
+                          itemRevealed: false,
                           photoFit: { ...DEFAULT_PHOTO_FIT },
                         }))
                       }
@@ -422,6 +466,20 @@ export function PriceOrderHostPanel() {
                       }
                       onError={showToast}
                     />
+                    {item.imageUrl ? (
+                      <StatusSwitch
+                        checked={item.itemRevealed !== false}
+                        labelOn="Curtain open"
+                        labelOff="Curtain closed"
+                        ariaLabel={`${item.label.trim() || `Item ${index + 1}`} curtain`}
+                        onToggle={() =>
+                          updateItem(item.id, (prev) => ({
+                            ...prev,
+                            itemRevealed: !(prev.itemRevealed !== false),
+                          }))
+                        }
+                      />
+                    ) : null}
                     <input
                       type="text"
                       value={item.label}

@@ -1,4 +1,7 @@
+import { uid } from "@/lib/utils";
+
 export type QuestionTimeTeam = {
+  id: string;
   name: string;
   score: number;
 };
@@ -7,8 +10,7 @@ export type QuestionTimeState = {
   /** Audience header title. */
   title: string;
   question: string;
-  leftTeam: QuestionTimeTeam;
-  rightTeam: QuestionTimeTeam;
+  teams: QuestionTimeTeam[];
   /** Configured length of the clock. */
   timerDurationMs: number;
   /** Remaining time when paused or idle. */
@@ -19,6 +21,8 @@ export type QuestionTimeState = {
 };
 
 export const DEFAULT_QUESTION_TIME_TITLE = "Question Time";
+export const MIN_QUESTION_TIME_TEAMS = 2;
+export const MAX_QUESTION_TIME_TEAMS = 8;
 
 export const QUESTION_TIME_DURATION_PRESETS_MS = [
   10_000, 15_000, 20_000, 30_000, 45_000, 60_000, 90_000, 120_000,
@@ -28,12 +32,21 @@ export const DEFAULT_QUESTION_TIME_DURATION_MS = 30_000;
 export const MIN_QUESTION_TIME_DURATION_MS = 5_000;
 export const MAX_QUESTION_TIME_DURATION_MS = 10 * 60_000;
 
+export function createQuestionTimeTeam(
+  name: string,
+  score = 0,
+): QuestionTimeTeam {
+  return { id: uid(), name, score };
+}
+
 export function createDefaultQuestionTimeState(): QuestionTimeState {
   return {
     title: DEFAULT_QUESTION_TIME_TITLE,
     question: "",
-    leftTeam: { name: "Team 1", score: 0 },
-    rightTeam: { name: "Team 2", score: 0 },
+    teams: [
+      createQuestionTimeTeam("Team 1"),
+      createQuestionTimeTeam("Team 2"),
+    ],
     timerDurationMs: DEFAULT_QUESTION_TIME_DURATION_MS,
     timerRemainingMs: DEFAULT_QUESTION_TIME_DURATION_MS,
     timerRunning: false,

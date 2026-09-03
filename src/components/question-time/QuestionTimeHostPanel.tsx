@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pause, Play, RotateCcw } from "lucide-react";
+import { Pause, Play, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import {
+  MAX_QUESTION_TIME_TEAMS,
+  MIN_QUESTION_TIME_TEAMS,
   QUESTION_TIME_DURATION_PRESETS_MS,
   clampQuestionTimeScore,
   createDefaultQuestionTimeState,
+  createQuestionTimeTeam,
   formatQuestionTimeClock,
   formatQuestionTimePreset,
   pauseQuestionTimeTimer,
@@ -84,21 +87,43 @@ export function QuestionTimeHostPanel() {
     patch((prev) => setQuestionTimeDuration(prev, next));
   };
 
-  const adjustScore = (side: "leftTeam" | "rightTeam", delta: number) => {
+  const adjustScore = (teamId: string, delta: number) => {
     patch((prev) => ({
       ...prev,
-      [side]: {
-        ...prev[side],
-        score: clampQuestionTimeScore(prev[side].score + delta),
-      },
+      teams: prev.teams.map((team) =>
+        team.id === teamId
+          ? {
+              ...team,
+              score: clampQuestionTimeScore(team.score + delta),
+            }
+          : team,
+      ),
+    }));
+  };
+
+  const addTeam = () => {
+    if (game.teams.length >= MAX_QUESTION_TIME_TEAMS) return;
+    patch((prev) => ({
+      ...prev,
+      teams: [
+        ...prev.teams,
+        createQuestionTimeTeam(`Team ${prev.teams.length + 1}`),
+      ],
+    }));
+  };
+
+  const removeTeam = (teamId: string) => {
+    if (game.teams.length <= MIN_QUESTION_TIME_TEAMS) return;
+    patch((prev) => ({
+      ...prev,
+      teams: prev.teams.filter((team) => team.id !== teamId),
     }));
   };
 
   const resetScores = () => {
     patch((prev) => ({
       ...prev,
-      leftTeam: { ...prev.leftTeam, score: 0 },
-      rightTeam: { ...prev.rightTeam, score: 0 },
+      teams: prev.teams.map((team) => ({ ...team, score: 0 })),
     }));
   };
 
@@ -106,8 +131,7 @@ export function QuestionTimeHostPanel() {
     patch((prev) => ({
       ...createDefaultQuestionTimeState(),
       title: prev.title,
-      leftTeam: { ...prev.leftTeam, score: 0 },
-      rightTeam: { ...prev.rightTeam, score: 0 },
+      teams: prev.teams.map((team) => ({ ...team, score: 0 })),
       timerDurationMs: prev.timerDurationMs,
       timerRemainingMs: prev.timerDurationMs,
     }));
@@ -302,68 +326,104 @@ export function QuestionTimeHostPanel() {
               </div>
             </section>
 
-            {(["leftTeam", "rightTeam"] as const).map((key) => {
-              const team = game[key];
-              const label = key === "leftTeam" ? "Left team" : "Right team";
-              return (
-                <article
-                  key={key}
-                  className="flex flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4"
+            <section className="flex flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4 md:col-span-2">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+                  Teams ({game.teams.length}/{MAX_QUESTION_TIME_TEAMS})
+                </h3>
+                <button
+                  type="button"
+                  disabled={game.teams.length >= MAX_QUESTION_TIME_TEAMS}
+                  onClick={addTeam}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
                 >
-                  <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-                    {label}
-                  </h3>
-                  <input
-                    type="text"
-                    value={team.name}
-                    onChange={(event) =>
-                      patch((prev) => ({
-                        ...prev,
-                        [key]: { ...prev[key], name: event.target.value },
-                      }))
-                    }
-                    placeholder={label}
-                    className="h-10 rounded-lg border border-neutral-700 bg-neutral-950 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
-                  />
-                  <div className="flex items-center gap-3">
-                    <span className="min-w-16 text-4xl font-bold tabular-nums text-white">
-                      {team.score}
-                    </span>
+                  <Plus size={14} />
+                  Add team
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {game.teams.map((team, index) => (
+                  <article
+                    key={team.id}
+                    className="flex flex-col gap-3 rounded-xl border border-neutral-700 bg-neutral-950 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+                        Team {index + 1}
+                      </h4>
+                      <button
+                        type="button"
+                        disabled={game.teams.length <= MIN_QUESTION_TIME_TEAMS}
+                        onClick={() => removeTeam(team.id)}
+                        className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-red-300 disabled:opacity-30"
+                        aria-label={`Remove team ${index + 1}`}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                     <input
-                      type="number"
-                      min={0}
-                      max={9999}
-                      value={team.score}
+                      type="text"
+                      value={team.name}
                       onChange={(event) =>
                         patch((prev) => ({
                           ...prev,
-                          [key]: {
-                            ...prev[key],
-                            score: clampQuestionTimeScore(
-                              Number.parseInt(event.target.value || "0", 10),
-                            ),
-                          },
+                          teams: prev.teams.map((entry) =>
+                            entry.id === team.id
+                              ? { ...entry, name: event.target.value }
+                              : entry,
+                          ),
                         }))
                       }
-                      className="h-10 w-24 rounded-lg border border-neutral-700 bg-neutral-950 px-3 text-white focus:border-sky-500 focus:outline-none"
-                      aria-label={`${label} score`}
+                      placeholder={`Team ${index + 1}`}
+                      className="h-10 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
                     />
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {[-1, 1, 5, 10].map((delta) => (
-                      <button
-                        key={`${key}-${delta}`}
-                        type="button"
-                        onClick={() => adjustScore(key, delta)}
-                        className="inline-flex h-10 min-w-14 items-center justify-center rounded-md border border-teal-500 bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-500"
-                      >
-                        {delta > 0 ? `+${delta}` : delta}
-                      </button>
-                    ))}
-                  </div>
-                </article>
-              );
-            })}
+                    <div className="flex items-center gap-3">
+                      <span className="min-w-16 text-4xl font-bold tabular-nums text-white">
+                        {team.score}
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={9999}
+                        value={team.score}
+                        onChange={(event) =>
+                          patch((prev) => ({
+                            ...prev,
+                            teams: prev.teams.map((entry) =>
+                              entry.id === team.id
+                                ? {
+                                    ...entry,
+                                    score: clampQuestionTimeScore(
+                                      Number.parseInt(
+                                        event.target.value || "0",
+                                        10,
+                                      ),
+                                    ),
+                                  }
+                                : entry,
+                            ),
+                          }))
+                        }
+                        className="h-10 w-24 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white focus:border-sky-500 focus:outline-none"
+                        aria-label={`${team.name.trim() || `Team ${index + 1}`} score`}
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {[-1, 1, 5, 10].map((delta) => (
+                        <button
+                          key={`${team.id}-${delta}`}
+                          type="button"
+                          onClick={() => adjustScore(team.id, delta)}
+                          className="inline-flex h-10 min-w-14 items-center justify-center rounded-md border border-teal-500 bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-500"
+                        >
+                          {delta > 0 ? `+${delta}` : delta}
+                        </button>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
           </div>
         </div>
       </div>
