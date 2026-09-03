@@ -5,7 +5,6 @@ import { Minus, Plus } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { OperatorNotice } from "@/components/operator/OperatorNotice";
-import { useSound } from "@/lib/feud/useSound";
 import { phraseHasLetter } from "@/lib/wheel/types";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
@@ -154,7 +153,6 @@ export function WheelHostPanel() {
   const { state, updateWheel } = useSuite();
   const wheel = state.wheel;
   const spectatorLive = state.spectatorGame === "wheel";
-  const sounds = useSound();
   const [phraseInput, setPhraseInput] = useState(wheel.phrase);
   const [topicInput, setTopicInput] = useState(wheel.topic);
   const [editing, setEditing] = useState(!wheel.phrase);
@@ -200,7 +198,6 @@ export function WheelHostPanel() {
       revealedLetters: [...prev.revealedLetters, letter],
       wrongCount: hit ? prev.wrongCount : (prev.wrongCount ?? 0) + 1,
     }));
-    if (!hit) sounds.wrong();
   };
 
   const isLetterGuessed = (letter: string) =>

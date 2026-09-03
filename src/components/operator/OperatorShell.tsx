@@ -3,7 +3,6 @@
 import {
   BarChart3,
   Briefcase,
-  ChevronRight,
   CircleDollarSign,
   Download,
   Flag,
@@ -26,9 +25,12 @@ import {
   Tag,
   ListOrdered,
   Heart,
+  Pencil,
+  ScrollText,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { SuiteProvider, useSuite } from "@/lib/suite-provider";
 import {
   ACTIVE_GAME_LABELS,
@@ -54,9 +56,11 @@ import { TriviaHostPanel } from "@/components/trivia/TriviaHostPanel";
 import { PriceGuesserHostPanel } from "@/components/price-guesser/PriceGuesserHostPanel";
 import { PriceOrderHostPanel } from "@/components/price-order/PriceOrderHostPanel";
 import { QuestionTimeHostPanel } from "@/components/question-time/QuestionTimeHostPanel";
+import { PictionaryHostPanel } from "@/components/pictionary/PictionaryHostPanel";
 import { PinSettingsPanel } from "@/components/operator/PinSettingsPanel";
 import { PinGate } from "@/components/auth/PinGate";
 import { useStudioTheme } from "@/components/studio/StudioTheme";
+import { GameshowLogo } from "@/components/studio/GameshowLogo";
 
 const NAV_TOP: ActiveGame[] = ["idle"];
 const NAV_GAMES: ActiveGame[] = [
@@ -67,6 +71,7 @@ const NAV_GAMES: ActiveGame[] = [
   "priceGuesser",
   "priceOrder",
   "questionTime",
+  "pictionary",
   "jeoparody",
   "takeIt",
 ];
@@ -87,6 +92,7 @@ const GAME_ICONS: Record<ActiveGame, LucideIcon> = {
   questionTime: Heart,
   poll: BarChart3,
   messageBoard: Megaphone,
+  pictionary: Pencil,
 };
 
 const CARD_ICON: Record<Exclude<ActiveGame, "idle">, string> = {
@@ -102,26 +108,12 @@ const CARD_ICON: Record<Exclude<ActiveGame, "idle">, string> = {
   questionTime: "bg-rose-500 text-white",
   poll: "bg-orange-500 text-white",
   messageBoard: "bg-fuchsia-500 text-white",
+  pictionary: "bg-pink-500 text-white",
 };
 
 const NAV_ACTIVE: Record<ActiveGame, string> = {
   idle: "bg-teal-600 text-white",
   ...CARD_ICON,
-};
-
-const GAME_DESCRIPTIONS: Record<Exclude<ActiveGame, "idle">, string> = {
-  feud: "Reveal survey answers, track strikes, and run each round.",
-  wheel: "Set a phrase and reveal letters on the spectator board.",
-  liveDrawer: "Draw colored tokens from the pool for the spectator display.",
-  takeIt: "Open nine cases, take banker offers, and decide take it or leave it.",
-  derby: "Pick a winner and run a 20-second race on the spectator screen.",
-  jeoparody: "Set categories and clues, reveal prompts, and score contestants from the operator desk.",
-  trivia: "Boolean questions on player phones. Cut the field to any remaining count.",
-  priceGuesser: "Show an item photo behind a curtain, then reveal the item and the real price.",
-  priceOrder: "Put up to five items on screen and build cheapest-to-most-expensive order.",
-  questionTime: "Show a question, score two teams, and run a giant countdown for the room.",
-  poll: "Ask a question, open voting on player phones, and show live results.",
-  messageBoard: "Put a text announcement on the spectator screen.",
 };
 
 function BetaTag({ compact, inverted }: Readonly<{ compact?: boolean; inverted?: boolean }>) {
@@ -352,11 +344,16 @@ function OperatorContent() {
           }`}
         >
           {!sidebarCollapsed && (
-            <p
-              className="min-w-0 whitespace-nowrap text-[1.2rem] leading-none text-teal-600"
-              style={{ fontFamily: "var(--font-pacifico), cursive" }}
-            >
-              Cash&apos;s Gameshow
+            <p className="flex min-w-0 items-baseline gap-1.5 whitespace-nowrap leading-none">
+              <span
+                className="text-[1.25rem] text-[#3dff8a]"
+                style={{ fontFamily: "var(--font-pacifico), cursive" }}
+              >
+                Jack&apos;d
+              </span>
+              <span className="font-gameshow text-[1.05rem] text-[#c084fc]">
+                UP
+              </span>
             </p>
           )}
           <button
@@ -419,6 +416,17 @@ function OperatorContent() {
         </nav>
 
         <div className="border-t border-neutral-800 p-2">
+          <Link
+            href="/operator/changelog"
+            aria-label="Updates"
+            title={sidebarCollapsed ? "Updates" : undefined}
+            className={`mb-0.5 flex w-full items-center rounded-md py-2 text-left text-base font-normal text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-100 ${
+              sidebarCollapsed ? "justify-center px-2" : "gap-2.5 px-2.5"
+            }`}
+          >
+            <ScrollText size={18} strokeWidth={1.5} className="shrink-0" aria-hidden />
+            {!sidebarCollapsed && <span className="truncate">Updates</span>}
+          </Link>
           <div ref={settingsRef} className="relative">
             <button
               type="button"
@@ -561,128 +569,82 @@ function OperatorContent() {
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {state.activeGame === "idle" && (
             <div className="min-h-0 flex-1 overflow-auto">
-              <div className="@container mx-auto w-full max-w-6xl px-6 py-6">
-              <div className="mb-6 text-center">
-                <h2
-                  className="text-3xl tracking-tight text-teal-700 sm:text-4xl"
-                  style={{ fontFamily: "var(--font-pacifico), cursive" }}
-                >
-                  Welcome to Cash&apos;s Gameshow App
-                </h2>
-                <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-neutral-400">
-                  Pick a game below or from the left sidebar to open its
-                  operator controls. The rail on the right controls the
-                  spectator screen — choose what the audience sees, independently
-                  of the game you are running at this desk.
-                </p>
-              </div>
+              <div className="mx-auto flex w-full max-w-4xl flex-col px-6 pb-6 pt-2 mt-[-64px]">
+                <div className="pointer-events-none relative mx-auto h-96 w-full max-w-xl overflow-hidden">
+                  <GameshowLogo className="h-full w-full origin-center scale-[1.15]" />
+                </div>
 
-              <div className="grid grid-cols-1 gap-3 @md:grid-cols-2 @3xl:grid-cols-3">
-                {(
-                  [
-                    "feud",
-                    "wheel",
-                    "derby",
-                    "trivia",
-                    "priceGuesser",
-                    "priceOrder",
-                    "questionTime",
-                    "jeoparody",
-                    "takeIt",
-                    "liveDrawer",
-                    "poll",
-                    "messageBoard",
-                  ] as const
-                ).map((game) => {
-                  const Icon = GAME_ICONS[game];
-                  return (
+                <div className="relative z-10 mt-6 w-full">
+                  <div className="grid gap-8 sm:grid-cols-2">
+                    <div>
+                      <h2 className="text-base font-bold text-white">Games</h2>
+                      <p className="mt-1.5 text-sm leading-relaxed text-neutral-400">
+                        Use the list on the left to pick the game you&apos;re
+                        running. That opens the controls for that game on this
+                        desk.
+                      </p>
+                    </div>
+                    <div>
+                      <h2 className="text-base font-bold text-white">
+                        Spectator screen
+                      </h2>
+                      <p className="mt-1.5 text-sm leading-relaxed text-neutral-400">
+                        The rail on the right chooses what the audience sees. It
+                        can stay on standby or show a different game than the one
+                        you&apos;re controlling.
+                      </p>
+                    </div>
+                  </div>
+
+                  <h2 className="mt-8 text-center text-base font-bold text-white">
+                    Screens
+                  </h2>
+                  <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
                     <button
-                      key={game}
                       type="button"
-                      onClick={() => setActiveGame(game)}
-                      className="group flex h-full flex-col rounded-2xl border border-neutral-700 bg-neutral-900 p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-teal-400 hover:shadow-md"
+                      onClick={openHostess}
+                      className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-500"
                     >
-                      <span className="flex items-center gap-3">
-                        <span
-                          className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${CARD_ICON[game]}`}
-                        >
-                          <Icon size={20} aria-hidden />
-                        </span>
-                        <span className="flex min-w-0 items-center gap-2 text-base font-bold text-white">
-                          {ACTIVE_GAME_LABELS[game]}
-                          {BETA_GAMES.has(game) && <BetaTag />}
-                          {((game === "poll" && pollLive) ||
-                            (game === "trivia" && triviaLive)) && (
-                            <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-emerald-400 uppercase">
-                              Live
-                            </span>
-                          )}
-                        </span>
-                      </span>
-                      <span className="mt-2 flex-1 text-sm leading-snug text-neutral-400">
-                        {GAME_DESCRIPTIONS[game]}
-                      </span>
-                      <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-teal-600">
-                        Open
-                        <ChevronRight size={16} />
-                      </span>
+                      <UserRound size={16} aria-hidden />
+                      Hostess
                     </button>
-                  );
-                })}
-              </div>
+                    <button
+                      type="button"
+                      onClick={openPlayer}
+                      className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500"
+                    >
+                      <Smartphone size={16} aria-hidden />
+                      Player
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openSpectator}
+                      className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-500"
+                    >
+                      <Presentation size={16} aria-hidden />
+                      Spectator
+                    </button>
+                  </div>
 
-              <div className="mt-6 grid grid-cols-1 gap-3 @md:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={openHostess}
-                  className="group flex h-full flex-col rounded-2xl border border-neutral-700 bg-neutral-900 p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-400 hover:shadow-md"
-                >
-                  <span className="flex items-center gap-3">
-                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500 text-white">
-                      <UserRound size={20} aria-hidden />
-                    </span>
-                    <span className="text-base font-bold text-white">
-                      Hostess Controls
-                    </span>
-                  </span>
-                  <span className="mt-2 flex-1 text-sm leading-snug text-neutral-400">
-                    Open the hostess desk for live drawer tokens and the number
-                    pad.
-                  </span>
-                  <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-violet-600">
-                    Open Hostess
-                    <ChevronRight size={16} />
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={openPlayer}
-                  className="group flex h-full flex-col rounded-2xl border border-neutral-700 bg-neutral-900 p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-md"
-                >
-                  <span className="flex items-center gap-3">
-                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white">
-                      <Smartphone size={20} aria-hidden />
-                    </span>
-                    <span className="text-base font-bold text-white">
-                      Player Controls
-                    </span>
-                  </span>
-                  <span className="mt-2 flex-1 text-sm leading-snug text-neutral-400">
-                    Open the player phone screen for polls, trivia, and
-                    on-device play.
-                  </span>
-                  <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-emerald-600">
-                    Open Player
-                    <ChevronRight size={16} />
-                  </span>
-                </button>
-              </div>
+                  <div className="mt-3 text-center">
+                    <Link
+                      href="/operator/changelog"
+                      className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
+                    >
+                      Updates
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
           )}
           {state.activeGame === "feud" && <FeudHostPanel />}
           {state.activeGame === "wheel" && <WheelHostPanel />}
-          {state.activeGame === "liveDrawer" && <LiveDrawerHostPanel />}
+          {state.activeGame === "liveDrawer" && (
+            <div className="min-h-0 flex-1 overflow-auto">
+              <LiveDrawerHostPanel />
+            </div>
+          )}
           {state.activeGame === "takeIt" && (
             <div className="min-h-0 flex-1 overflow-auto">
               <TakeItOrLeaveItHostPanel />
@@ -700,6 +662,7 @@ function OperatorContent() {
               <MessageBoardHostPanel />
             </div>
           )}
+          {state.activeGame === "pictionary" && <PictionaryHostPanel />}
         </main>
       </div>
 

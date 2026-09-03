@@ -1,0 +1,148 @@
+.mb-stage {
+  --jack-gold: #ffdc14;
+  --jack-gold-soft: #fff794;
+  --jack-green: #3dff8a;
+  --jack-green-deep: #0f9f55;
+  --jack-purple: #c084fc;
+  --jack-purple-deep: #7c3aed;
+  --jack-ink: #f7f3ea;
+  --jack-muted: rgba(247, 243, 234, 0.55);
+  --mb-text-scale: 1;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  color: var(--jack-ink);
+  font-family: var(--font-oswald), Impact, "Arial Black", sans-serif;
+  background:
+    radial-gradient(ellipse 62% 52% at 50% 38%, rgba(61, 255, 138, 0.14), transparent 64%),
+    radial-gradient(ellipse 46% 40% at 92% 90%, rgba(124, 58, 237, 0.32), transparent 58%),
+    radial-gradient(ellipse 38% 34% at 6% 94%, rgba(255, 220, 20, 0.1), transparent 54%),
+    radial-gradient(ellipse 36% 28% at 8% 8%, rgba(192, 132, 252, 0.16), transparent 50%),
+    linear-gradient(180deg, #050505 0%, #0a0a0a 46%, #0d0714 100%);
+}
+
+.mb-stage *,
+.mb-stage *::before,
+.mb-stage *::after {
+  box-sizing: border-box;
+}
+
+.mb-glow {
+  pointer-events: none;
+  position: absolute;
+  inset: -12%;
+  background:
+    repeating-conic-gradient(
+      from 18deg at 50% 42%,
+      rgba(61, 255, 138, 0.055) 0deg 7deg,
+      transparent 7deg 20deg
+    );
+  opacity: 0.45;
+  mask-image: radial-gradient(circle at 50% 42%, #000 10%, transparent 62%);
+}
+
+.mb-harlequin {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.28;
+  background-color: transparent;
+  background-image:
+    linear-gradient(45deg, rgba(124, 58, 237, 0.28) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(61, 255, 138, 0.14) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(124, 58, 237, 0.22) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255, 220, 20, 0.08) 75%);
+  background-size: 52px 52px;
+  background-position:
+    0 0,
+    0 26px,
+    26px -26px,
+    -26px 0;
+  mask-image: radial-gradient(ellipse 78% 68% at 50% 48%, transparent 18%, #000 78%);
+}
+
+.mb-grain {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.16;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+
+.mb-sparkles {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 18%, #fff 70%, transparent),
+    radial-gradient(1px 1px at 28% 72%, var(--jack-gold-soft) 70%, transparent),
+    radial-gradient(1.5px 1.5px at 63% 14%, #fff 70%, transparent),
+    radial-gradient(1px 1px at 81% 58%, var(--jack-purple) 70%, transparent),
+    radial-gradient(1.5px 1.5px at 47% 41%, var(--jack-green) 70%, transparent),
+    radial-gradient(1px 1px at 91% 22%, #fff 70%, transparent),
+    radial-gradient(1.5px 1.5px at 8% 88%, var(--jack-gold) 70%, transparent),
+    radial-gradient(1px 1px at 74% 86%, #fff 70%, transparent);
+  opacity: 0.42;
+}
+
+.mb-brand {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  padding-top: clamp(0.6rem, 2vh, 1.4rem);
+}
+
+.mb-logo {
+  height: clamp(8.5rem, 26vh, 16rem);
+  width: auto;
+  aspect-ratio: 699 / 463;
+  overflow: visible;
+}
+
+.mb-body {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6vw;
+}
+
+.mb-message {
+  margin: 0;
+  max-width: 90%;
+  text-align: center;
+  font-size: calc(clamp(2.25rem, 7vw, 6.5rem) * var(--mb-text-scale, 1));
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  color: #fffef6;
+  text-shadow:
+    0 0 28px rgba(61, 255, 138, 0.22),
+    0 2px 0 rgba(0, 0, 0, 0.55);
+}
+
+.mb-empty {
+  margin: 0;
+  text-align: center;
+  font-size: clamp(1.25rem, 2.6vw, 2rem);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--jack-muted);
+}

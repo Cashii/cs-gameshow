@@ -261,10 +261,8 @@ export function PriceOrderHostPanel() {
                 <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
                   Player order (cheapest → most expensive)
                 </h3>
-                {slots.length === 0 && (
-                  <p className="rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-5 text-sm text-neutral-500">
-                    Empty list
-                  </p>
+                {slots.length === 0 && game.items.length > 0 && (
+                  <p className="text-sm text-neutral-500">Empty list</p>
                 )}
                 {slots.map((item, index) =>
                   item ? (
@@ -360,21 +358,33 @@ export function PriceOrderHostPanel() {
                 <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
                   Items ({game.items.length}/{PRICE_ORDER_MAX_ITEMS})
                 </h3>
-                <button
-                  type="button"
-                  disabled={!canAdd}
-                  onClick={addItem}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
-                >
-                  <Plus size={14} />
-                  Add item
-                </button>
+                {game.items.length > 0 && (
+                  <button
+                    type="button"
+                    disabled={!canAdd}
+                    onClick={addItem}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
+                  >
+                    <Plus size={14} />
+                    Add item
+                  </button>
+                )}
               </div>
 
               {game.items.length === 0 && (
-                <p className="rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-6 text-sm text-neutral-500">
-                  Add up to five items with a photo and price.
-                </p>
+                <div className="flex flex-col items-start gap-3 py-8">
+                  <p className="text-sm text-neutral-400">
+                    No items yet. Add up to five with a photo and price.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={addItem}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500"
+                  >
+                    <Plus size={14} />
+                    Add item
+                  </button>
+                </div>
               )}
 
               <div className="flex flex-wrap gap-3">

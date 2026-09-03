@@ -472,9 +472,8 @@ export function LiveDrawerHostPanel() {
   return (
     <>
       <Toast message={toastMessage} />
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto p-6 xl:overflow-hidden">
-            <div className="flex shrink-0 flex-col gap-6 xl:flex-row xl:items-stretch">
+      <div className="flex flex-col gap-6 p-6">
+            <div className="flex flex-col gap-6 xl:flex-row xl:items-stretch">
             <div className="flex w-full shrink-0 flex-col xl:w-80">
               <div className="flex flex-1 flex-col rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
                 <h2 className="text-xl font-bold text-white">Add token</h2>
@@ -488,7 +487,7 @@ export function LiveDrawerHostPanel() {
                     }
                   }}
                   placeholder="1-10"
-                  className="mt-2 h-20 w-full rounded-lg border border-neutral-600 bg-neutral-700 px-4 text-4xl font-bold tabular-nums text-white placeholder:text-2xl placeholder:font-normal placeholder:text-neutral-500 focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  className="mt-2 h-12 w-full rounded-lg border border-neutral-600 bg-neutral-700 px-3 text-2xl font-bold tabular-nums text-white placeholder:text-lg placeholder:font-normal placeholder:text-neutral-500 focus:ring-2 focus:ring-teal-500 focus:outline-none"
                 />
                 <p className="mt-1.5 text-xs text-neutral-400">
                   One number, a comma list, or a range like 1-10. All use the
@@ -565,10 +564,7 @@ export function LiveDrawerHostPanel() {
                 </div>
                 <div className="@container flex flex-1 flex-col p-6">
                   <h2 className="text-xl font-bold text-white">Draw controls</h2>
-                  <p className="mt-1 text-sm text-neutral-400">
-                    Random draw by color count or select specific tokens below.
-                  </p>
-                  <div className="mt-4 grid grid-cols-4 gap-2 @min-[70rem]:grid-cols-8">
+                  <div className="mt-3 grid grid-cols-4 gap-2 @min-[70rem]:grid-cols-8">
                     {LIVE_DRAWER_COLORS.map((c) => {
                       const available = poolSummary[c.id] ?? 0;
                       const count = colorCounts[c.id] ?? 0;
@@ -580,7 +576,7 @@ export function LiveDrawerHostPanel() {
                         >
                           {c.name}
                           <div
-                            className={`mt-1.5 flex h-20 w-full items-stretch overflow-hidden rounded-lg border-2 bg-neutral-700 ${
+                            className={`mt-1.5 flex h-12 w-full items-stretch overflow-hidden rounded-lg border-2 bg-neutral-700 ${
                               empty ? "opacity-40" : ""
                             }`}
                             style={{ borderColor: c.hex }}
@@ -597,7 +593,7 @@ export function LiveDrawerHostPanel() {
                               <Minus size={18} />
                             </button>
                             {empty ? (
-                              <div className="flex min-w-0 flex-1 items-center justify-center text-3xl font-bold leading-none tabular-nums text-neutral-400">
+                              <div className="flex min-w-0 flex-1 items-center justify-center text-xl font-bold leading-none tabular-nums text-neutral-400">
                                 0
                               </div>
                             ) : (
@@ -614,7 +610,7 @@ export function LiveDrawerHostPanel() {
                                     Number(e.target.value) || 0,
                                   )
                                 }
-                                className="h-full min-w-0 flex-1 bg-transparent px-0.5 text-center text-3xl font-bold leading-none tabular-nums text-white [appearance:textfield] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                className="h-full min-w-0 flex-1 bg-transparent px-0.5 text-center text-xl font-bold leading-none tabular-nums text-white [appearance:textfield] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                               />
                             )}
                             <button
@@ -655,11 +651,11 @@ export function LiveDrawerHostPanel() {
               </div>
             </div>
 
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <div className="flex min-w-0 shrink-0 flex-col">
               <h2 className="mb-3 text-xl font-bold text-white">
                 Token Summary
               </h2>
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-neutral-700 bg-neutral-800 shadow-lg">
+              <div className="flex min-w-0 flex-col overflow-visible rounded-lg border border-neutral-700 bg-neutral-800 shadow-lg">
                 <div className="flex flex-wrap items-center gap-3 border-b border-neutral-700 px-4 py-2.5">
                   <div className="flex items-center gap-2">
                     <div className="flex rounded-lg border border-neutral-600 p-0.5">
@@ -759,7 +755,7 @@ export function LiveDrawerHostPanel() {
                   )}
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-auto px-4 pt-2 pb-3">
+                <div className="px-4 pt-2 pb-3">
                   {listTab === "called" ? (
                     calledRows.length === 0 ? (
                       <p className="text-neutral-400">No called numbers</p>
@@ -852,7 +848,6 @@ export function LiveDrawerHostPanel() {
                 )}
               </div>
             </div>
-        </div>
       </div>
       <ConfirmDialog
         open={clearPoolOpen}

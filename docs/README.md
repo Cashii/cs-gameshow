@@ -40,5 +40,6 @@ Open [http://localhost:3000/operator](http://localhost:3000/operator). Default o
 
 ## More
 
+- [Design](design.md)
 - [Glossary](glossary.md)
 - [Architecture](architecture.md)

@@ -56,6 +56,10 @@ import {
   createDefaultQuestionTimeState,
   type QuestionTimeState,
 } from "@/lib/question-time/types";
+import {
+  createDefaultPictionaryState,
+  type PictionaryState,
+} from "@/lib/pictionary/types";
 
 export type SuiteRole = "operator" | "spectator" | "hostess" | "player";
 
@@ -94,6 +98,9 @@ type SuiteContextValue = {
   ) => void;
   updateQuestionTime: (
     updater: (game: QuestionTimeState) => QuestionTimeState,
+  ) => void;
+  updatePictionary: (
+    updater: (game: PictionaryState) => PictionaryState,
   ) => void;
   patchSuite: (patch: Partial<SuiteState>) => Promise<void>;
   refreshSnapshot: () => Promise<void>;
@@ -519,6 +526,18 @@ export function SuiteProvider({
     [applyLocalSuite],
   );
 
+  const updatePictionary = useCallback(
+    (updater: (game: PictionaryState) => PictionaryState) => {
+      applyLocalSuite((prev) => ({
+        ...prev,
+        pictionary: updater(
+          prev.pictionary ?? createDefaultPictionaryState(),
+        ),
+      }));
+    },
+    [applyLocalSuite],
+  );
+
   const applyServerSnapshot = useCallback(
     (next: EventSnapshot) => {
       confirmedRevisionRef.current = Math.max(
@@ -583,6 +602,7 @@ export function SuiteProvider({
       updatePriceGuesser,
       updatePriceOrder,
       updateQuestionTime,
+      updatePictionary,
       patchSuite,
       refreshSnapshot,
       applyServerSnapshot,
@@ -608,6 +628,7 @@ export function SuiteProvider({
       updatePriceGuesser,
       updatePriceOrder,
       updateQuestionTime,
+      updatePictionary,
       patchSuite,
       refreshSnapshot,
       applyServerSnapshot,

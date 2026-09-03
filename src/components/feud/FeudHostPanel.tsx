@@ -135,7 +135,6 @@ export function FeudHostPanel() {
     setRound((r) => {
       r.strikes = clamp((r.strikes || 0) + 1, 0, 3);
     });
-    sounds.wrong();
   };
 
   const removeStrike = () =>

@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import { clamp } from "@/lib/utils";
 
 export const PHOTO_ZOOM_MIN = 1;
-export const PHOTO_ZOOM_MAX = 3;
+export const PHOTO_ZOOM_MAX = 4;
 
 export type PhotoFit = {
   zoom: number;
@@ -43,7 +43,7 @@ export function normalizePhotoFit(raw: unknown): PhotoFit {
 export function photoFitStyle(fit: PhotoFit | undefined): CSSProperties {
   const { zoom, x, y } = normalizePhotoFit(fit);
   return {
-    objectFit: "cover",
+    objectFit: "contain",
     objectPosition: `${x}% ${y}%`,
     transform: zoom === 1 ? undefined : `scale(${zoom})`,
     transformOrigin: `${x}% ${y}%`,
@@ -61,7 +61,7 @@ export function panPhotoFit(
   const { zoom, x, y } = normalizePhotoFit(fit);
   if (frameWidth < 1 || frameHeight < 1) return { zoom, x, y };
   // scale() + transform-origin: a 1px origin shift moves the image by (zoom - 1)px.
-  // At zoom 1 only object-position can pan (non-square sources).
+  // At zoom 1 only object-position can pan (letterboxed contain).
   const slack = zoom <= 1 ? 1 : zoom - 1;
   return {
     zoom,

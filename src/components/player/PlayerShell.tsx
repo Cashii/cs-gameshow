@@ -189,9 +189,9 @@ function PlayerContent() {
       subtitle="Stand by — no poll is open right now."
     >
       {playerCode ? (
-        <p className="mt-10 text-sm tracking-widest text-neutral-500">
+        <div className="mt-3 text-sm tracking-widest text-neutral-500">
           {playerCode}
-        </p>
+        </div>
       ) : null}
     </StandbyScreen>
   );
@@ -200,7 +200,9 @@ function PlayerContent() {
 export function PlayerShell() {
   return (
     <SuiteProvider role="player">
-      <PlayerContent />
+      <div className="h-full w-full">
+        <PlayerContent />
+      </div>
     </SuiteProvider>
   );
 }

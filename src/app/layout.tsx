@@ -25,7 +25,7 @@ const pacifico = Pacifico({
 });
 
 export const metadata: Metadata = {
-  title: "CS Gameshow",
+  title: "Jack'd Up",
   description: "Live game show suite for business game nights",
 };
 

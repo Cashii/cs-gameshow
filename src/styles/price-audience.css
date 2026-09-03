@@ -262,7 +262,7 @@
 }
 
 .price-guesser-body .price-photo {
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .price-photo {
@@ -459,7 +459,7 @@
 
 .price-shelf-card .price-photo,
 .price-order-slot .price-photo {
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .price-shelf-card .price-item-label,

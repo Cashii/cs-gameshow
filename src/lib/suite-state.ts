@@ -18,6 +18,7 @@ import {
   type PollState,
 } from "@/lib/poll/types";
 import {
+  clampMessageBoardScale,
   createDefaultMessageBoardState,
   type MessageBoardState,
 } from "@/lib/message-board/types";
@@ -62,6 +63,11 @@ import {
   type QuestionTimeState,
   type QuestionTimeTeam,
 } from "@/lib/question-time/types";
+import {
+  createDefaultPictionaryState,
+  normalizePictionaryState,
+  type PictionaryState,
+} from "@/lib/pictionary/types";
 
 export type ActiveGame =
   | "feud"
@@ -76,7 +82,8 @@ export type ActiveGame =
   | "trivia"
   | "priceGuesser"
   | "priceOrder"
-  | "questionTime";
+  | "questionTime"
+  | "pictionary";
 export type SpectatorScreen = ActiveGame;
 
 export type SuiteState = {
@@ -97,6 +104,7 @@ export type SuiteState = {
   priceGuesser: PriceGuesserState;
   priceOrder: PriceOrderState;
   questionTime: QuestionTimeState;
+  pictionary: PictionaryState;
 };
 
 export type EventSnapshot = SuiteState & {
@@ -134,7 +142,8 @@ function normalizeActiveGame(
     raw === "trivia" ||
     raw === "priceGuesser" ||
     raw === "priceOrder" ||
-    raw === "questionTime"
+    raw === "questionTime" ||
+    raw === "pictionary"
   ) {
     return raw;
   }
@@ -177,6 +186,7 @@ export function createDefaultSuiteState(): SuiteState {
     priceGuesser: createDefaultPriceGuesserState(),
     priceOrder: createDefaultPriceOrderState(),
     questionTime: createDefaultQuestionTimeState(),
+    pictionary: createDefaultPictionaryState(),
   };
 }
 
@@ -280,6 +290,7 @@ function normalizeMessageBoardState(
   if (!raw || typeof raw !== "object") return defaults;
   return {
     text: typeof raw.text === "string" ? raw.text : defaults.text,
+    scale: clampMessageBoardScale(raw.scale),
   };
 }
 
@@ -631,6 +642,7 @@ export function normalizeSuiteState(
     priceGuesser: normalizePriceGuesserState(raw.priceGuesser),
     priceOrder: normalizePriceOrderState(raw.priceOrder),
     questionTime: normalizeQuestionTimeState(raw.questionTime),
+    pictionary: normalizePictionaryState(raw.pictionary),
   };
 }
 
@@ -684,6 +696,7 @@ export const ACTIVE_GAME_LABELS: Record<ActiveGame, string> = {
   priceGuesser: "Price Guesser",
   priceOrder: "Price Order",
   questionTime: "Question Time",
+  pictionary: "Pictionary",
 };
 
 export const SPECTATOR_SCREEN_LABELS: Record<SpectatorScreen, string> =
@@ -698,6 +711,7 @@ export const SPECTATOR_SCREENS: SpectatorScreen[] = [
   "priceGuesser",
   "priceOrder",
   "questionTime",
+  "pictionary",
   "jeoparody",
   "takeIt",
   "liveDrawer",

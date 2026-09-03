@@ -184,7 +184,7 @@ export function SquarePhotoEditor({
       {imageUrl && (
         <>
           <p className="text-[11px] leading-tight text-neutral-500">
-            Drag to reposition
+            Fitted in the square. Zoom in to crop, drag to reposition.
           </p>
           <div className="flex items-center gap-2">
             <button

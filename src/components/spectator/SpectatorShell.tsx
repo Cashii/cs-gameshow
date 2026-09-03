@@ -20,6 +20,7 @@ function SpectatorContent() {
 
   useEffect(() => {
     if (spectatorGame === displayedGameRef.current) {
+      setTransitionPhase((phase) => (phase === "visible" ? phase : "visible"));
       return;
     }
 

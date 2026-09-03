@@ -14,9 +14,12 @@ import { TriviaAudienceView } from "@/components/trivia/TriviaAudienceView";
 import { PriceGuesserAudienceView } from "@/components/price-guesser/PriceGuesserAudienceView";
 import { PriceOrderAudienceView } from "@/components/price-order/PriceOrderAudienceView";
 import { QuestionTimeAudienceView } from "@/components/question-time/QuestionTimeAudienceView";
+import { PictionaryAudienceView } from "@/components/pictionary/PictionaryAudienceView";
 import { createDefaultPriceGuesserState } from "@/lib/price-guesser/types";
 import { createDefaultPriceOrderState } from "@/lib/price-order/types";
 import { createDefaultQuestionTimeState } from "@/lib/question-time/types";
+import { createDefaultPictionaryState } from "@/lib/pictionary/types";
+import { createDefaultMessageBoardState } from "@/lib/message-board/types";
 import { StandbyScreen } from "@/components/studio/StandbyScreen";
 
 const standbyScreen = <StandbyScreen />;
@@ -78,7 +81,7 @@ export function ActiveGameBoard({
     content = (
       <div className="h-full w-full overflow-hidden">
         <MessageBoardAudienceView
-          board={state.messageBoard ?? { text: "" }}
+          board={state.messageBoard ?? createDefaultMessageBoardState()}
         />
       </div>
     );
@@ -124,6 +127,14 @@ export function ActiveGameBoard({
       <div className="h-full w-full overflow-hidden">
         <QuestionTimeAudienceView
           game={state.questionTime ?? createDefaultQuestionTimeState()}
+        />
+      </div>
+    );
+  } else if (activeGame === "pictionary") {
+    content = (
+      <div className="h-full w-full overflow-hidden">
+        <PictionaryAudienceView
+          game={state.pictionary ?? createDefaultPictionaryState()}
         />
       </div>
     );
