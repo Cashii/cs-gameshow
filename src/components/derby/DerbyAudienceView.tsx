@@ -19,6 +19,7 @@ import {
   DerbyDiscoBall,
   DerbyWonderbarBrand,
 } from "@/components/derby/DerbyWonderbarBrand";
+import { PlayerVoteQr } from "@/components/poll/PlayerVoteQr";
 import "@/styles/derby-audience.css";
 
 function prefersReducedMotion(): boolean {
@@ -174,10 +175,36 @@ export function DerbyAudienceView({
       </div>
 
       {winner && (
-        <div className="derby-winner-banner" role="status">
+        <output className="derby-winner-banner" aria-live="polite">
           {winner.name} wins
-        </div>
+        </output>
       )}
+
+      {game.phase === "idle" && game.raceId ? (
+        <div
+          className={`derby-join-qr-overlay absolute inset-x-0 bottom-0 top-[calc(var(--derby-chrome-h)-5rem)] z-20 flex items-center justify-center ${
+            game.showJoinQr ? "is-visible" : "is-hidden"
+          }`}
+          aria-hidden={!game.showJoinQr}
+        >
+          <div
+            className="derby-join-qr-backdrop pointer-events-none absolute inset-0 backdrop-blur-sm"
+            style={{
+              background:
+                "linear-gradient(to bottom, transparent 0%, rgba(10,10,10,0.35) 32%, rgba(10,10,10,0.55) 100%)",
+              WebkitMaskImage:
+                "linear-gradient(to bottom, transparent 0%, black 28%)",
+              maskImage: "linear-gradient(to bottom, transparent 0%, black 28%)",
+            }}
+            aria-hidden
+          />
+          <div className="derby-join-qr-card relative flex flex-col items-center gap-4 rounded-3xl bg-neutral-950/20 px-6 py-5">
+            <div className="size-[min(32rem,62vmin)]">
+              <PlayerVoteQr label="Scan to play" />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

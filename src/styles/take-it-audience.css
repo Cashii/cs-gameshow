@@ -681,7 +681,54 @@
   }
 }
 
+.tioli-join-qr-overlay {
+  transition:
+    opacity 0.4s ease,
+    visibility 0.4s ease;
+}
+
+.tioli-join-qr-overlay.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tioli-join-qr-overlay.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.tioli-join-qr-backdrop {
+  transition: opacity 0.4s ease;
+}
+
+.tioli-join-qr-overlay.is-hidden .tioli-join-qr-backdrop {
+  opacity: 0;
+}
+
+.tioli-join-qr-card {
+  position: relative;
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tioli-join-qr-overlay.is-visible .tioli-join-qr-card {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.tioli-join-qr-overlay.is-hidden .tioli-join-qr-card {
+  opacity: 0;
+  transform: scale(0.92);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .tioli-join-qr-overlay,
+  .tioli-join-qr-backdrop,
+  .tioli-join-qr-card {
+    transition: none;
+  }
+
   .tioli-audience .tioli-case.just-opened .tioli-suitcase-shell,
   .tioli-audience .tioli-case.just-opened::after,
   .tioli-audience .tioli-case-feature,

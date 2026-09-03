@@ -4,7 +4,12 @@ import { EVENT_ID } from "@/lib/suite-state";
 import { getDeviceCode } from "@/lib/player/device-id";
 import {
   createDefaultTriviaState,
-  isTriviaChoiceId,
+  createTriviaQueuedQuestion,
+  emptyTriviaChoiceCounts,
+  isTriviaChoiceOpen,
+  normalizeTriviaOptions,
+  syncTriviaOptionsFields,
+  TRIVIA_CHOICE_IDS,
   withTriviaHistoryAppended,
   type TriviaChoiceId,
   type TriviaGameState,
@@ -78,6 +83,10 @@ export async function refreshTriviaCounts(
     return {
       ...trivia,
       answeredCount: 0,
+      choiceCounts: emptyTriviaChoiceCounts(
+        normalizeTriviaOptions(trivia.options, trivia.optionA, trivia.optionB)
+          .length,
+      ),
       choiceACount: 0,
       choiceBCount: 0,
       remainingCount,
@@ -94,8 +103,15 @@ export async function refreshTriviaCounts(
       .toArray(),
   );
   const map = new Map(counts.map((row) => [row._id, row.count]));
-  const choiceACount = map.get("a") ?? 0;
-  const choiceBCount = map.get("b") ?? 0;
+  const options = normalizeTriviaOptions(
+    trivia.options,
+    trivia.optionA,
+    trivia.optionB,
+  );
+  const choiceCounts = options.map(
+    (_, index) => map.get(TRIVIA_CHOICE_IDS[index]) ?? 0,
+  );
+  const answeredCount = choiceCounts.reduce((sum, n) => sum + n, 0);
   const remainingCount = fieldNotSetYet(trivia)
     ? 0
     : await playersCol(db).then((c) =>
@@ -104,9 +120,10 @@ export async function refreshTriviaCounts(
 
   return {
     ...trivia,
-    answeredCount: choiceACount + choiceBCount,
-    choiceACount,
-    choiceBCount,
+    answeredCount,
+    choiceCounts,
+    choiceACount: choiceCounts[0] ?? 0,
+    choiceBCount: choiceCounts[1] ?? 0,
     remainingCount,
     winnerCodes: trivia.status === "finished" ? trivia.winnerCodes : [],
   };
@@ -183,7 +200,6 @@ export async function castTriviaVote(
   choiceId: string,
   deviceId: string,
 ): Promise<EventSnapshot> {
-  if (!isTriviaChoiceId(choiceId)) throw new Error("Invalid choice");
   const trimmed = deviceId.trim();
   if (!trimmed) throw new Error("deviceId required");
 
@@ -191,6 +207,14 @@ export async function castTriviaVote(
   const trivia = event.trivia ?? createDefaultTriviaState();
   if (trivia.status !== "open" || trivia.roundId !== roundId) {
     throw new Error("Voting is not open");
+  }
+  const options = normalizeTriviaOptions(
+    trivia.options,
+    trivia.optionA,
+    trivia.optionB,
+  );
+  if (!isTriviaChoiceOpen(options, choiceId)) {
+    throw new Error("Invalid choice");
   }
 
   const db = await getDb();
@@ -212,7 +236,7 @@ export async function castTriviaVote(
         eventId: EVENT_ID,
         roundId,
         deviceId: trimmed,
-        choiceId,
+        choiceId: choiceId,
         playerCode: getDeviceCode(trimmed),
         createdAt: new Date(),
       }),
@@ -227,8 +251,9 @@ export async function castTriviaVote(
 
 export async function triviaSetup(input: {
   question: string;
-  optionA: string;
-  optionB: string;
+  options?: string[];
+  optionA?: string;
+  optionB?: string;
 }): Promise<EventSnapshot> {
   return updateEventSuite((prev) => {
     const t = prev.trivia ?? createDefaultTriviaState();
@@ -242,6 +267,12 @@ export async function triviaSetup(input: {
       throw new Error("Reset the series to play again");
     }
     const roundIndex = t.roundIndex === 0 ? 1 : t.roundIndex;
+    const synced = syncTriviaOptionsFields({
+      options: input.options,
+      optionA: input.optionA ?? t.optionA,
+      optionB: input.optionB ?? t.optionB,
+      choiceCounts: emptyTriviaChoiceCounts(2),
+    });
     return {
       ...prev,
       trivia: {
@@ -250,8 +281,12 @@ export async function triviaSetup(input: {
         roundId: t.roundId || crypto.randomUUID(),
         roundIndex,
         question: input.question.trim() || t.question || "True or false?",
-        optionA: input.optionA.trim() || t.optionA || "True",
-        optionB: input.optionB.trim() || t.optionB || "False",
+        options: synced.options,
+        optionA: synced.optionA,
+        optionB: synced.optionB,
+        choiceCounts: synced.choiceCounts,
+        choiceACount: 0,
+        choiceBCount: 0,
         survivingChoiceId: null,
       },
     };
@@ -260,8 +295,9 @@ export async function triviaSetup(input: {
 
 export async function triviaOpen(input: {
   question: string;
-  optionA: string;
-  optionB: string;
+  options?: string[];
+  optionA?: string;
+  optionB?: string;
 }): Promise<EventSnapshot> {
   return updateEventSuite((prev) => {
     const t = prev.trivia ?? createDefaultTriviaState();
@@ -274,6 +310,12 @@ export async function triviaOpen(input: {
       throw new Error("Reset the series to play again");
     }
     const roundIndex = t.roundIndex === 0 ? 1 : t.roundIndex;
+    const synced = syncTriviaOptionsFields({
+      options: input.options,
+      optionA: input.optionA ?? t.optionA,
+      optionB: input.optionB ?? t.optionB,
+      choiceCounts: emptyTriviaChoiceCounts(2),
+    });
     return {
       ...prev,
       trivia: {
@@ -282,8 +324,12 @@ export async function triviaOpen(input: {
         roundId: t.roundId || crypto.randomUUID(),
         roundIndex,
         question: input.question.trim() || t.question || "True or false?",
-        optionA: input.optionA.trim() || t.optionA || "True",
-        optionB: input.optionB.trim() || t.optionB || "False",
+        options: synced.options,
+        optionA: synced.optionA,
+        optionB: synced.optionB,
+        choiceCounts: synced.choiceCounts,
+        choiceACount: 0,
+        choiceBCount: 0,
         survivingChoiceId: null,
       },
     };
@@ -305,6 +351,14 @@ export async function triviaReveal(
   const trivia = event.trivia ?? createDefaultTriviaState();
   if (trivia.status !== "locked") throw new Error("Lock voting before revealing");
   if (!trivia.roundId) throw new Error("No active round");
+  const options = normalizeTriviaOptions(
+    trivia.options,
+    trivia.optionA,
+    trivia.optionB,
+  );
+  if (!isTriviaChoiceOpen(options, survivingChoiceId)) {
+    throw new Error("Invalid surviving answer");
+  }
 
   const db = await getDb();
   const votes = await votesCol(db).then((c) =>
@@ -464,6 +518,9 @@ export async function triviaNextQuestion(): Promise<EventSnapshot> {
     const history = withTriviaHistoryAppended(t);
     const queue = [...(t.queue ?? [])];
     const next = queue.shift();
+    const nextOptions = next
+      ? createTriviaQueuedQuestion(next)
+      : syncTriviaOptionsFields(t);
     return {
       ...prev,
       trivia: {
@@ -472,10 +529,12 @@ export async function triviaNextQuestion(): Promise<EventSnapshot> {
         roundId: "",
         roundIndex: t.roundIndex + 1,
         question: next?.question ?? "",
-        optionA: next?.optionA ?? t.optionA,
-        optionB: next?.optionB ?? t.optionB,
+        options: nextOptions.options,
+        optionA: nextOptions.optionA,
+        optionB: nextOptions.optionB,
         survivingChoiceId: null,
         answeredCount: 0,
+        choiceCounts: emptyTriviaChoiceCounts(nextOptions.options.length),
         choiceACount: 0,
         choiceBCount: 0,
         winnerCodes: [],
@@ -490,6 +549,7 @@ export async function triviaSaveQueue(
   queue: Array<{
     id?: string;
     question?: string;
+    options?: string[];
     optionA?: string;
     optionB?: string;
   }>,
@@ -498,21 +558,18 @@ export async function triviaSaveQueue(
     const t = prev.trivia ?? createDefaultTriviaState();
     const normalized = queue
       .filter((item) => item && typeof item === "object")
-      .map((item, index) => ({
-        id:
-          typeof item.id === "string" && item.id.trim()
-            ? item.id
-            : `queue-${index}-${Date.now()}`,
-        question: typeof item.question === "string" ? item.question : "",
-        optionA:
-          typeof item.optionA === "string" && item.optionA.trim()
-            ? item.optionA
-            : "True",
-        optionB:
-          typeof item.optionB === "string" && item.optionB.trim()
-            ? item.optionB
-            : "False",
-      }));
+      .map((item, index) =>
+        createTriviaQueuedQuestion({
+          id:
+            typeof item.id === "string" && item.id.trim()
+              ? item.id
+              : `queue-${index}-${Date.now()}`,
+          question: typeof item.question === "string" ? item.question : "",
+          options: item.options,
+          optionA: item.optionA,
+          optionB: item.optionB,
+        }),
+      );
     return {
       ...prev,
       trivia: {

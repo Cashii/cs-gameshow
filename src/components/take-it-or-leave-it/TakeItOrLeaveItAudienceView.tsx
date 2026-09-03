@@ -13,6 +13,7 @@ import {
   type TakeItCard,
   type TakeItGameState,
 } from "@/lib/take-it-or-leave-it/types";
+import { PlayerVoteQr } from "@/components/poll/PlayerVoteQr";
 import "@/styles/take-it-audience.css";
 
 function CardFace({ card }: Readonly<{ card: TakeItCard }>) {
@@ -50,6 +51,21 @@ export function TakeItOrLeaveItAudienceView({
     }
     prevOpenedRef.current = game.lastOpenedCaseId;
   }, [game.lastOpenedCaseId]);
+
+  const joinQrActive = game.phase === "setup" || game.phase === "pick";
+  const [joinQrMounted, setJoinQrMounted] = useState(joinQrActive);
+  const [joinQrVisible, setJoinQrVisible] = useState(joinQrActive);
+
+  useEffect(() => {
+    if (joinQrActive) {
+      setJoinQrMounted(true);
+      const frame = requestAnimationFrame(() => setJoinQrVisible(true));
+      return () => cancelAnimationFrame(frame);
+    }
+    setJoinQrVisible(false);
+    const timer = window.setTimeout(() => setJoinQrMounted(false), 400);
+    return () => clearTimeout(timer);
+  }, [joinQrActive]);
 
   const featuredCase = game.cases.find((c) => c.id === flashCaseId);
   const caseCount = game.cases?.length || game.cards?.length || 9;
@@ -142,6 +158,20 @@ export function TakeItOrLeaveItAudienceView({
           </div>
         </div>
       )}
+
+      {joinQrMounted ? (
+        <div
+          className={`tioli-join-qr-overlay absolute inset-0 z-20 flex items-center justify-center pointer-events-none ${
+            joinQrVisible ? "is-visible" : "is-hidden"
+          }`}
+          aria-hidden={!joinQrVisible}
+        >
+          <div className="tioli-join-qr-backdrop absolute inset-0 bg-neutral-950/55 backdrop-blur-sm" aria-hidden />
+          <div className="tioli-join-qr-card size-[min(32rem,62vmin)]">
+            <PlayerVoteQr label="Scan to play" />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

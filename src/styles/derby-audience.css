@@ -902,6 +902,47 @@
   }
 }
 
+.derby-join-qr-overlay {
+  pointer-events: none;
+  transition:
+    opacity 0.4s ease,
+    visibility 0.4s ease;
+}
+
+.derby-join-qr-overlay.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.derby-join-qr-overlay.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.derby-join-qr-backdrop {
+  transition: opacity 0.4s ease;
+}
+
+.derby-join-qr-overlay.is-hidden .derby-join-qr-backdrop {
+  opacity: 0;
+}
+
+.derby-join-qr-card {
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.derby-join-qr-overlay.is-visible .derby-join-qr-card {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.derby-join-qr-overlay.is-hidden .derby-join-qr-card {
+  opacity: 0;
+  transform: scale(0.92);
+}
+
 @keyframes derby-winner-throb {
   0%,
   100% {
@@ -913,6 +954,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .derby-join-qr-overlay,
+  .derby-join-qr-backdrop,
+  .derby-join-qr-card {
+    transition: none;
+  }
+
   .derby-audience.is-racing .derby-bulb,
   .derby-winner-banner {
     animation: none;

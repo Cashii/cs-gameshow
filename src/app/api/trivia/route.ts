@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     choiceId?: string;
     deviceId?: string;
     question?: string;
+    options?: string[];
     optionA?: string;
     optionB?: string;
     survivingChoiceId?: string;
@@ -54,6 +55,7 @@ export async function POST(request: Request) {
         return json(
           await triviaSetup({
             question: body.question ?? "",
+            options: body.options,
             optionA: body.optionA ?? "",
             optionB: body.optionB ?? "",
           }),
@@ -62,6 +64,7 @@ export async function POST(request: Request) {
         return json(
           await triviaOpen({
             question: body.question ?? "",
+            options: body.options,
             optionA: body.optionA ?? "",
             optionB: body.optionB ?? "",
           }),
@@ -70,7 +73,7 @@ export async function POST(request: Request) {
         return json(await triviaLock());
       case "reveal": {
         if (!isTriviaChoiceId(body.survivingChoiceId)) {
-          return error("survivingChoiceId must be a or b");
+          return error("survivingChoiceId required");
         }
         return json(await triviaReveal(body.survivingChoiceId));
       }

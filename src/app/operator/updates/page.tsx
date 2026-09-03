@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: "Updates",
 };
 
-export default async function OperatorChangelogRoute() {
+export default async function OperatorUpdatesRoute() {
   const markdown = await readFile(
     path.join(process.cwd(), "CHANGELOG.md"),
     "utf8",

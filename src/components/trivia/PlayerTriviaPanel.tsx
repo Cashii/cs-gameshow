@@ -2,6 +2,8 @@
 
 import { LoaderCircle } from "lucide-react";
 import type { TriviaChoiceId, TriviaGameState, TriviaMe } from "@/lib/trivia/types";
+import { triviaChoiceIdAt } from "@/lib/trivia/types";
+import "@/styles/trivia-audience.css";
 
 export function PlayerTriviaPanel({
   trivia,
@@ -67,33 +69,36 @@ export function PlayerTriviaPanel({
 
   if (trivia.status === "open" && me?.canVote) {
     return (
-    <div className="flex h-full w-full flex-col overflow-auto bg-transparent px-4 py-8">
+      <div className="trivia-player-panel flex h-full w-full flex-col overflow-auto bg-transparent px-4 py-8">
         <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center text-center">
-          <p className="text-sm font-semibold tracking-[0.2em] text-teal-600 uppercase">
+          <p className="trivia-player-eyebrow">
             Question {trivia.roundIndex || 1}
           </p>
-          <h1 className="mt-2 text-2xl font-bold text-white sm:text-3xl">
+          <h1 className="trivia-player-question">
             {trivia.question.trim() || "Question?"}
           </h1>
           <div className="mt-8 grid w-full gap-3">
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => onVote("a")}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-orange-300 bg-orange-100 px-4 py-5 text-xl font-semibold text-orange-950 hover:bg-orange-200 disabled:opacity-50"
-            >
-              {loading ? <LoaderCircle className="animate-spin" size={22} /> : null}
-              {trivia.optionA}
-            </button>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => onVote("b")}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-sky-300 bg-sky-100 px-4 py-5 text-xl font-semibold text-sky-950 hover:bg-sky-200 disabled:opacity-50"
-            >
-              {loading ? <LoaderCircle className="animate-spin" size={22} /> : null}
-              {trivia.optionB}
-            </button>
+            {(trivia.options?.length >= 2
+              ? trivia.options
+              : [trivia.optionA, trivia.optionB]
+            ).map((option, index) => {
+              const choiceId = triviaChoiceIdAt(index);
+              if (!choiceId) return null;
+              return (
+                <button
+                  key={choiceId}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => onVote(choiceId)}
+                  className={`trivia-player-choice trivia-player-choice-${choiceId}`}
+                >
+                  {loading ? (
+                    <LoaderCircle className="animate-spin" size={22} />
+                  ) : null}
+                  {option}
+                </button>
+              );
+            })}
           </div>
           {message ? <p className="mt-4 text-sm text-red-400">{message}</p> : null}
           {playerCode ? (
@@ -168,17 +173,15 @@ function StatusScreen({
 }) {
   const titleColor =
     tone === "out"
-      ? "text-rose-600"
+      ? "text-[#f472b6]"
       : tone === "win"
-        ? "text-amber-500"
+        ? "text-[#ffdc14]"
         : tone === "miss"
-          ? "text-violet-600"
-          : "text-teal-600";
+          ? "text-[#c084fc]"
+          : "text-[#3dff8a]";
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center bg-transparent px-4 text-center">
-      <p className="text-sm font-semibold tracking-[0.2em] text-teal-600 uppercase">
-        {eyebrow}
-      </p>
+    <div className="trivia-player-panel flex h-full w-full flex-col items-center justify-center bg-transparent px-4 text-center">
+      <p className="trivia-player-eyebrow">{eyebrow}</p>
       <h1 className={`mt-3 text-4xl font-bold sm:text-5xl ${titleColor}`}>
         {title}
       </h1>

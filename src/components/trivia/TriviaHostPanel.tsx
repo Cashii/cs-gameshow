@@ -2,11 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useSuite } from "@/lib/suite-provider";
-import { createTriviaQueuedQuestion } from "@/lib/trivia/types";
-import type {
-  TriviaChoiceId,
-  TriviaQueuedQuestion,
-  TriviaStatus,
+import {
+  createTriviaQueuedQuestion,
+  MAX_TRIVIA_OPTIONS,
+  MIN_TRIVIA_OPTIONS,
+  triviaChoiceIdAt,
+  triviaChoiceIndex,
+  triviaChoiceLetter,
+  type TriviaChoiceId,
+  type TriviaQueuedQuestion,
+  type TriviaStatus,
 } from "@/lib/trivia/types";
 import { OperatorNotice } from "@/components/operator/OperatorNotice";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
@@ -48,8 +53,11 @@ export function TriviaHostPanel() {
   const trivia = state.trivia;
   const spectatorLive = state.spectatorGame === "trivia";
   const [question, setQuestion] = useState(trivia.question || "");
-  const [optionA, setOptionA] = useState(trivia.optionA || "True");
-  const [optionB, setOptionB] = useState(trivia.optionB || "False");
+  const [options, setOptions] = useState<string[]>(() =>
+    trivia.options?.length
+      ? trivia.options
+      : [trivia.optionA || "True", trivia.optionB || "False"],
+  );
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [roster, setRoster] = useState<string[]>([]);
@@ -107,9 +115,19 @@ export function TriviaHostPanel() {
 
   useEffect(() => {
     setQuestion(trivia.question || "");
-    setOptionA(trivia.optionA || "True");
-    setOptionB(trivia.optionB || "False");
-  }, [trivia.roundIndex, trivia.status, trivia.question, trivia.optionA, trivia.optionB]);
+    setOptions(
+      trivia.options?.length
+        ? trivia.options
+        : [trivia.optionA || "True", trivia.optionB || "False"],
+    );
+  }, [
+    trivia.roundIndex,
+    trivia.status,
+    trivia.question,
+    trivia.options,
+    trivia.optionA,
+    trivia.optionB,
+  ]);
 
   const statusLabel = triviaStatusLabel(
     trivia.status,
@@ -117,8 +135,45 @@ export function TriviaHostPanel() {
     settingUpNext,
   );
 
+  const answersLocked =
+    trivia.status === "open" || trivia.status === "locked";
+  const liveOptions =
+    trivia.options?.length >= MIN_TRIVIA_OPTIONS
+      ? trivia.options
+      : options;
+
   const survive = (survivingChoiceId: TriviaChoiceId) => {
     void runAction({ action: "reveal", survivingChoiceId });
+  };
+
+  const addOption = () => {
+    if (options.length >= MAX_TRIVIA_OPTIONS) return;
+    setOptions((prev) => [...prev, `Answer ${prev.length + 1}`]);
+  };
+
+  const removeOption = (index: number) => {
+    if (options.length <= MIN_TRIVIA_OPTIONS) return;
+    setOptions((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateQueuedOptions = (
+    itemId: string,
+    updater: (current: string[]) => string[],
+  ) => {
+    setQueueDraft((prev) =>
+      prev.map((entry) => {
+        if (entry.id !== itemId) return entry;
+        const nextOptions = updater(
+          entry.options?.length
+            ? entry.options
+            : [entry.optionA, entry.optionB],
+        );
+        return createTriviaQueuedQuestion({
+          ...entry,
+          options: nextOptions,
+        });
+      }),
+    );
   };
 
   const saveQueue = (queue: TriviaQueuedQuestion[]) => {
@@ -202,29 +257,51 @@ export function TriviaHostPanel() {
               }`}
             />
           </label>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block">
-              <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                Side A
-              </span>
-              <input
-                value={optionA}
-                onChange={(e) => setOptionA(e.target.value)}
-                disabled={trivia.status === "open" || trivia.status === "locked"}
-                className="mt-1.5 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-white disabled:opacity-60"
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                Side B
-              </span>
-              <input
-                value={optionB}
-                onChange={(e) => setOptionB(e.target.value)}
-                disabled={trivia.status === "open" || trivia.status === "locked"}
-                className="mt-1.5 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-white disabled:opacity-60"
-              />
-            </label>
+          <div className="space-y-3">
+            {options.map((option, index) => {
+              const letter = triviaChoiceLetter(
+                triviaChoiceIdAt(index) ?? "a",
+              );
+              return (
+                <label key={`${index}-${letter}`} className="block">
+                  <span className="flex items-center justify-between gap-2 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                    Answer {letter}
+                    {options.length > MIN_TRIVIA_OPTIONS && !answersLocked ? (
+                      <button
+                        type="button"
+                        onClick={() => removeOption(index)}
+                        className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-red-300"
+                        aria-label={`Remove answer ${letter}`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    ) : null}
+                  </span>
+                  <input
+                    value={option}
+                    onChange={(e) =>
+                      setOptions((prev) =>
+                        prev.map((item, i) =>
+                          i === index ? e.target.value : item,
+                        ),
+                      )
+                    }
+                    disabled={answersLocked}
+                    className="mt-1.5 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-white disabled:opacity-60"
+                  />
+                </label>
+              );
+            })}
+            {options.length < MAX_TRIVIA_OPTIONS && !answersLocked ? (
+              <button
+                type="button"
+                onClick={addOption}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-600 px-3 py-2 text-sm font-semibold text-neutral-200 hover:bg-neutral-800"
+              >
+                <Plus size={14} />
+                Add answer
+              </button>
+            ) : null}
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -236,8 +313,7 @@ export function TriviaHostPanel() {
                   void runAction({
                     action: "open",
                     question,
-                    optionA,
-                    optionB,
+                    options,
                   })
                 }
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40"
@@ -259,22 +335,21 @@ export function TriviaHostPanel() {
             )}
             {trivia.status === "locked" && (
               <>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => survive("a")}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-40"
-                >
-                  Survive A — {trivia.optionA}
-                </button>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => survive("b")}
-                  className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-40"
-                >
-                  Survive B — {trivia.optionB}
-                </button>
+                {liveOptions.map((option, index) => {
+                  const choiceId = triviaChoiceIdAt(index);
+                  if (!choiceId) return null;
+                  return (
+                    <button
+                      key={choiceId}
+                      type="button"
+                      disabled={loading}
+                      onClick={() => survive(choiceId)}
+                      className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-600 disabled:opacity-40"
+                    >
+                      Survive {triviaChoiceLetter(choiceId)} — {option}
+                    </button>
+                  );
+                })}
               </>
             )}
             {(trivia.status === "revealed" || trivia.status === "finished") && (
@@ -413,37 +488,62 @@ export function TriviaHostPanel() {
                       placeholder="Queued question"
                       className="mb-2 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
                     />
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <input
-                        value={item.optionA}
-                        onChange={(e) => {
-                          setQueueDraft((prev) =>
-                            prev.map((entry) =>
-                              entry.id === item.id
-                                ? { ...entry, optionA: e.target.value }
-                                : entry,
-                            ),
-                          );
-                        }}
-                        onBlur={persistQueueDraft}
-                        placeholder="Side A"
-                        className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
-                      />
-                      <input
-                        value={item.optionB}
-                        onChange={(e) => {
-                          setQueueDraft((prev) =>
-                            prev.map((entry) =>
-                              entry.id === item.id
-                                ? { ...entry, optionB: e.target.value }
-                                : entry,
-                            ),
-                          );
-                        }}
-                        onBlur={persistQueueDraft}
-                        placeholder="Side B"
-                        className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
-                      />
+                    <div className="space-y-2">
+                      {(item.options?.length
+                        ? item.options
+                        : [item.optionA, item.optionB]
+                      ).map((option, optionIndex) => (
+                        <div key={`${item.id}-${optionIndex}`} className="flex gap-2">
+                          <input
+                            value={option}
+                            onChange={(e) => {
+                              updateQueuedOptions(item.id, (current) =>
+                                current.map((entry, i) =>
+                                  i === optionIndex ? e.target.value : entry,
+                                ),
+                              );
+                            }}
+                            onBlur={persistQueueDraft}
+                            placeholder={`Answer ${triviaChoiceLetter(
+                              triviaChoiceIdAt(optionIndex) ?? "a",
+                            )}`}
+                            className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
+                          />
+                          {(item.options?.length ?? 2) > MIN_TRIVIA_OPTIONS ? (
+                            <button
+                              type="button"
+                              disabled={loading}
+                              onClick={() => {
+                                updateQueuedOptions(item.id, (current) =>
+                                  current.filter((_, i) => i !== optionIndex),
+                                );
+                                persistQueueDraft();
+                              }}
+                              className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-red-300 disabled:opacity-40"
+                              aria-label="Remove queued answer"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          ) : null}
+                        </div>
+                      ))}
+                      {(item.options?.length ?? 2) < MAX_TRIVIA_OPTIONS ? (
+                        <button
+                          type="button"
+                          disabled={loading}
+                          onClick={() => {
+                            updateQueuedOptions(item.id, (current) => [
+                              ...current,
+                              `Answer ${current.length + 1}`,
+                            ]);
+                            persistQueueDraft();
+                          }}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-teal-400 hover:text-teal-300 disabled:opacity-40"
+                        >
+                          <Plus size={12} />
+                          Add answer
+                        </button>
+                      ) : null}
                     </div>
                   </article>
                 ))}
@@ -472,13 +572,33 @@ export function TriviaHostPanel() {
                     </p>
                     <p className="mt-1 text-neutral-400">
                       Survived{" "}
-                      {entry.survivingChoiceId === "a"
-                        ? `A · ${entry.optionA}`
-                        : entry.survivingChoiceId === "b"
-                          ? `B · ${entry.optionB}`
-                          : "—"}
+                      {entry.survivingChoiceId
+                        ? `${triviaChoiceLetter(entry.survivingChoiceId)} · ${
+                            (entry.options?.length
+                              ? entry.options
+                              : [entry.optionA, entry.optionB])[
+                              triviaChoiceIndex(entry.survivingChoiceId)
+                            ] ?? ""
+                          }`
+                        : "—"}
                       {" · "}
-                      A {entry.choiceACount} / B {entry.choiceBCount}
+                      {(entry.options?.length
+                        ? entry.options
+                        : [entry.optionA, entry.optionB]
+                      )
+                        .map((option, index) => {
+                          const count =
+                            entry.choiceCounts?.[index] ??
+                            (index === 0
+                              ? entry.choiceACount
+                              : index === 1
+                                ? entry.choiceBCount
+                                : 0);
+                          return `${triviaChoiceLetter(
+                            triviaChoiceIdAt(index) ?? "a",
+                          )} ${count}`;
+                        })
+                        .join(" / ")}
                       {" · "}
                       {entry.remainingCount} remaining
                     </p>
@@ -505,28 +625,50 @@ export function TriviaHostPanel() {
             </p>
             {trivia.status !== "idle" && trivia.status !== "open" ? null : (
               <ul className="mt-3 space-y-1 text-sm text-neutral-300">
-                <li className="flex justify-between gap-3">
-                  <span className="truncate">A · {trivia.optionA}</span>
-                  <strong className="tabular-nums">{trivia.choiceACount}</strong>
-                </li>
-                <li className="flex justify-between gap-3">
-                  <span className="truncate">B · {trivia.optionB}</span>
-                  <strong className="tabular-nums">{trivia.choiceBCount}</strong>
-                </li>
+                {liveOptions.map((option, index) => (
+                  <li
+                    key={`live-${index}`}
+                    className="flex justify-between gap-3"
+                  >
+                    <span className="truncate">
+                      {triviaChoiceLetter(triviaChoiceIdAt(index) ?? "a")} ·{" "}
+                      {option}
+                    </span>
+                    <strong className="tabular-nums">
+                      {trivia.choiceCounts?.[index] ??
+                        (index === 0
+                          ? trivia.choiceACount
+                          : index === 1
+                            ? trivia.choiceBCount
+                            : 0)}
+                    </strong>
+                  </li>
+                ))}
               </ul>
             )}
             {(trivia.status === "locked" ||
               trivia.status === "revealed" ||
               trivia.status === "finished") && (
               <ul className="mt-3 space-y-1 text-sm text-neutral-300">
-                <li className="flex justify-between gap-3">
-                  <span className="truncate">A · {trivia.optionA}</span>
-                  <strong className="tabular-nums">{trivia.choiceACount}</strong>
-                </li>
-                <li className="flex justify-between gap-3">
-                  <span className="truncate">B · {trivia.optionB}</span>
-                  <strong className="tabular-nums">{trivia.choiceBCount}</strong>
-                </li>
+                {liveOptions.map((option, index) => (
+                  <li
+                    key={`split-${index}`}
+                    className="flex justify-between gap-3"
+                  >
+                    <span className="truncate">
+                      {triviaChoiceLetter(triviaChoiceIdAt(index) ?? "a")} ·{" "}
+                      {option}
+                    </span>
+                    <strong className="tabular-nums">
+                      {trivia.choiceCounts?.[index] ??
+                        (index === 0
+                          ? trivia.choiceACount
+                          : index === 1
+                            ? trivia.choiceBCount
+                            : 0)}
+                    </strong>
+                  </li>
+                ))}
               </ul>
             )}
             {trivia.status === "finished" && trivia.winnerCodes.length > 0 ? (

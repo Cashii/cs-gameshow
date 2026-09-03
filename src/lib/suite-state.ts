@@ -46,7 +46,11 @@ import { createSampleJeoparodyGame } from "@/lib/jeoparody/defaults";
 import type { JeoparodyGameState, JeoparodyPhase } from "@/lib/jeoparody/types";
 import {
   createDefaultTriviaState,
+  createTriviaQueuedQuestion,
   isTriviaChoiceId,
+  normalizeTriviaChoiceCounts,
+  normalizeTriviaOptions,
+  syncTriviaOptionsFields,
   type TriviaGameState,
   type TriviaQueuedQuestion,
   type TriviaRoundHistory,
@@ -430,15 +434,16 @@ function normalizeTriviaQueuedQuestion(
   index: number,
 ): TriviaQueuedQuestion | null {
   if (!raw || typeof raw !== "object") return null;
-  return {
+  return createTriviaQueuedQuestion({
     id:
       typeof raw.id === "string" && raw.id.trim()
         ? raw.id
         : `queue-${index}`,
     question: typeof raw.question === "string" ? raw.question : "",
-    optionA: typeof raw.optionA === "string" ? raw.optionA : "True",
-    optionB: typeof raw.optionB === "string" ? raw.optionB : "False",
-  };
+    options: raw.options,
+    optionA: raw.optionA,
+    optionB: raw.optionB,
+  });
 }
 
 function normalizeTriviaHistoryEntry(
@@ -446,6 +451,14 @@ function normalizeTriviaHistoryEntry(
 ): TriviaRoundHistory | null {
   if (!raw || typeof raw !== "object") return null;
   if (typeof raw.roundId !== "string" || !raw.roundId) return null;
+  const synced = syncTriviaOptionsFields({
+    options: raw.options,
+    optionA: raw.optionA,
+    optionB: raw.optionB,
+    choiceCounts: raw.choiceCounts,
+    choiceACount: raw.choiceACount,
+    choiceBCount: raw.choiceBCount,
+  });
   return {
     roundIndex:
       typeof raw.roundIndex === "number" && Number.isFinite(raw.roundIndex)
@@ -453,19 +466,15 @@ function normalizeTriviaHistoryEntry(
         : 0,
     roundId: raw.roundId,
     question: typeof raw.question === "string" ? raw.question : "",
-    optionA: typeof raw.optionA === "string" ? raw.optionA : "True",
-    optionB: typeof raw.optionB === "string" ? raw.optionB : "False",
+    options: synced.options,
+    optionA: synced.optionA,
+    optionB: synced.optionB,
     survivingChoiceId: isTriviaChoiceId(raw.survivingChoiceId)
       ? raw.survivingChoiceId
       : null,
-    choiceACount:
-      typeof raw.choiceACount === "number" && Number.isFinite(raw.choiceACount)
-        ? Math.max(0, Math.floor(raw.choiceACount))
-        : 0,
-    choiceBCount:
-      typeof raw.choiceBCount === "number" && Number.isFinite(raw.choiceBCount)
-        ? Math.max(0, Math.floor(raw.choiceBCount))
-        : 0,
+    choiceCounts: synced.choiceCounts,
+    choiceACount: synced.choiceACount,
+    choiceBCount: synced.choiceBCount,
     remainingCount:
       typeof raw.remainingCount === "number" &&
       Number.isFinite(raw.remainingCount)
@@ -494,14 +503,31 @@ function normalizeTriviaState(
     roundId: typeof raw.roundId === "string" ? raw.roundId : defaults.roundId,
     roundIndex: Math.max(0, Math.floor(num(raw.roundIndex, defaults.roundIndex))),
     question: typeof raw.question === "string" ? raw.question : defaults.question,
-    optionA: typeof raw.optionA === "string" ? raw.optionA : defaults.optionA,
-    optionB: typeof raw.optionB === "string" ? raw.optionB : defaults.optionB,
+    ...(() => {
+      const options = normalizeTriviaOptions(
+        raw.options,
+        raw.optionA,
+        raw.optionB,
+      );
+      const choiceCounts = normalizeTriviaChoiceCounts(
+        raw.choiceCounts,
+        options.length,
+        raw.choiceACount,
+        raw.choiceBCount,
+      );
+      return {
+        options,
+        optionA: options[0] ?? defaults.optionA,
+        optionB: options[1] ?? defaults.optionB,
+        choiceCounts,
+        choiceACount: choiceCounts[0] ?? 0,
+        choiceBCount: choiceCounts[1] ?? 0,
+      };
+    })(),
     survivingChoiceId: isTriviaChoiceId(raw.survivingChoiceId)
       ? raw.survivingChoiceId
       : null,
     answeredCount: Math.max(0, Math.floor(num(raw.answeredCount, 0))),
-    choiceACount: Math.max(0, Math.floor(num(raw.choiceACount, 0))),
-    choiceBCount: Math.max(0, Math.floor(num(raw.choiceBCount, 0))),
     remainingCount: Math.max(0, Math.floor(num(raw.remainingCount, 0))),
     fieldSize: Math.max(0, Math.floor(num(raw.fieldSize, 0))),
     winnerCodes: Array.isArray(raw.winnerCodes)
@@ -567,6 +593,7 @@ function normalizeDerbyState(
         ? raw.sequence
         : defaults.sequence,
     voteTallies: normalizeDerbyVoteTallies(raw.voteTallies),
+    showJoinQr: raw.showJoinQr !== false,
   };
 }
 

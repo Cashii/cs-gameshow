@@ -58,6 +58,7 @@ import { PriceOrderHostPanel } from "@/components/price-order/PriceOrderHostPane
 import { QuestionTimeHostPanel } from "@/components/question-time/QuestionTimeHostPanel";
 import { PictionaryHostPanel } from "@/components/pictionary/PictionaryHostPanel";
 import { PinSettingsPanel } from "@/components/operator/PinSettingsPanel";
+import { NAV_ACTIVE } from "@/components/operator/gameIconTheme";
 import { PinGate } from "@/components/auth/PinGate";
 import { useStudioTheme } from "@/components/studio/StudioTheme";
 import { GameshowLogo } from "@/components/studio/GameshowLogo";
@@ -93,27 +94,6 @@ const GAME_ICONS: Record<ActiveGame, LucideIcon> = {
   poll: BarChart3,
   messageBoard: Megaphone,
   pictionary: Pencil,
-};
-
-const CARD_ICON: Record<Exclude<ActiveGame, "idle">, string> = {
-  feud: "bg-[#2563eb] text-white",
-  wheel: "bg-emerald-500 text-white",
-  liveDrawer: "bg-sky-500 text-white",
-  takeIt: "bg-red-500 text-white",
-  derby: "bg-lime-600 text-white",
-  jeoparody: "bg-violet-500 text-white",
-  trivia: "bg-cyan-500 text-white",
-  priceGuesser: "bg-amber-500 text-white",
-  priceOrder: "bg-teal-500 text-white",
-  questionTime: "bg-rose-500 text-white",
-  poll: "bg-orange-500 text-white",
-  messageBoard: "bg-fuchsia-500 text-white",
-  pictionary: "bg-pink-500 text-white",
-};
-
-const NAV_ACTIVE: Record<ActiveGame, string> = {
-  idle: "bg-teal-600 text-white",
-  ...CARD_ICON,
 };
 
 function BetaTag({ compact, inverted }: Readonly<{ compact?: boolean; inverted?: boolean }>) {
@@ -417,7 +397,7 @@ function OperatorContent() {
 
         <div className="border-t border-neutral-800 p-2">
           <Link
-            href="/operator/changelog"
+            href="/operator/updates"
             aria-label="Updates"
             title={sidebarCollapsed ? "Updates" : undefined}
             className={`mb-0.5 flex w-full items-center rounded-md py-2 text-left text-base font-normal text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-100 ${
@@ -569,7 +549,7 @@ function OperatorContent() {
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {state.activeGame === "idle" && (
             <div className="min-h-0 flex-1 overflow-auto">
-              <div className="mx-auto flex w-full max-w-4xl flex-col px-6 pb-6 pt-2 mt-[-64px]">
+              <div className="mx-auto -mt-16 flex w-full max-w-4xl flex-col px-6 pb-6 pt-2">
                 <div className="pointer-events-none relative mx-auto h-96 w-full max-w-xl overflow-hidden">
                   <GameshowLogo className="h-full w-full origin-center scale-[1.15]" />
                 </div>
@@ -628,7 +608,7 @@ function OperatorContent() {
 
                   <div className="mt-3 text-center">
                     <Link
-                      href="/operator/changelog"
+                      href="/operator/updates"
                       className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
                     >
                       Updates

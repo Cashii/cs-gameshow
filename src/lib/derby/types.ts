@@ -55,6 +55,8 @@ export type DerbyGameState = {
   sequence: number;
   /** Public vote tallies for the current raceId (counts only). */
   voteTallies: Record<DerbyRacerId, number>;
+  /** Spectator QR overlay during betting (idle). */
+  showJoinQr: boolean;
 };
 
 export function emptyDerbyVoteTallies(): Record<DerbyRacerId, number> {
@@ -74,6 +76,7 @@ export function createDefaultDerbyState(): DerbyGameState {
     seed: 0,
     sequence: 0,
     voteTallies: emptyDerbyVoteTallies(),
+    showJoinQr: true,
   };
 }
 
