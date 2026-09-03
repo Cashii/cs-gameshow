@@ -12,5 +12,5 @@
 1. **Derby Race** — Guests pick a toy or horse on their phones before the race. A large QR code overlay appears during derby betting phase so participants can join. Operator sees live vote tallies on each racer and in the top bar; betting locks when the race starts.
 1. **Pictionary** — New game. Type the word to show or cover with a curtain, flash hints by revealing letters of the word, and run a configurable timer.
 1. **Uploaded photos** — Photos fit the square instead of crop-fit so photos uploaded that aren't perfect squares don't appeared zoomed in at the base size.
-1. **Live Drawer** — The page scroll bug is fixed.
+1. **Live Drawer** — The page scroll bug is fixed. Tokens stay the same size whether the number is one, two, or three digits.
 1. **Take It or Leave It** — Cases hold green or red cards instead of money. Players pick a case on their phones using player screen; A large QR code overlay appears on the spectator screen during setup and picking so participants can play. When a case is opened players can see if they can keep-playing or are eliminated. While the game is live, the operator always sees green/red answers and live vote counts per case. The big screen no longer shows the game title.

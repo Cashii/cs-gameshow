@@ -33,7 +33,7 @@ function sortTokens(tokens: LiveDrawerToken[]): LiveDrawerToken[] {
 
 function tokenCircleClass(number: string): string {
   const digits = number.trim().length;
-  if (digits >= 3) return "size-14 text-base";
+  if (digits >= 3) return "size-12 text-sm";
   if (digits === 2) return "size-12 text-lg";
   return "size-12 text-xl";
 }

@@ -113,14 +113,14 @@ function addTokensSummary(
 
 function revealedChipClass(number: string): string {
   const digits = number.trim().length;
-  if (digits >= 3) return "h-14 min-w-14 px-1 text-base";
-  if (digits === 2) return "h-14 min-w-14 px-1 text-xl";
-  return "h-14 min-w-14 text-2xl";
+  if (digits >= 3) return "size-14 px-1 text-base";
+  if (digits === 2) return "size-14 text-xl";
+  return "size-14 text-2xl";
 }
 
 function summaryTokenClass(number: string): string {
   const digits = number.trim().length;
-  if (digits >= 3) return "size-14 text-base";
+  if (digits >= 3) return "size-12 text-sm";
   if (digits === 2) return "size-12 text-lg";
   return "size-12 text-xl";
 }

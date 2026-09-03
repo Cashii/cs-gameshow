@@ -129,12 +129,6 @@
   line-height: 1;
 }
 
-.live-drawer-audience .live-drawer-ball[data-digits="3"],
-.live-drawer-audience .live-drawer-ball[data-digits="4"] {
-  width: 1.5em;
-  height: 1.5em;
-}
-
 .live-drawer-audience .live-drawer-balls.enter .live-drawer-ball {
   animation:
     live-drawer-digit-pop 0.85s cubic-bezier(0.22, 1.35, 0.36, 1) both,
