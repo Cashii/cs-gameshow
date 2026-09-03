@@ -17,8 +17,8 @@ function SpectatorContent() {
     "visible" | "exit" | "enter"
   >("visible");
   const displayedGameRef = useRef(displayedGame);
-  const showPoll = spectatorGame === "poll";
-  const showStandby = spectatorGame === "idle";
+  const showPoll = displayedGame === "poll";
+  const showStandby = displayedGame === "idle";
 
   useEffect(() => {
     if (spectatorGame === displayedGameRef.current) {
@@ -26,30 +26,13 @@ function SpectatorContent() {
       return;
     }
 
-    const from = displayedGameRef.current;
-    const to = spectatorGame;
-    const leavingStandby = from === "idle";
-    const enteringStandby = to === "idle";
-
-    if (leavingStandby) {
-      displayedGameRef.current = to;
-      setDisplayedGame(to);
-      setTransitionPhase("enter");
-      const settleTimer = window.setTimeout(() => {
-        setTransitionPhase("visible");
-      }, 350);
-      return () => {
-        clearTimeout(settleTimer);
-      };
-    }
-
     const exitFrame = requestAnimationFrame(() => {
       setTransitionPhase("exit");
     });
     const swapTimer = window.setTimeout(() => {
-      displayedGameRef.current = to;
-      setDisplayedGame(to);
-      setTransitionPhase(enteringStandby ? "visible" : "enter");
+      displayedGameRef.current = spectatorGame;
+      setDisplayedGame(spectatorGame);
+      setTransitionPhase("enter");
     }, 350);
     const settleTimer = window.setTimeout(() => {
       setTransitionPhase("visible");
@@ -68,21 +51,24 @@ function SpectatorContent() {
     else document.exitFullscreen?.();
   };
 
+  const transitionClass = `audience-page-transition audience-page-transition--${transitionPhase} h-full w-full`;
+
   return (
-    <div className="relative h-full min-h-full w-full">
-      <div className="spectator-standby">
+    <div className="relative h-full min-h-full w-full bg-black">
+      <div className="spectator-blackout" aria-hidden />
+      <div
+        className={
+          showStandby ? transitionClass : "spectator-standby-held"
+        }
+      >
         <StandbyScreen paused={!showStandby} />
       </div>
       {showPoll ? (
-        <div
-          className={`audience-page-transition audience-page-transition--${transitionPhase} h-full w-full`}
-        >
+        <div className={transitionClass}>
           <PollSpectatorOverlay poll={state.poll} />
         </div>
       ) : !showStandby ? (
-        <div
-          className={`audience-page-transition audience-page-transition--${transitionPhase} h-full w-full`}
-        >
+        <div className={transitionClass}>
           <ActiveGameBoard
             activeGame={displayedGame}
             state={state}
