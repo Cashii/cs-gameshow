@@ -20,7 +20,6 @@ import {
 import { snapshotToSuite, useEventSync } from "@/lib/sync/useEventSync";
 import {
   publishLocalSuite,
-  readLocalSuite,
   useLocalSuiteSync,
 } from "@/lib/sync/useLocalSuiteSync";
 import type { FeudGameState, FeudRound } from "@/lib/feud/types";
@@ -310,16 +309,6 @@ export function SuiteProvider({
     fetchSnapshot()
       .then((remote) => {
         applyRemoteSnapshot(remote);
-        if (role !== "spectator") return;
-        const stored = readLocalSuite();
-        if (!stored) return;
-        const prev = snapshotRef.current ?? remote;
-        replaceSnapshot(
-          mergeSuiteIntoSnapshot(prev, {
-            ...stored,
-            liveDrawer: pickLiveDrawer(stored.liveDrawer, prev.liveDrawer),
-          }),
-        );
       })
       .catch(() => setConnected(false));
   }, [applyRemoteSnapshot, replaceSnapshot, role, syncEnabled]);

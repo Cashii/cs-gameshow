@@ -557,7 +557,7 @@ function OperatorContent({
             <div className="min-h-0 flex-1 overflow-auto">
               <div className="mx-auto -mt-16 flex w-full max-w-4xl flex-col px-6 pb-6 pt-2">
                 <div className="pointer-events-none relative mx-auto h-96 w-full max-w-xl overflow-hidden">
-                  <GameshowLogo className="h-full w-full origin-center scale-[1.15]" />
+                  <GameshowLogo className="h-full w-full" zoom={1.15} />
                 </div>
 
                 <div className="relative z-10 mt-6 w-full">

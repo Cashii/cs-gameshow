@@ -7,23 +7,30 @@ import { GameshowLogo } from "@/components/studio/GameshowLogo";
 export function PollSpectatorOverlay({
   poll,
 }: Readonly<{ poll: PollState }>) {
-  if (poll.status === "idle") return null;
-
   const total = poll.choices.reduce((s, c) => s + c.votes, 0);
   const live = poll.status === "open";
+  const idle = poll.status === "idle";
+
+  let statusLabel = "Poll results";
+  if (idle) statusLabel = "Get ready";
+  else if (live) statusLabel = "Live results";
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[#0a0a0a] text-white">
-      <GameshowLogo
-        variant="noshadow"
-        className="absolute inset-0 h-full w-full origin-center scale-[1.85] object-contain opacity-20"
-      />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(20,184,166,0.18),transparent_42%),radial-gradient(ellipse_at_top_right,rgba(14,165,233,0.16),transparent_40%),radial-gradient(ellipse_at_bottom,rgba(245,158,11,0.14),transparent_45%)]" />
+    <div className="relative z-10 h-full w-full overflow-hidden bg-[#0a0a0a] text-white">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(20,184,166,0.18),transparent_42%),radial-gradient(ellipse_at_top_right,rgba(14,165,233,0.16),transparent_40%),radial-gradient(ellipse_at_bottom,rgba(245,158,11,0.14),transparent_45%)]" />
 
       <div className="relative z-10 flex h-full min-h-0 w-full flex-col px-8 py-6 sm:px-16 sm:py-8">
+        <div className="flex shrink-0 justify-center">
+          <GameshowLogo
+            variant="noshadow"
+            className="h-16 w-auto aspect-[699/463] sm:h-20"
+            zoom={1}
+            alt=""
+          />
+        </div>
         <div className="shrink-0 text-center">
           <p className="text-sm font-semibold tracking-[0.28em] text-amber-300 uppercase sm:text-base">
-            {live ? "Live results" : "Poll results"}
+            {statusLabel}
           </p>
           <h1
             className="mt-3 font-bold text-white"
@@ -33,7 +40,7 @@ export function PollSpectatorOverlay({
               lineHeight: 1.05,
             }}
           >
-            {poll.question.trim() || "Question?"}
+            {poll.question.trim() || (idle ? "Waiting for a poll" : "Question?")}
           </h1>
         </div>
 
@@ -62,13 +69,13 @@ export function PollSpectatorOverlay({
                       lineHeight: 1,
                     }}
                   >
-                    {pct}%
+                    {idle ? "—" : `${pct}%`}
                   </span>
                 </div>
                 <div className="h-5 overflow-hidden rounded-full bg-white/10 sm:h-7">
                   <div
                     className="bg-linear-to-r h-full rounded-full from-teal-400 via-cyan-400 to-amber-300 transition-all duration-500 ease-out"
-                    style={{ width: `${pct}%` }}
+                    style={{ width: idle ? "0%" : `${pct}%` }}
                   />
                 </div>
               </li>

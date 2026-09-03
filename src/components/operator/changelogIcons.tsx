@@ -54,7 +54,13 @@ export function gamesForChangelogItem(
     return ["feud", "wheel"];
   }
 
-  if (text.includes("branding") || text.includes("updates")) return [];
+  if (
+    text.includes("branding") ||
+    text.includes("updates") ||
+    text.includes("spectator")
+  ) {
+    return [];
+  }
 
   return [];
 }
@@ -132,7 +138,7 @@ export function labelForChangelogGame(
 export function fallbackIconForChangelogItem(item: ChangelogItem): LucideIcon {
   const text = `${item.title} ${item.detail}`.toLowerCase();
   if (text.includes("uploaded photo")) return ImageIcon;
-  if (text.includes("branding")) return Sparkles;
+  if (text.includes("branding") || text.includes("spectator")) return Sparkles;
   if (
     text.includes("strikes") ||
     text.includes("feud") ||

@@ -1,7 +1,17 @@
 .gameshow-logo {
   position: relative;
   display: block;
-  overflow: visible;
+  overflow: hidden;
+  contain: layout paint;
+}
+
+.gameshow-logo-stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--gameshow-logo-zoom, 1) * 100%);
+  height: calc(var(--gameshow-logo-zoom, 1) * 100%);
+  translate: -50% -50%;
 }
 
 .gameshow-logo-art {
@@ -20,17 +30,20 @@
   overflow: visible;
 }
 
-.gameshow-logo-sparkle {
-  fill: #fffef6;
-  filter:
-    drop-shadow(0 0 3px #fff)
-    drop-shadow(0 0 8px rgba(255, 220, 90, 0.9));
+.gameshow-logo-sparkle-spin {
   transform-box: fill-box;
   transform-origin: center;
   animation-name: gameshow-logo-twinkle;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
-  mix-blend-mode: screen;
+}
+
+.gameshow-logo-sparkle {
+  fill: #fffef6;
+}
+
+.gameshow-logo-sparkle-glow {
+  fill: rgba(255, 220, 90, 0.45);
 }
 
 @keyframes gameshow-logo-twinkle {
@@ -54,35 +67,37 @@
   }
 }
 
-.gameshow-logo-noshadow .gameshow-logo-sparkles {
+.gameshow-logo-noshadow {
   overflow: visible;
-  animation: gameshow-logo-shimmer 3.8s ease-in-out infinite;
 }
 
-.gameshow-logo-noshadow .gameshow-logo-sparkle {
+.gameshow-logo-noshadow .gameshow-logo-sparkle-spin {
   animation-name: gameshow-logo-twinkle-hot;
   animation-timing-function: cubic-bezier(0.22, 0.9, 0.32, 1);
 }
 
 .gameshow-logo-sparkle-gold {
   fill: #fff3a8;
-  filter:
-    drop-shadow(0 0 3px #fff)
-    drop-shadow(0 0 10px rgba(255, 220, 20, 0.95));
+}
+
+.gameshow-logo-sparkle-gold-glow {
+  fill: rgba(255, 220, 20, 0.5);
 }
 
 .gameshow-logo-sparkle-green {
   fill: #d9ffe8;
-  filter:
-    drop-shadow(0 0 3px #fff)
-    drop-shadow(0 0 10px rgba(61, 255, 138, 0.95));
+}
+
+.gameshow-logo-sparkle-green-glow {
+  fill: rgba(61, 255, 138, 0.45);
 }
 
 .gameshow-logo-sparkle-purple {
   fill: #f3e6ff;
-  filter:
-    drop-shadow(0 0 3px #fff)
-    drop-shadow(0 0 10px rgba(192, 132, 252, 0.95));
+}
+
+.gameshow-logo-sparkle-purple-glow {
+  fill: rgba(192, 132, 252, 0.45);
 }
 
 .gameshow-logo-noshadow .gameshow-logo-sparkle-hot {
@@ -131,24 +146,14 @@
   }
 }
 
-@keyframes gameshow-logo-shimmer {
-  0%,
-  100% {
-    filter: brightness(1);
-  }
-  50% {
-    filter: brightness(1.35);
-  }
+.gameshow-logo-paused .gameshow-logo-sparkle-spin {
+  animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gameshow-logo-sparkle {
+  .gameshow-logo-sparkle-spin {
     animation: none;
     opacity: 0.45;
     transform: none;
-  }
-
-  .gameshow-logo-noshadow .gameshow-logo-sparkles {
-    animation: none;
   }
 }
