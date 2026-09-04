@@ -141,6 +141,17 @@ export async function POST(request: Request) {
         }));
         return json(snapshot);
       }
+      case "deleteHistory": {
+        if (!body.pollId?.trim()) return error("pollId required");
+        const pollId = body.pollId.trim();
+        const snapshot = await updateEventSuite((prev) => ({
+          ...prev,
+          pollHistory: (prev.pollHistory ?? []).filter(
+            (entry) => entry.id !== pollId,
+          ),
+        }));
+        return json(snapshot);
+      }
       default:
         return error("Invalid action");
     }

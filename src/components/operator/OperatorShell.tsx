@@ -80,7 +80,7 @@ const NAV_GAMES: ActiveGame[] = [
   "takeIt",
 ];
 const NAV_TOOLS: ActiveGame[] = ["liveDrawer", "poll", "messageBoard"];
-const BETA_GAMES: ReadonlySet<ActiveGame> = new Set(["takeIt", "jeoparody"]);
+const BETA_GAMES: ReadonlySet<ActiveGame> = new Set(["jeoparody"]);
 
 const GAME_ICONS: Record<ActiveGame, LucideIcon> = {
   idle: Home,

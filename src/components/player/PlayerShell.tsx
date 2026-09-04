@@ -74,8 +74,12 @@ function PlayerContent() {
     spectatorGame,
   ]);
 
+  const pollLive =
+    spectatorGame === "poll" &&
+    (poll.status === "open" || poll.status === "results");
+
   useEffect(() => {
-    if (poll.status !== "open" || !poll.id || !deviceId) {
+    if (!pollLive || poll.status !== "open" || !poll.id || !deviceId) {
       setVotedPollId(null);
       return;
     }
@@ -101,10 +105,9 @@ function PlayerContent() {
     return () => {
       cancelled = true;
     };
-  }, [poll.id, poll.status, deviceId]);
+  }, [pollLive, poll.id, poll.status, deviceId]);
 
-  const derbyLive =
-    spectatorGame === "derby" || state.activeGame === "derby";
+  const derbyLive = spectatorGame === "derby";
 
   useEffect(() => {
     if (!derbyLive || !derby.raceId || !deviceId) {
@@ -136,8 +139,7 @@ function PlayerContent() {
   }, [derbyLive, derby.raceId, derby.phase, deviceId]);
 
   const takeItLive =
-    (spectatorGame === "takeIt" || state.activeGame === "takeIt") &&
-    takeIt.phase !== "setup";
+    spectatorGame === "takeIt" && takeIt.phase !== "setup";
 
   useEffect(() => {
     if (!takeItLive || !takeIt.roundId || !deviceId) {
@@ -339,7 +341,7 @@ function PlayerContent() {
     );
   }
 
-  if (poll.status === "open" || poll.status === "results") {
+  if (pollLive) {
     return (
       <PlayerPollOverlay
         poll={poll}
@@ -356,7 +358,7 @@ function PlayerContent() {
   return (
     <StandbyScreen
       size="player"
-      subtitle="Stand by — no poll is open right now."
+      subtitle="Stand by — waiting for the next game."
     >
       {playerCode ? (
         <div className="mt-3 text-sm tracking-widest text-neutral-500">

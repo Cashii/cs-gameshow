@@ -2,6 +2,7 @@
 
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useSuite } from "@/lib/suite-provider";
 
 function formatVoteTime(iso: string): string {
@@ -28,6 +29,11 @@ export function PollHostPanel() {
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(
     null,
   );
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    pollId: string;
+    question: string;
+  }>({ open: false, pollId: "", question: "" });
 
   const runAction = async (body: Record<string, unknown>) => {
     setLoading(true);
@@ -127,8 +133,8 @@ export function PollHostPanel() {
         <div>
           <h3 className="text-lg font-bold text-white">Poll Control</h3>
           <p className="text-sm text-neutral-400">
-            Edit the question, then open voting. Set Spectator screen to Poll to put
-            live results on the projector.
+            Edit the question, then open voting. Set Spectator screen to Poll to
+            show it on the projector and guest phones.
           </p>
         </div>
         <p className="text-sm text-neutral-400">
@@ -283,27 +289,44 @@ export function PollHostPanel() {
                   key={`${entry.id}-${entry.closedAt}`}
                   className="rounded-xl border border-neutral-800 bg-neutral-900"
                 >
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedHistoryId(open ? null : entry.id)
-                    }
-                    className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-white">
-                        {entry.question || "(no question)"}
-                      </p>
-                      <p className="mt-0.5 text-xs text-neutral-500">
-                        {new Date(entry.closedAt).toLocaleString()} ·{" "}
-                        {entryVotes} vote{entryVotes === 1 ? "" : "s"} ·{" "}
-                        {entry.status}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-sm text-neutral-400">
-                      {open ? "Hide" : "Review"}
-                    </span>
-                  </button>
+                  <div className="flex items-start gap-1 px-2 py-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedHistoryId(open ? null : entry.id)
+                      }
+                      className="flex min-w-0 flex-1 items-start justify-between gap-3 px-2 py-2 text-left"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-white">
+                          {entry.question || "(no question)"}
+                        </p>
+                        <p className="mt-0.5 text-xs text-neutral-500">
+                          {new Date(entry.closedAt).toLocaleString()} ·{" "}
+                          {entryVotes} vote{entryVotes === 1 ? "" : "s"} ·{" "}
+                          {entry.status}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-sm text-neutral-400">
+                        {open ? "Hide" : "Review"}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() =>
+                        setDeleteConfirm({
+                          open: true,
+                          pollId: entry.id,
+                          question: entry.question || "(no question)",
+                        })
+                      }
+                      className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-700 text-neutral-400 hover:bg-neutral-800 hover:text-red-400 disabled:opacity-40"
+                      aria-label={`Delete past poll: ${entry.question || "untitled"}`}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                   {open ? (
                     <div className="space-y-3 border-t border-neutral-800 px-4 py-3">
                       <ul className="space-y-1 text-sm text-neutral-300">
@@ -351,6 +374,22 @@ export function PollHostPanel() {
         )}
       </section>
       </div>
+
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) =>
+          setDeleteConfirm((prev) => ({ ...prev, open }))
+        }
+        title="Delete past poll"
+        message={`Remove “${deleteConfirm.question}” from history? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => {
+          const pollId = deleteConfirm.pollId;
+          if (expandedHistoryId === pollId) setExpandedHistoryId(null);
+          void runAction({ action: "deleteHistory", pollId });
+        }}
+      />
     </div>
   );
 }
