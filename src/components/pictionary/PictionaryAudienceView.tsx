@@ -114,8 +114,8 @@ export function PictionaryAudienceView({
 }: Readonly<{ game: PictionaryState }>) {
   const [now, setNow] = useState<number | null>(null);
   const word = game.word.trim();
-  const curtainOpen = Boolean(word) && game.reveal !== "covered";
-  const showHint = game.reveal === "hint";
+  const curtainOpen = Boolean(word) && !game.curtainCovered;
+  const showHint = game.hintEnabled;
 
   useEffect(() => {
     setNow(Date.now());

@@ -6,13 +6,16 @@ import {
   formatQuestionTimePreset,
 } from "@/lib/question-time/types";
 
-export type PictionaryReveal = "covered" | "word" | "hint";
+type LegacyPictionaryReveal = "covered" | "word" | "hint";
 
 export type PictionaryState = {
   word: string;
   /** Character indexes hidden when the hint is showing. */
   hiddenIndexes: number[];
-  reveal: PictionaryReveal;
+  /** When true, curtains are closed over the board. */
+  curtainCovered: boolean;
+  /** When true, open curtains show the letter hint instead of the full word. */
+  hintEnabled: boolean;
   timerDurationMs: number;
   timerRemainingMs: number;
   timerRunning: boolean;
@@ -22,13 +25,14 @@ export type PictionaryState = {
 export const PICTIONARY_DURATION_PRESETS_MS = QUESTION_TIME_DURATION_PRESETS_MS;
 export const DEFAULT_PICTIONARY_DURATION_MS = DEFAULT_QUESTION_TIME_DURATION_MS;
 
-const REVEALS = new Set<PictionaryReveal>(["covered", "word", "hint"]);
+const REVEALS = new Set<string>(["covered", "word", "hint"]);
 
 export function createDefaultPictionaryState(): PictionaryState {
   return {
     word: "",
     hiddenIndexes: [],
-    reveal: "covered",
+    curtainCovered: true,
+    hintEnabled: false,
     timerDurationMs: DEFAULT_PICTIONARY_DURATION_MS,
     timerRemainingMs: DEFAULT_PICTIONARY_DURATION_MS,
     timerRunning: false,
@@ -36,8 +40,19 @@ export function createDefaultPictionaryState(): PictionaryState {
   };
 }
 
-export function isPictionaryReveal(value: unknown): value is PictionaryReveal {
-  return typeof value === "string" && REVEALS.has(value as PictionaryReveal);
+function isLegacyPictionaryReveal(
+  value: unknown,
+): value is LegacyPictionaryReveal {
+  return typeof value === "string" && REVEALS.has(value);
+}
+
+function flagsFromLegacyReveal(reveal: LegacyPictionaryReveal): {
+  curtainCovered: boolean;
+  hintEnabled: boolean;
+} {
+  if (reveal === "covered") return { curtainCovered: true, hintEnabled: false };
+  if (reveal === "hint") return { curtainCovered: false, hintEnabled: true };
+  return { curtainCovered: false, hintEnabled: false };
 }
 
 export function hideablePictionaryIndexes(word: string): number[] {
@@ -145,7 +160,7 @@ export function formatPictionaryPreset(ms: number): string {
 }
 
 export function normalizePictionaryState(
-  raw: Partial<PictionaryState> | undefined,
+  raw: Partial<PictionaryState> & { reveal?: unknown } | undefined,
 ): PictionaryState {
   const defaults = createDefaultPictionaryState();
   if (!raw || typeof raw !== "object") return defaults;
@@ -163,10 +178,25 @@ export function normalizePictionaryState(
     Number.isFinite(raw.timerRemainingMs)
       ? Math.max(0, Math.round(raw.timerRemainingMs))
       : timerDurationMs;
+
+  let curtainCovered = defaults.curtainCovered;
+  let hintEnabled = defaults.hintEnabled;
+  if (typeof raw.curtainCovered === "boolean" || typeof raw.hintEnabled === "boolean") {
+    curtainCovered =
+      typeof raw.curtainCovered === "boolean"
+        ? raw.curtainCovered
+        : defaults.curtainCovered;
+    hintEnabled =
+      typeof raw.hintEnabled === "boolean" ? raw.hintEnabled : defaults.hintEnabled;
+  } else if (isLegacyPictionaryReveal(raw.reveal)) {
+    ({ curtainCovered, hintEnabled } = flagsFromLegacyReveal(raw.reveal));
+  }
+
   return {
     word,
     hiddenIndexes: sanitizePictionaryHiddenIndexes(word, raw.hiddenIndexes),
-    reveal: isPictionaryReveal(raw.reveal) ? raw.reveal : defaults.reveal,
+    curtainCovered,
+    hintEnabled,
     timerDurationMs,
     timerRemainingMs,
     timerRunning: timerRunning && timerEndsAt != null,

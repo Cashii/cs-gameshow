@@ -12,7 +12,6 @@ import {
   pausePictionaryTimer,
   pictionaryRemainingMs,
   resetPictionaryTimer,
-  sanitizePictionaryHiddenIndexes,
   setPictionaryDuration,
   startPictionaryTimer,
   togglePictionaryHiddenIndex,
@@ -92,7 +91,7 @@ export function PictionaryHostPanel() {
     patch((prev) => ({
       ...prev,
       word: next,
-      hiddenIndexes: sanitizePictionaryHiddenIndexes(next, prev.hiddenIndexes),
+      hiddenIndexes: hideablePictionaryIndexes(next),
     }));
   };
 
@@ -107,30 +106,31 @@ export function PictionaryHostPanel() {
             Game actions
           </span>
           <StatusSwitch
-            checked={game.reveal !== "covered"}
+            checked={game.curtainCovered}
             disabled={!game.word.trim()}
-            labelOn={game.reveal === "hint" ? "Hint showing" : "Word showing"}
-            labelOff="Covered"
-            ariaLabel="Toggle word"
+            labelOn="Curtain covered"
+            labelOff="Curtain open"
+            ariaLabel="Cover curtain"
             onToggle={() =>
               patch((prev) => ({
                 ...prev,
-                reveal: prev.reveal === "covered" ? "word" : "covered",
+                curtainCovered: !prev.curtainCovered,
               }))
             }
           />
-          <button
-            type="button"
+          <StatusSwitch
+            checked={game.hintEnabled}
             disabled={!game.word.trim()}
-            onClick={() => patch((prev) => ({ ...prev, reveal: "hint" }))}
-            className={`inline-flex h-10 items-center rounded-md border px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500 ${
-              game.reveal === "hint"
-                ? "border-teal-500 bg-teal-600 hover:bg-teal-500"
-                : "border-neutral-600 bg-neutral-800 hover:bg-neutral-700"
-            }`}
-          >
-            Show hint
-          </button>
+            labelOn="Hint on"
+            labelOff="Hint off"
+            ariaLabel="Hint"
+            onToggle={() =>
+              patch((prev) => ({
+                ...prev,
+                hintEnabled: !prev.hintEnabled,
+              }))
+            }
+          />
           <button
             type="button"
             onClick={() => setConfirmReset(true)}
@@ -151,7 +151,7 @@ export function PictionaryHostPanel() {
             </OperatorNotice>
           )}
 
-          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)]">
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
             <section className="flex flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4">
               <h2 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
                 Word to draw
@@ -168,9 +168,14 @@ export function PictionaryHostPanel() {
 
             <section className="flex flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-                  Hint letters
-                </h2>
+                <div>
+                  <h2 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+                    Hint letters
+                  </h2>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    Green = shown on screen. Blank = covered in the hint.
+                  </p>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -199,10 +204,10 @@ export function PictionaryHostPanel() {
               </div>
               {hideable.length === 0 ? (
                 <p className="text-sm text-neutral-500">
-                  Type a word, then tap letters to hide them in the hint.
+                  Type a word, then tap letters to cover or show them in the hint.
                 </p>
               ) : (
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {game.word.split("").map((char, index) => {
                     if (char === " ") {
                       return (
@@ -219,10 +224,11 @@ export function PictionaryHostPanel() {
                       <button
                         key={`letter-${index}-${letter}`}
                         type="button"
+                        aria-pressed={!hidden}
                         title={
                           hidden
                             ? `Show ${letter} in hint`
-                            : `Hide ${letter} in hint`
+                            : `Cover ${letter} in hint`
                         }
                         onClick={() =>
                           patch((prev) => ({
@@ -233,13 +239,26 @@ export function PictionaryHostPanel() {
                             ),
                           }))
                         }
-                        className={`inline-flex h-10 min-w-10 items-center justify-center rounded-md border px-2 text-base font-bold uppercase ${
+                        className={`inline-flex h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-lg border-2 px-2 ${
                           hidden
-                            ? "border-amber-500/50 bg-neutral-950 text-neutral-500 line-through"
-                            : "border-neutral-600 bg-neutral-800 text-white hover:border-sky-500"
+                            ? "border-dashed border-neutral-600 bg-neutral-950 text-neutral-400"
+                            : "border-emerald-400 bg-emerald-500/20 text-emerald-300 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.35)]"
                         }`}
                       >
-                        {char}
+                        <span
+                          className={`text-base font-bold uppercase leading-none ${
+                            hidden ? "opacity-70" : ""
+                          }`}
+                        >
+                          {char}
+                        </span>
+                        <span
+                          className={`text-[0.65rem] font-semibold tracking-wide uppercase ${
+                            hidden ? "text-neutral-500" : "text-emerald-400"
+                          }`}
+                        >
+                          {hidden ? "Covered" : "Shown"}
+                        </span>
                       </button>
                     );
                   })}

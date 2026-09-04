@@ -118,7 +118,7 @@ export function TakeItOrLeaveItHostPanel() {
               <span className="font-semibold text-red-400">{red} red</span>
             </p>
             <p className="mt-1 text-sm text-neutral-400">
-              Phone picks:{" "}
+              Votes:{" "}
               <span className="font-semibold text-white">{pickTotal}</span>
             </p>
             <p className="mt-1 text-sm text-neutral-400">
@@ -248,17 +248,9 @@ export function TakeItOrLeaveItHostPanel() {
 
       {game.phase === "pick" && (
         <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
-          <h2 className="mb-2 text-xl font-bold text-white">Phone picks</h2>
-          <p className="mb-4 text-sm text-neutral-400">
-            Guests choose a case on `/player`. Many phones can share a case.
-            Vote counts update live. You always see green/red here — guests do
-            not. You can begin opening even before anyone has picked.
-          </p>
-          <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-            Case votes
-          </p>
+          <h2 className="mb-4 text-xl font-bold text-white">Cases</h2>
           <div
-            className="mb-4 grid gap-3"
+            className="mb-4 grid gap-2"
             style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
           >
             {game.cases.map((c) => {
@@ -267,24 +259,24 @@ export function TakeItOrLeaveItHostPanel() {
               return (
                 <div
                   key={c.id}
-                  className={`rounded-lg border py-4 text-center ${
+                  className={`rounded-md border px-2 py-2 text-center ${
                     isGreen
                       ? "border-emerald-500 bg-emerald-900/40"
                       : "border-red-500 bg-red-900/40"
                   }`}
                 >
-                  <p className="text-lg font-bold text-white">#{c.id}</p>
+                  <p className="text-sm font-bold text-white">#{c.id}</p>
                   <p
-                    className={`mt-1 text-sm font-semibold ${
+                    className={`text-xs font-semibold ${
                       isGreen ? "text-emerald-200" : "text-red-200"
                     }`}
                   >
                     {takeItCardLabel(c.card)}
                   </p>
-                  <p className="mt-2 text-3xl font-bold tabular-nums text-amber-300">
+                  <p className="mt-1 text-xl font-bold tabular-nums text-amber-300">
                     {votes}
                   </p>
-                  <p className="text-xs text-neutral-400">
+                  <p className="text-[0.65rem] leading-tight text-neutral-400">
                     {votes === 1 ? "vote" : "votes"}
                   </p>
                 </div>
@@ -309,7 +301,7 @@ export function TakeItOrLeaveItHostPanel() {
             it on the big screen and phones. Dimmed cases are already opened.
           </p>
           <div
-            className="grid gap-3"
+            className="grid gap-2"
             style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
           >
             {game.cases.map((c) => {
@@ -321,7 +313,7 @@ export function TakeItOrLeaveItHostPanel() {
                   type="button"
                   disabled={c.opened}
                   onClick={() => openCase(c.id)}
-                  className={`rounded-lg border py-4 text-lg font-bold transition-colors ${
+                  className={`rounded-md border px-2 py-2 text-sm font-bold transition-colors ${
                     isGreen
                       ? "border-emerald-500 bg-emerald-900/40 text-emerald-200"
                       : "border-red-500 bg-red-900/40 text-red-200"
@@ -329,23 +321,23 @@ export function TakeItOrLeaveItHostPanel() {
                     c.opened
                       ? "cursor-not-allowed opacity-45"
                       : votes > 0
-                        ? "ring-2 ring-sky-400 ring-offset-2 ring-offset-neutral-800 hover:brightness-110"
+                        ? "ring-2 ring-sky-400 ring-offset-1 ring-offset-neutral-800 hover:brightness-110"
                         : "hover:brightness-110"
                   }`}
                 >
                   #{c.id}
-                  <span className="mt-1 block text-sm font-semibold">
+                  <span className="mt-0.5 block text-xs font-semibold">
                     {takeItCardLabel(c.card)}
                   </span>
-                  <span className="mt-2 block text-2xl font-bold tabular-nums text-amber-300">
+                  <span className="mt-1 block text-xl font-bold tabular-nums text-amber-300">
                     {votes}
                   </span>
-                  <span className="mt-0.5 block text-xs font-medium text-neutral-300">
+                  <span className="mt-0.5 block text-[0.65rem] font-medium leading-tight text-neutral-300">
                     {c.opened
                       ? "Opened"
                       : votes > 0
-                        ? `${votes} ${votes === 1 ? "vote" : "votes"} · tap to open`
-                        : "No votes · tap to open"}
+                        ? `${votes} ${votes === 1 ? "vote" : "votes"} · tap`
+                        : "No votes · tap"}
                   </span>
                 </button>
               );

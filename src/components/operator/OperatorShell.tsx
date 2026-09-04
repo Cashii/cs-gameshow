@@ -76,8 +76,8 @@ const NAV_GAMES: ActiveGame[] = [
   "priceOrder",
   "questionTime",
   "pictionary",
-  "jeoparody",
   "takeIt",
+  "jeoparody",
 ];
 const NAV_TOOLS: ActiveGame[] = ["liveDrawer", "poll", "messageBoard"];
 const BETA_GAMES: ReadonlySet<ActiveGame> = new Set(["jeoparody"]);
