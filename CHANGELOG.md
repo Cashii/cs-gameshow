@@ -2,7 +2,7 @@
 
 ## September 22, 2026
 
-1. **Price Order** — Ranking slots grow to fill available space under the shelf; rank numbers are larger; photos and price tags stay matched without clipping or curtain shadows.
+1. **Price Order** — Ranking slots grow to fill available space under the shelf; item curtains cover the photo and the item name; rank numbers are larger; photos and price tags stay matched without clipping.
 1. **Poll** — Toggle **Percentages shown / hidden** to hide live percentage bars on the big screen and phones (operator tally still updates). For quiz-style polls, mark the correct choice, then Reveal correct answer.
 1. **Derby Race** — Wonderbar theme no longer shows the Wonder BAR logo lockup (title only). After a race finishes, winner picks are locked and a clear message points you to Race again or Reset.
 1. **Elimination Trivia** — Upcoming answer fields accept spaces while typing. Question 1 question and answers stay saved when you switch screens (saved when you leave the field).

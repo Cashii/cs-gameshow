@@ -37,9 +37,9 @@ function CurtainedItem({
           alt={itemRevealed ? label || "Item" : ""}
           fit={item.photoFit}
         />
-        <ItemCurtain open={itemRevealed} />
       </div>
       <p className="price-item-label">{label || "\u00a0"}</p>
+      <ItemCurtain open={itemRevealed} />
     </div>
   );
 }

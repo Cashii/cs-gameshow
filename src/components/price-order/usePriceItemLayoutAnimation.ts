@@ -27,14 +27,21 @@ function playMoveAnimation(
     animation.cancel();
   }
 
+  node.classList.add("price-moving");
+  const clearMoving = () => {
+    node.classList.remove("price-moving");
+    if (node.style.zIndex === "3") node.style.zIndex = "";
+  };
+
   if (!first) {
-    node.animate(
+    const animation = node.animate(
       [
         { opacity: 0, transform: "scale(0.84)" },
         { opacity: 1, transform: "scale(1)" },
       ],
       { duration: DURATION_MS, easing: EASING },
     );
+    void animation.finished.finally(clearMoving);
     return;
   }
 
@@ -48,6 +55,7 @@ function playMoveAnimation(
     Math.abs(sx - 1) < 0.02 &&
     Math.abs(sy - 1) < 0.02
   ) {
+    clearMoving();
     return;
   }
 
@@ -59,9 +67,7 @@ function playMoveAnimation(
     ],
     { duration: DURATION_MS, easing: EASING },
   );
-  void animation.finished.finally(() => {
-    if (node.style.zIndex === "3") node.style.zIndex = "";
-  });
+  void animation.finished.finally(clearMoving);
 }
 
 export function usePriceItemLayoutAnimation(

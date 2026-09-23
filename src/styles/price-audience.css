@@ -129,12 +129,19 @@
   inset: -0.9rem;
   border-radius: 0.45rem;
   box-shadow: 0 22px 48px rgba(0, 0, 0, 0.55);
-  transition: box-shadow 280ms ease, opacity 200ms ease;
+  visibility: visible;
+  transition:
+    box-shadow 280ms ease,
+    visibility 0s linear 0s;
 }
 
 .price-curtain-open {
   box-shadow: none;
-  opacity: 0;
+  /* Hide only after the slide finishes so no leftover shadow sits on the photo. */
+  visibility: hidden;
+  transition:
+    box-shadow 280ms ease,
+    visibility 0s linear 1.4s;
 }
 
 .price-curtain-valance {
@@ -150,7 +157,9 @@
     0 10px 18px rgba(0, 0, 0, 0.45),
     inset 0 2px 0 rgba(255, 246, 216, 0.18);
   transform: translateY(0);
-  transition: transform 1.15s cubic-bezier(0.65, 0, 0.35, 1);
+  transition:
+    transform 1.15s cubic-bezier(0.65, 0, 0.35, 1),
+    box-shadow 280ms ease;
 }
 
 .price-curtain-valance::before {
@@ -231,16 +240,25 @@
 }
 
 .price-curtain-open .price-curtain-valance {
-  transform: translateY(-110%);
+  transform: translateY(-120%);
   box-shadow: none;
 }
 
 .price-curtain-open .price-curtain-left {
-  transform: translateX(-104%);
+  transform: translateX(-110%);
 }
 
 .price-curtain-open .price-curtain-right {
-  transform: translateX(104%);
+  transform: translateX(110%);
+}
+
+.price-curtain-instant,
+.price-curtain-instant .price-curtain-valance,
+.price-curtain-instant .price-curtain-panel,
+.price-moving .price-curtain,
+.price-moving .price-curtain-valance,
+.price-moving .price-curtain-panel {
+  transition: none !important;
 }
 
 .price-photo-frame {
@@ -483,17 +501,19 @@
 }
 
 .price-order-curtain-stage {
+  position: relative;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   min-height: 0;
   flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 0.75rem;
 }
 
 .price-shelf-card .price-order-curtain-stage {
   width: 100%;
-  overflow: visible;
 }
 
 .price-order-slot .price-order-curtain-stage {
@@ -523,7 +543,7 @@
   align-self: center;
 }
 
-.price-order-photo-wrap .price-curtain {
+.price-order-curtain-stage .price-curtain {
   inset: 0;
   border-radius: inherit;
 }
@@ -533,7 +553,7 @@
   z-index: 1;
   width: 100%;
   max-width: 100%;
-  padding: 0.35rem 0.2rem 0;
+  padding: 0.35rem 0.2rem 0.35rem;
   text-align: center;
   white-space: normal;
   line-height: 1.15;
