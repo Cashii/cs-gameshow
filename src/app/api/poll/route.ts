@@ -24,6 +24,7 @@ export async function POST(request: Request) {
     deviceId?: string;
     displayName?: string;
     userAgent?: string;
+    showPercentages?: boolean;
   };
 
   if (body.action === "vote") {
@@ -73,6 +74,9 @@ export async function POST(request: Request) {
             })),
             status: "idle",
             voteLog: [],
+            correctChoiceId: null,
+            correctAnswerRevealed: false,
+            showPercentages: event.poll?.showPercentages !== false,
           },
         }));
         return json(snapshot);
@@ -107,6 +111,9 @@ export async function POST(request: Request) {
                 : prev.poll.choices.map((c) => ({ ...c, votes: 0 })),
               status: "open" as const,
               voteLog: [],
+              correctChoiceId: null,
+              correctAnswerRevealed: false,
+              showPercentages: prev.poll?.showPercentages !== false,
             },
           };
         });
@@ -123,6 +130,49 @@ export async function POST(request: Request) {
         const snapshot = await updatePoll((prev) => ({
           ...prev,
           status: "results",
+        }));
+        return json(snapshot);
+      }
+      case "setCorrectChoice": {
+        const choiceId =
+          typeof body.choiceId === "string" && body.choiceId.trim()
+            ? body.choiceId.trim()
+            : null;
+        const snapshot = await updatePoll((prev) => {
+          if (choiceId && !prev.choices.some((c) => c.id === choiceId)) {
+            throw new Error("Choice not found");
+          }
+          const nextId = choiceId;
+          return {
+            ...prev,
+            correctChoiceId: nextId,
+            correctAnswerRevealed: nextId
+              ? prev.correctAnswerRevealed
+              : false,
+          };
+        });
+        return json(snapshot);
+      }
+      case "revealCorrectAnswer": {
+        const snapshot = await updatePoll((prev) => {
+          if (!prev.correctChoiceId) {
+            throw new Error("Pick a correct answer first");
+          }
+          return { ...prev, correctAnswerRevealed: true };
+        });
+        return json(snapshot);
+      }
+      case "hideCorrectAnswer": {
+        const snapshot = await updatePoll((prev) => ({
+          ...prev,
+          correctAnswerRevealed: false,
+        }));
+        return json(snapshot);
+      }
+      case "setShowPercentages": {
+        const snapshot = await updatePoll((prev) => ({
+          ...prev,
+          showPercentages: body.showPercentages !== false,
         }));
         return json(snapshot);
       }

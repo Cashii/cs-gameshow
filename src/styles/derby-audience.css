@@ -351,76 +351,10 @@
   filter: drop-shadow(0 0 10px #f0abfc);
 }
 
-.derby-disco-ball-svg.is-compact {
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 0 6px #e879f9);
-}
-
 .derby-audience.theme-wonderbar.is-racing .derby-disco-facets {
   animation: derby-disco-spin 2.4s linear infinite;
   transform-origin: 40px 52px;
   transform-box: fill-box;
-}
-
-.derby-wonderbar-brand {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem 1.4rem;
-  height: 100%;
-  max-width: 100%;
-}
-
-.derby-wonderbar-lockup {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0.35rem 1.25rem 0.5rem;
-  background: rgba(253, 244, 255, 0.12);
-  border: 3px solid #f5d0fe;
-  border-radius: 1.25rem;
-  box-shadow:
-    0 0 18px rgba(244, 114, 182, 0.45),
-    inset 0 0 12px rgba(253, 244, 255, 0.08);
-}
-
-.derby-wonderbar-script {
-  display: flex;
-  align-items: center;
-  margin: 0;
-  font-family: var(--font-pacifico), "Segoe Script", cursive;
-  font-size: clamp(2.5rem, 8vh, 5rem);
-  line-height: 0.9;
-  color: #f472b6;
-}
-
-.derby-wonderbar-letters {
-  background: linear-gradient(90deg, #f472b6, #c084fc 55%, #7c3aed);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 0 8px rgba(244, 114, 182, 0.65));
-}
-
-.derby-wonderbar-o {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 0.82em;
-  height: 0.82em;
-  margin: 0 0.04em;
-  transform: translateY(0.06em);
-}
-
-.derby-wonderbar-bar {
-  margin: 0.02rem 0 0;
-  font-size: clamp(0.9rem, 2vh, 1.25rem);
-  font-weight: 800;
-  letter-spacing: 0.38em;
-  color: #f472b6;
-  text-indent: 0.38em;
 }
 
 .derby-audience.theme-wonderbar .derby-title {

@@ -1,5 +1,15 @@
 # Updates
 
+## September 22, 2026
+
+1. **Price Order** — Ranking slots grow to fill available space under the shelf; rank numbers are larger; photos and price tags stay matched without clipping or curtain shadows.
+1. **Poll** — Toggle **Percentages shown / hidden** to hide live percentage bars on the big screen and phones (operator tally still updates). For quiz-style polls, mark the correct choice, then Reveal correct answer.
+1. **Derby Race** — Wonderbar theme no longer shows the Wonder BAR logo lockup (title only). After a race finishes, winner picks are locked and a clear message points you to Race again or Reset.
+1. **Elimination Trivia** — Upcoming answer fields accept spaces while typing. Question 1 question and answers stay saved when you switch screens (saved when you leave the field).
+1. **Friendly Feud** — Team names sit beside the board in larger type so they’re easier to read. Under Award to, choose **No one** to reveal an answer without giving points. Long answers fit better in the answer tiles.
+1. **Wheel of Riches** — The topic banner shows the full topic, wraps when needed, and spans nearly the full screen width with side margins.
+1. **Pictionary** — Hint letters and the full word wrap only between words, so phrases like “Tall Safari Animal” never split a word across lines.
+
 ## September 3, 2026
 
 1. **Branding** — Jack'd Up logo now appears on operator, spectator, player screens and colors have been updated on the app to match the logo color palette.

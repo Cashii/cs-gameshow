@@ -342,16 +342,23 @@ function normalizeLiveDrawerState(
 function normalizePollState(raw: Partial<PollState> | undefined): PollState {
   const defaults = createEmptyPoll();
   if (!raw || typeof raw !== "object") return defaults;
-  return {
-    ...defaults,
-    ...raw,
-    choices: Array.isArray(raw.choices) && raw.choices.length >= 2
+  const choices =
+    Array.isArray(raw.choices) && raw.choices.length >= 2
       ? raw.choices.map((c, i) => ({
           id: c.id ?? String.fromCharCode(97 + i),
           text: c.text ?? `Option ${i + 1}`,
           votes: typeof c.votes === "number" ? c.votes : 0,
         }))
-      : defaults.choices,
+      : defaults.choices;
+  const correctChoiceId =
+    typeof raw.correctChoiceId === "string" &&
+    choices.some((c) => c.id === raw.correctChoiceId)
+      ? raw.correctChoiceId
+      : null;
+  return {
+    ...defaults,
+    ...raw,
+    choices,
     status: raw.status ?? "idle",
     voteLog: Array.isArray(raw.voteLog)
       ? raw.voteLog
@@ -375,6 +382,9 @@ function normalizePollState(raw: Partial<PollState> | undefined): PollState {
             platform: typeof entry.platform === "string" ? entry.platform : "",
           }))
       : [],
+    correctChoiceId,
+    correctAnswerRevealed: Boolean(raw.correctAnswerRevealed) && !!correctChoiceId,
+    showPercentages: raw.showPercentages !== false,
   };
 }
 
@@ -393,6 +403,8 @@ function normalizePollHistory(
         choices: item.choices,
         status: item.status,
         voteLog: item.voteLog,
+        correctChoiceId: item.correctChoiceId,
+        correctAnswerRevealed: item.correctAnswerRevealed,
       });
       return {
         id: poll.id,
@@ -404,6 +416,8 @@ function normalizePollHistory(
             ? item.closedAt
             : new Date(0).toISOString(),
         voteLog: poll.voteLog,
+        correctChoiceId: poll.correctChoiceId,
+        correctAnswerRevealed: poll.correctAnswerRevealed,
       };
     })
     .filter((entry): entry is PollHistoryEntry => entry != null)
@@ -877,7 +891,12 @@ export function normalizeSuiteState(
       },
       showTeamScores: raw.feud?.showTeamScores ?? true,
       showAnswerScores: raw.feud?.showAnswerScores ?? true,
-      awardTeam: raw.feud?.awardTeam === "right" ? "right" : "left",
+      awardTeam:
+        raw.feud?.awardTeam === "right"
+          ? "right"
+          : raw.feud?.awardTeam === "none"
+            ? "none"
+            : "left",
       rounds: raw.feud?.rounds?.length
         ? raw.feud.rounds
         : createSampleFeudGame().rounds,

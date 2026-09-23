@@ -30,6 +30,9 @@ export function PlayerPollOverlay({
   const total = poll.choices.reduce((s, c) => s + c.votes, 0);
   const showResults = poll.status === "results" || poll.status === "closed";
   const canVote = poll.status === "open" && !voted && !checkingVote;
+  const showCorrect =
+    poll.correctAnswerRevealed && Boolean(poll.correctChoiceId);
+  const showPercentages = poll.showPercentages !== false && showResults;
 
   return (
     <div className="flex h-full w-full flex-col overflow-auto bg-transparent px-4 py-8">
@@ -40,7 +43,11 @@ export function PlayerPollOverlay({
             ? voted
               ? "Vote recorded"
               : "Live poll"
-            : "Poll results"}
+            : showCorrect
+              ? "Correct answer"
+              : showPercentages
+                ? "Poll results"
+                : "Poll closed"}
         </p>
         <h1 className="mt-2 text-2xl font-bold text-white sm:text-3xl">
           {question}
@@ -68,35 +75,50 @@ export function PlayerPollOverlay({
           </p>
         ) : (
           <ul className="mt-8 w-full space-y-3">
-            {poll.choices.map((choice) => (
-              <li key={choice.id}>
-                <div className="flex items-center justify-center gap-4 text-white">
-                  <span>{choice.text}</span>
-                  {showResults && (
-                    <span className="font-bold tabular-nums">
-                      {total > 0
-                        ? Math.round((choice.votes / total) * 100)
-                        : 0}
-                      %
+            {poll.choices.map((choice) => {
+              const isCorrect =
+                showCorrect && choice.id === poll.correctChoiceId;
+              return (
+                <li key={choice.id}>
+                  <div
+                    className={`flex items-center justify-center gap-4 ${
+                      isCorrect
+                        ? "font-semibold text-emerald-300"
+                        : "text-white"
+                    }`}
+                  >
+                    <span>
+                      {choice.text}
+                      {isCorrect ? " ✓" : ""}
                     </span>
-                  )}
-                </div>
-                {showResults && (
-                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-teal-100">
-                    <div
-                      className="mx-auto h-full rounded-full bg-teal-500 transition-all duration-500"
-                      style={{
-                        width: `${
-                          total > 0
-                            ? Math.round((choice.votes / total) * 100)
-                            : 0
-                        }%`,
-                      }}
-                    />
+                    {showPercentages && (
+                      <span className="font-bold tabular-nums">
+                        {total > 0
+                          ? Math.round((choice.votes / total) * 100)
+                          : 0}
+                        %
+                      </span>
+                    )}
                   </div>
-                )}
-              </li>
-            ))}
+                  {showPercentages && (
+                    <div className="mt-1 h-2 overflow-hidden rounded-full bg-teal-100">
+                      <div
+                        className={`mx-auto h-full rounded-full transition-all duration-500 ${
+                          isCorrect ? "bg-emerald-500" : "bg-teal-500"
+                        }`}
+                        style={{
+                          width: `${
+                            total > 0
+                              ? Math.round((choice.votes / total) * 100)
+                              : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
 

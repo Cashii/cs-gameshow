@@ -113,8 +113,12 @@ export function FeudHostPanel() {
       const a = r.answers.find((x) => x.id === id);
       if (a && !a.revealed) {
         a.revealed = true;
-        a.awardedTo = all.awardTeam === "right" ? "right" : "left";
-        creditTeam(all, a.awardedTo, a.points || 0);
+        if (all.awardTeam === "none") {
+          a.awardedTo = undefined;
+        } else {
+          a.awardedTo = all.awardTeam === "right" ? "right" : "left";
+          creditTeam(all, a.awardedTo, a.points || 0);
+        }
         sounds.correct();
       }
     });
@@ -496,12 +500,11 @@ export function FeudHostPanel() {
                 >
                   Award to
                 </span>
-                {(["left", "right"] as const).map((side) => {
+                {(["left", "right", "none"] as const).map((side) => {
                   const selected = (feud.awardTeam ?? "left") === side;
-                  const name =
-                    side === "left"
-                      ? feud.leftTeam.name || "Left"
-                      : feud.rightTeam.name || "Right";
+                  let name = "No one";
+                  if (side === "left") name = feud.leftTeam.name || "Left";
+                  else if (side === "right") name = feud.rightTeam.name || "Right";
                   return (
                     <button
                       key={side}
@@ -516,12 +519,16 @@ export function FeudHostPanel() {
                         border: selected
                           ? side === "left"
                             ? "1px solid #fb7185"
-                            : "1px solid #60a5fa"
+                            : side === "right"
+                              ? "1px solid #60a5fa"
+                              : "1px solid #a3a3a3"
                           : "1px solid var(--color-neutral-700)",
                         background: selected
                           ? side === "left"
                             ? "#fb7185"
-                            : "#60a5fa"
+                            : side === "right"
+                              ? "#60a5fa"
+                              : "#737373"
                           : "var(--color-neutral-800)",
                         color: selected ? "#fff" : "var(--color-neutral-400)",
                         fontSize: 12,
@@ -572,7 +579,11 @@ export function FeudHostPanel() {
                       padding: "1px 0",
                       borderLeft: a.revealed
                         ? `3px solid ${
-                            a.awardedTo === "right" ? "#60a5fa" : "#fb7185"
+                            a.awardedTo === "right"
+                              ? "#60a5fa"
+                              : a.awardedTo === "left"
+                                ? "#fb7185"
+                                : "#a3a3a3"
                           }`
                         : "3px solid transparent",
                       opacity: dragAnswerId === a.id ? 0.7 : 1,
@@ -629,7 +640,9 @@ export function FeudHostPanel() {
                           color: a.revealed
                             ? a.awardedTo === "right"
                               ? "#2563eb"
-                              : "#e11d48"
+                              : a.awardedTo === "left"
+                                ? "#e11d48"
+                                : "var(--color-neutral-300)"
                             : "var(--color-neutral-400)",
                           textAlign: "center",
                         }}

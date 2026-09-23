@@ -100,54 +100,59 @@
   flex-shrink: 0;
 }
 
-.feud-audience .score-row.with-teams {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: end;
-}
-
-.feud-audience .score-row.teams-only {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: end;
-}
-
 .feud-audience .team-score {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-start;
+  gap: 12px;
   min-width: 0;
+  z-index: 10;
+  align-self: start;
+  padding-top: clamp(8px, 2vh, 28px);
 }
 
 .feud-audience .team-score-left {
-  justify-self: start;
+  justify-self: stretch;
+  padding-right: 4px;
 }
 
 .feud-audience .team-score-right {
-  justify-self: end;
+  justify-self: stretch;
+  padding-left: 4px;
 }
 
 .feud-audience .team-score-name {
-  font-size: clamp(24px, min(3vw, 3.8vh), 44px);
+  font-size: clamp(36px, min(4.5vw, 7vh), 72px);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: #f2f5f3;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
-  white-space: nowrap;
+  color: #ffffff;
+  text-shadow:
+    0 3px 0 rgba(0, 0, 0, 0.6),
+    0 0 16px rgba(0, 0, 0, 0.5);
+  -webkit-text-stroke: 0.6px rgba(0, 0, 0, 0.4);
+  paint-order: stroke fill;
+  white-space: normal;
   overflow: hidden;
-  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   max-width: 100%;
-  line-height: 1;
+  width: 100%;
+  line-height: 1.1;
+  text-align: center;
+  word-break: break-word;
 }
 
 .feud-audience .team-score-value {
   font-weight: 700;
   font-size: clamp(40px, min(5vw, 6vh), 80px);
-  min-width: 200px;
-  width: 200px;
-  padding: 12px 40px;
+  min-width: min(200px, 100%);
+  width: min(200px, 100%);
+  max-width: 100%;
+  padding: 12px clamp(12px, 2vw, 40px);
   text-align: center;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.05em;
@@ -214,6 +219,7 @@
   align-items: stretch;
   justify-items: stretch;
   justify-content: center;
+  min-width: 0;
 }
 
 .feud-audience .board-container {
@@ -227,6 +233,23 @@
   min-height: 0;
   z-index: 1;
   overflow-y: auto;
+}
+
+.feud-audience .board-container.with-side-teams {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 16vw) minmax(0, 1fr) minmax(7.5rem, 16vw);
+  align-items: start;
+  justify-items: stretch;
+  gap: clamp(8px, 1.5vw, 20px);
+  padding-left: clamp(12px, 2vw, 28px);
+  padding-right: clamp(12px, 2vw, 28px);
+  overflow: hidden;
+}
+
+.feud-audience .board-container.with-side-teams .board {
+  max-width: 100%;
+  justify-self: center;
+  align-self: stretch;
 }
 
 .feud-audience .lightbulb {
@@ -335,14 +358,21 @@
 }
 
 .feud-audience .tile-text {
+  min-width: 0;
   text-align: left;
-  font-size: clamp(32px, min(3.5vw, 5vh), 56px);
+  font-size: clamp(18px, min(2.5vw, 4vh), 56px);
   font-weight: 600;
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
   line-height: 1.15;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
   color: #f2f5f3;
   text-transform: uppercase;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
 }
 
 .feud-audience .tile.no-points .tile-text {
@@ -504,19 +534,26 @@
 }
 
 .host-embed .feud-audience .team-score-name {
-  font-size: clamp(10px, 1.2vw, 14px);
+  font-size: clamp(18px, 2.4vw, 32px);
 }
 
 .host-embed .feud-audience .team-score-value {
   font-size: clamp(18px, 2vw, 36px);
-  min-width: 100px;
-  width: 100px;
-  padding: 6px 20px;
+  min-width: min(100px, 100%);
+  width: min(100px, 100%);
+  padding: 6px 12px;
   border-width: 3px;
 }
 
 .host-embed .feud-audience .board-container {
   padding: 12px;
+}
+
+.host-embed .feud-audience .board-container.with-side-teams {
+  grid-template-columns: minmax(4.5rem, 14%) minmax(0, 1fr) minmax(4.5rem, 14%);
+  gap: 8px;
+  padding-left: 8px;
+  padding-right: 8px;
 }
 
 .host-embed .feud-audience .board {

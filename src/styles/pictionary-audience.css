@@ -130,7 +130,8 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   line-height: 1.12;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: normal;
   white-space: pre-wrap;
   text-transform: uppercase;
   color: #fffef6;
@@ -158,11 +159,16 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: clamp(0.35rem, 1.2vw, 0.85rem) clamp(0.28rem, 1vw, 0.7rem);
+  column-gap: clamp(1.1rem, 3.2vw, 2.4rem);
+  row-gap: clamp(0.45rem, 1.4vw, 1rem);
 }
 
-.pict-hint-gap {
-  width: clamp(0.7rem, 2vw, 1.6rem);
+.pict-hint-word {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: clamp(0.28rem, 1vw, 0.7rem);
+  max-width: 100%;
 }
 
 .pict-hint-tile {

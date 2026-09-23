@@ -125,6 +125,59 @@ export function PollHostPanel() {
           >
             Clear poll
           </button>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={poll.showPercentages !== false}
+            aria-label="Toggle live percentages"
+            disabled={loading}
+            onClick={() =>
+              void runAction({
+                action: "setShowPercentages",
+                showPercentages: poll.showPercentages === false,
+              })
+            }
+            className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-40 ${
+              poll.showPercentages !== false ? "bg-sky-500" : "bg-neutral-500"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                poll.showPercentages !== false
+                  ? "translate-x-5"
+                  : "translate-x-0"
+              }`}
+            />
+          </button>
+          <span
+            className={`text-sm font-semibold ${
+              poll.showPercentages !== false
+                ? "text-sky-300"
+                : "text-neutral-400"
+            }`}
+          >
+            {poll.showPercentages !== false
+              ? "Percentages shown"
+              : "Percentages hidden"}
+          </span>
+          {poll.status !== "idle" && poll.correctChoiceId ? (
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() =>
+                void runAction({
+                  action: poll.correctAnswerRevealed
+                    ? "hideCorrectAnswer"
+                    : "revealCorrectAnswer",
+                })
+              }
+              className="inline-flex h-10 items-center rounded-md border border-amber-500 bg-amber-600 px-4 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-50"
+            >
+              {poll.correctAnswerRevealed
+                ? "Hide correct answer"
+                : "Reveal correct answer"}
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -217,16 +270,48 @@ export function PollHostPanel() {
               <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                 Live tally
               </span>
+              <p className="mt-1 text-xs text-neutral-500">
+                Optional: mark the correct choice, then reveal it on the big
+                screen.
+              </p>
               <ul className="mt-1.5 space-y-1.5 text-sm">
-                {poll.choices.map((c) => (
-                  <li
-                    key={c.id}
-                    className="flex items-center justify-between gap-3 text-neutral-300"
-                  >
-                    <span className="truncate">{c.text}</span>
-                    <strong className="tabular-nums text-white">{c.votes}</strong>
-                  </li>
-                ))}
+                {poll.choices.map((c) => {
+                  const isCorrect = poll.correctChoiceId === c.id;
+                  return (
+                    <li
+                      key={c.id}
+                      className={`flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 ${
+                        isCorrect
+                          ? "bg-emerald-950/50 text-emerald-100"
+                          : "text-neutral-300"
+                      }`}
+                    >
+                      <span className="min-w-0 truncate">{c.text}</span>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <strong className="tabular-nums text-white">
+                          {c.votes}
+                        </strong>
+                        <button
+                          type="button"
+                          disabled={loading}
+                          onClick={() =>
+                            void runAction({
+                              action: "setCorrectChoice",
+                              choiceId: isCorrect ? null : c.id,
+                            })
+                          }
+                          className={`rounded-md px-2 py-1 text-xs font-semibold disabled:opacity-40 ${
+                            isCorrect
+                              ? "bg-emerald-600 text-white"
+                              : "border border-neutral-600 text-neutral-300 hover:bg-neutral-800"
+                          }`}
+                        >
+                          {isCorrect ? "Correct" : "Mark correct"}
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
@@ -330,17 +415,26 @@ export function PollHostPanel() {
                   {open ? (
                     <div className="space-y-3 border-t border-neutral-800 px-4 py-3">
                       <ul className="space-y-1 text-sm text-neutral-300">
-                        {entry.choices.map((choice) => (
-                          <li
-                            key={choice.id}
-                            className="flex justify-between gap-3"
-                          >
-                            <span className="truncate">{choice.text}</span>
-                            <strong className="tabular-nums text-white">
-                              {choice.votes}
-                            </strong>
-                          </li>
-                        ))}
+                        {entry.choices.map((choice) => {
+                          const isCorrect =
+                            entry.correctChoiceId === choice.id;
+                          return (
+                            <li
+                              key={choice.id}
+                              className={`flex justify-between gap-3 ${
+                                isCorrect ? "font-semibold text-emerald-300" : ""
+                              }`}
+                            >
+                              <span className="truncate">
+                                {choice.text}
+                                {isCorrect ? " ✓" : ""}
+                              </span>
+                              <strong className="tabular-nums text-white">
+                                {choice.votes}
+                              </strong>
+                            </li>
+                          );
+                        })}
                       </ul>
                       {entry.voteLog.length === 0 ? (
                         <p className="text-sm text-neutral-500">No vote log saved.</p>

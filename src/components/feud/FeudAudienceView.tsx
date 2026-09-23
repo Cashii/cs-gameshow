@@ -161,23 +161,16 @@ export function FeudAudienceView({
         </div>
       )}
 
-      {(showTeamScores || showAnswerScores) && (
-        <div
-          className={`score-row${
-            showTeamScores && showAnswerScores
-              ? " with-teams"
-              : showTeamScores
-                ? " teams-only"
-                : ""
-          }`}
-        >
-          {showTeamScores && <TeamScore team={leftTeam} side="left" />}
-          {showAnswerScores && <RoundScore value={total} />}
-          {showTeamScores && <TeamScore team={rightTeam} side="right" />}
+      {showAnswerScores && (
+        <div className="score-row">
+          <RoundScore value={total} />
         </div>
       )}
 
-      <div className="board-container">
+      <div
+        className={`board-container${showTeamScores ? " with-side-teams" : ""}`}
+      >
+        {showTeamScores && <TeamScore team={leftTeam} side="left" />}
         <div className="board">
           {reordered.map((a) => {
             const originalIndex = round.answers.findIndex((ans) => ans.id === a.id);
@@ -192,6 +185,7 @@ export function FeudAudienceView({
             );
           })}
         </div>
+        {showTeamScores && <TeamScore team={rightTeam} side="right" />}
       </div>
 
       {strikePulse != null && strikePulse > 0 && (

@@ -15,10 +15,7 @@ import {
 import { createRaceSampler, raceProgress } from "@/lib/derby/race";
 import { DerbyHorse } from "@/components/derby/DerbyHorse";
 import { DerbyToy } from "@/components/derby/DerbyToy";
-import {
-  DerbyDiscoBall,
-  DerbyWonderbarBrand,
-} from "@/components/derby/DerbyWonderbarBrand";
+import { DerbyDiscoBall } from "@/components/derby/DerbyWonderbarBrand";
 import { PlayerVoteQr } from "@/components/poll/PlayerVoteQr";
 import "@/styles/derby-audience.css";
 
@@ -137,11 +134,9 @@ export function DerbyAudienceView({
       )}
 
       <header className="derby-chrome">
-        {theme === "wonderbar" ? (
-          <DerbyWonderbarBrand />
-        ) : (
-          <h1 className="derby-title">Kentucky Derby</h1>
-        )}
+        <h1 className="derby-title">
+          {theme === "wonderbar" ? "Dildo Derby" : "Kentucky Derby"}
+        </h1>
       </header>
 
       <div className="derby-track-wrap">

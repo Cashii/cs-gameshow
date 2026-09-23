@@ -27,24 +27,38 @@ function HintBoard({
   hiddenIndexes,
 }: Readonly<{ word: string; hiddenIndexes: number[] }>) {
   const hidden = new Set(hiddenIndexes);
+  const segments: { start: number; text: string }[] = [];
+  let cursor = 0;
+  while (cursor < word.length) {
+    if (word[cursor] === " ") {
+      cursor += 1;
+      continue;
+    }
+    const start = cursor;
+    while (cursor < word.length && word[cursor] !== " ") cursor += 1;
+    segments.push({ start, text: word.slice(start, cursor) });
+  }
+
   return (
     <div className="pict-hint" aria-label="Hint">
-      {word.split("").map((char, index) => {
-        if (char === " ") {
-          return <span key={`gap-${index}-space`} className="pict-hint-gap" />;
-        }
-        const isHidden = hidden.has(index);
-        return (
-          <span
-            key={`ch-${index}-${char}`}
-            className="pict-hint-tile"
-            style={{ animationDelay: `${index * 45}ms` }}
-            data-hidden={isHidden ? "true" : "false"}
-          >
-            {char}
-          </span>
-        );
-      })}
+      {segments.map((segment, segmentIndex) => (
+        <span key={`word-${segment.start}-${segmentIndex}`} className="pict-hint-word">
+          {segment.text.split("").map((char, offset) => {
+            const index = segment.start + offset;
+            const isHidden = hidden.has(index);
+            return (
+              <span
+                key={`ch-${index}-${char}`}
+                className="pict-hint-tile"
+                style={{ animationDelay: `${index * 45}ms` }}
+                data-hidden={isHidden ? "true" : "false"}
+              >
+                {char}
+              </span>
+            );
+          })}
+        </span>
+      ))}
     </div>
   );
 }

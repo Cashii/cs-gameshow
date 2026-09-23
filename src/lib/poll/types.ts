@@ -20,6 +20,12 @@ export type PollState = {
   choices: PollChoice[];
   status: "idle" | "open" | "closed" | "results";
   voteLog: PollVoteLogEntry[];
+  /** Operator-selected correct choice, if this poll has one. */
+  correctChoiceId: string | null;
+  /** When true, spectator/player highlight the correct choice. */
+  correctAnswerRevealed: boolean;
+  /** When false, hide percentage bars on spectator and player screens. */
+  showPercentages: boolean;
 };
 
 export type PollHistoryEntry = {
@@ -29,6 +35,8 @@ export type PollHistoryEntry = {
   status: PollState["status"];
   closedAt: string;
   voteLog: PollVoteLogEntry[];
+  correctChoiceId: string | null;
+  correctAnswerRevealed: boolean;
 };
 
 export const MAX_POLL_HISTORY = 20;
@@ -43,6 +51,9 @@ export function createDefaultPollState(): PollState {
     ],
     status: "idle",
     voteLog: [],
+    correctChoiceId: null,
+    correctAnswerRevealed: false,
+    showPercentages: true,
   };
 }
 
@@ -74,6 +85,8 @@ export function createPollHistoryEntry(
     status: poll.status,
     closedAt,
     voteLog: (poll.voteLog ?? []).slice(0, 250),
+    correctChoiceId: poll.correctChoiceId ?? null,
+    correctAnswerRevealed: Boolean(poll.correctAnswerRevealed),
   };
 }
 

@@ -31,13 +31,15 @@ function CurtainedItem({
         itemRevealed ? label || "Item" : "Item hidden behind curtain"
       }
     >
-      <ItemPhoto
-        src={item.imageUrl}
-        alt={itemRevealed ? label || "Item" : ""}
-        fit={item.photoFit}
-      />
+      <div className="price-order-photo-wrap">
+        <ItemPhoto
+          src={item.imageUrl}
+          alt={itemRevealed ? label || "Item" : ""}
+          fit={item.photoFit}
+        />
+        <ItemCurtain open={itemRevealed} />
+      </div>
       <p className="price-item-label">{label || "\u00a0"}</p>
-      <ItemCurtain open={itemRevealed} />
     </div>
   );
 }
@@ -97,19 +99,25 @@ export function PriceOrderAudienceView({
                 <span className="price-order-rank">#{index + 1}</span>
                 {item ? (
                   <div className="price-order-piece" data-price-move={item.id}>
-                    <CurtainedItem item={item} />
-                    <PriceTag
-                      price={item.price}
-                      revealed={item.priceRevealed}
-                    />
+                    <div className="price-order-stack">
+                      <CurtainedItem item={item} />
+                      <PriceTag
+                        price={item.price}
+                        revealed={item.priceRevealed}
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="price-order-piece">
-                    <div className="price-photo-frame">
-                      <div className="price-photo-missing">{index + 1}</div>
+                    <div className="price-order-stack">
+                      <div className="price-order-photo-wrap">
+                        <div className="price-photo-frame">
+                          <div className="price-photo-missing">{index + 1}</div>
+                        </div>
+                      </div>
+                      <p className="price-item-label">{"\u00a0"}</p>
+                      <div className="price-tag-spacer" aria-hidden />
                     </div>
-                    <p className="price-item-label">{"\u00a0"}</p>
-                    <div className="price-tag-spacer" aria-hidden />
                   </div>
                 )}
               </div>

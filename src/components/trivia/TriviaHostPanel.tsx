@@ -120,14 +120,7 @@ export function TriviaHostPanel() {
         ? trivia.options
         : [trivia.optionA || "True", trivia.optionB || "False"],
     );
-  }, [
-    trivia.roundIndex,
-    trivia.status,
-    trivia.question,
-    trivia.options,
-    trivia.optionA,
-    trivia.optionB,
-  ]);
+  }, [trivia.roundIndex, trivia.status]);
 
   const statusLabel = triviaStatusLabel(
     trivia.status,
@@ -168,10 +161,12 @@ export function TriviaHostPanel() {
             ? entry.options
             : [entry.optionA, entry.optionB],
         );
-        return createTriviaQueuedQuestion({
+        return {
           ...entry,
           options: nextOptions,
-        });
+          optionA: nextOptions[0] ?? entry.optionA,
+          optionB: nextOptions[1] ?? entry.optionB,
+        };
       }),
     );
   };
@@ -185,6 +180,21 @@ export function TriviaHostPanel() {
     setQueueDraft((current) => {
       void runAction({ action: "saveQueue", queue: current });
       return current;
+    });
+  };
+
+  const persistQuestionDraft = () => {
+    if (trivia.status !== "idle") return;
+    setQuestion((currentQuestion) => {
+      setOptions((currentOptions) => {
+        void runAction({
+          action: "setup",
+          question: currentQuestion,
+          options: currentOptions,
+        });
+        return currentOptions;
+      });
+      return currentQuestion;
     });
   };
 
@@ -247,6 +257,7 @@ export function TriviaHostPanel() {
             <input
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
+              onBlur={persistQuestionDraft}
               placeholder="True or false: …"
               autoFocus={settingUpNext}
               disabled={trivia.status === "open" || trivia.status === "locked"}
@@ -286,6 +297,7 @@ export function TriviaHostPanel() {
                         ),
                       )
                     }
+                    onBlur={persistQuestionDraft}
                     disabled={answersLocked}
                     className="mt-1.5 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-white disabled:opacity-60"
                   />

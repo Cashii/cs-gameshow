@@ -28,5 +28,5 @@ export type FeudGameState = {
   showTeamScores: boolean;
   showAnswerScores: boolean;
   /** Which team receives points when an answer is revealed. */
-  awardTeam: "left" | "right";
+  awardTeam: "left" | "right" | "none";
 };

@@ -10,10 +10,16 @@ export function PollSpectatorOverlay({
   const total = poll.choices.reduce((s, c) => s + c.votes, 0);
   const live = poll.status === "open";
   const idle = poll.status === "idle";
+  const showCorrect =
+    poll.correctAnswerRevealed && Boolean(poll.correctChoiceId);
+  const showPercentages = poll.showPercentages !== false && !idle;
 
   let statusLabel = "Poll results";
   if (idle) statusLabel = "Get ready";
+  else if (live && !showPercentages) statusLabel = "Voting open";
   else if (live) statusLabel = "Live results";
+  else if (!showPercentages) statusLabel = "Choices";
+  else if (showCorrect) statusLabel = "Correct answer";
 
   return (
     <div className="relative z-10 h-full w-full overflow-hidden bg-[#0a0a0a] text-white">
@@ -47,12 +53,23 @@ export function PollSpectatorOverlay({
         <ul className="mx-auto mt-8 max-h-[52%] w-full max-w-6xl shrink-0 space-y-6 overflow-auto">
           {poll.choices.map((choice) => {
             const pct = total > 0 ? Math.round((choice.votes / total) * 100) : 0;
+            const isCorrect = showCorrect && choice.id === poll.correctChoiceId;
             return (
               <li
                 key={choice.id}
-                className="rounded-4xl border border-white/12 bg-black/35 px-6 py-5 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-sm"
+                className={`rounded-4xl border px-6 py-5 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-sm ${
+                  isCorrect
+                    ? "border-emerald-400/80 bg-emerald-500/20 ring-2 ring-emerald-300/50"
+                    : showCorrect
+                      ? "border-white/8 bg-black/25 opacity-70"
+                      : "border-white/12 bg-black/35"
+                }`}
               >
-                <div className="mb-3 flex items-end justify-between gap-6 text-white">
+                <div
+                  className={`flex items-end justify-between gap-6 text-white ${
+                    showPercentages ? "mb-3" : ""
+                  }`}
+                >
                   <span
                     className="min-w-0 font-semibold"
                     style={{
@@ -61,23 +78,34 @@ export function PollSpectatorOverlay({
                     }}
                   >
                     {choice.text}
+                    {isCorrect ? " ✓" : ""}
                   </span>
-                  <span
-                    className="shrink-0 font-bold tabular-nums text-amber-300"
-                    style={{
-                      fontSize: "clamp(2rem, 5vw, 5.5rem)",
-                      lineHeight: 1,
-                    }}
-                  >
-                    {idle ? "—" : `${pct}%`}
-                  </span>
+                  {showPercentages ? (
+                    <span
+                      className={`shrink-0 font-bold tabular-nums ${
+                        isCorrect ? "text-emerald-300" : "text-amber-300"
+                      }`}
+                      style={{
+                        fontSize: "clamp(2rem, 5vw, 5.5rem)",
+                        lineHeight: 1,
+                      }}
+                    >
+                      {`${pct}%`}
+                    </span>
+                  ) : null}
                 </div>
-                <div className="h-5 overflow-hidden rounded-full bg-white/10 sm:h-7">
-                  <div
-                    className="bg-linear-to-r h-full rounded-full from-teal-400 via-cyan-400 to-amber-300 transition-all duration-500 ease-out"
-                    style={{ width: idle ? "0%" : `${pct}%` }}
-                  />
-                </div>
+                {showPercentages ? (
+                  <div className="h-5 overflow-hidden rounded-full bg-white/10 sm:h-7">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ease-out ${
+                        isCorrect
+                          ? "bg-linear-to-r from-emerald-400 via-teal-400 to-lime-300"
+                          : "bg-linear-to-r from-teal-400 via-cyan-400 to-amber-300"
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                ) : null}
               </li>
             );
           })}

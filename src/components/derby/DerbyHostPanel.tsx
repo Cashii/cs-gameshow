@@ -45,6 +45,8 @@ export function DerbyHostPanel() {
   const racers = getDerbyRacers(theme, nameOverrides);
   const [now, setNow] = useState(() => Date.now());
   const racing = game.phase === "racing";
+  const finished = game.phase === "finished";
+  const canPickWinner = game.phase === "idle";
   const spectatorShowingDerby = state.spectatorGame === "derby";
 
   useEffect(() => {
@@ -66,7 +68,7 @@ export function DerbyHostPanel() {
   }, [game.phase, game.startedAt, game.durationMs, game.sequence, updateDerby]);
 
   const pickWinner = (id: DerbyRacerId) => {
-    if (racing) return;
+    if (!canPickWinner) return;
     updateDerby((prev) => ({ ...prev, winnerId: id }));
   };
 
@@ -290,7 +292,7 @@ export function DerbyHostPanel() {
                 >
                   <button
                     type="button"
-                    disabled={racing}
+                    disabled={!canPickWinner}
                     onClick={() => pickWinner(racer.id)}
                     className="w-full disabled:cursor-not-allowed disabled:opacity-60"
                   >
@@ -333,8 +335,18 @@ export function DerbyHostPanel() {
           </div>
         </div>
 
+        {finished ? (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            Race finished
+            {picked ? ` — ${picked.name} wins` : ""}. Winner picks are locked.
+            Use <span className="font-semibold">Race again</span> for a new
+            round, or <span className="font-semibold">Reset</span> to clear the
+            winner.
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap gap-3">
-          {game.phase === "finished" ? (
+          {finished ? (
             <button
               type="button"
               onClick={raceAgain}
