@@ -26,7 +26,25 @@ export type PollState = {
   correctAnswerRevealed: boolean;
   /** When false, hide percentage bars on spectator and player screens. */
   showPercentages: boolean;
+  /** Spectator question/answer text size multiplier. */
+  scale: number;
 };
+
+export const DEFAULT_POLL_SCALE = 1;
+export const MIN_POLL_SCALE = 0.5;
+export const MAX_POLL_SCALE = 2.5;
+export const POLL_SCALE_STEP = 0.1;
+
+export function clampPollScale(value: unknown): number {
+  const n =
+    typeof value === "number" && Number.isFinite(value)
+      ? value
+      : DEFAULT_POLL_SCALE;
+  return Math.min(
+    MAX_POLL_SCALE,
+    Math.max(MIN_POLL_SCALE, Math.round(n * 10) / 10),
+  );
+}
 
 export type PollHistoryEntry = {
   id: string;
@@ -54,6 +72,7 @@ export function createDefaultPollState(): PollState {
     correctChoiceId: null,
     correctAnswerRevealed: false,
     showPercentages: true,
+    scale: DEFAULT_POLL_SCALE,
   };
 }
 

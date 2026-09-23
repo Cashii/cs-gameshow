@@ -1,8 +1,15 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Minus, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import {
+  clampPollScale,
+  DEFAULT_POLL_SCALE,
+  MAX_POLL_SCALE,
+  MIN_POLL_SCALE,
+  POLL_SCALE_STEP,
+} from "@/lib/poll/types";
 import { useSuite } from "@/lib/suite-provider";
 
 function formatVoteTime(iso: string): string {
@@ -16,8 +23,9 @@ function formatVoteTime(iso: string): string {
 }
 
 export function PollHostPanel() {
-  const { state, refreshSnapshot } = useSuite();
+  const { state, refreshSnapshot, updatePoll } = useSuite();
   const poll = state.poll;
+  const scale = clampPollScale(poll.scale);
   const [question, setQuestion] = useState(poll.question || "");
   const [choices, setChoices] = useState(
     poll.choices.length >= 2
@@ -55,6 +63,13 @@ export function PollHostPanel() {
     }
   };
 
+  const setScale = (next: number) => {
+    updatePoll((prev) => ({
+      ...prev,
+      scale: clampPollScale(next),
+    }));
+  };
+
   const choicePayload = () =>
     choices.map((text, i) => ({
       id: String.fromCharCode(97 + i),
@@ -86,98 +101,137 @@ export function PollHostPanel() {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-            Spectator actions
-          </span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={votingOpen}
-            aria-label="Toggle voting"
-            disabled={loading || (!votingOpen && !question.trim())}
-            onClick={() => {
-              if (votingOpen) void runAction({ action: "close" });
-              else handleOpen();
-            }}
-            className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-40 ${
-              votingOpen ? "bg-emerald-500" : "bg-neutral-500"
-            }`}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
-                votingOpen ? "translate-x-5" : "translate-x-0"
+        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+              Spectator actions
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={votingOpen}
+              aria-label="Toggle voting"
+              disabled={loading || (!votingOpen && !question.trim())}
+              onClick={() => {
+                if (votingOpen) void runAction({ action: "close" });
+                else handleOpen();
+              }}
+              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-40 ${
+                votingOpen ? "bg-emerald-500" : "bg-neutral-500"
               }`}
-            />
-          </button>
-          <span
-            className={`text-sm font-semibold ${
-              votingOpen ? "text-emerald-400" : "text-red-400"
-            }`}
-          >
-            {votingOpen ? "Voting Live" : "Voting Closed"}
-          </span>
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => runAction({ action: "clear" })}
-            className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
-          >
-            Clear poll
-          </button>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={poll.showPercentages !== false}
-            aria-label="Toggle live percentages"
-            disabled={loading}
-            onClick={() =>
-              void runAction({
-                action: "setShowPercentages",
-                showPercentages: poll.showPercentages === false,
-              })
-            }
-            className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-40 ${
-              poll.showPercentages !== false ? "bg-sky-500" : "bg-neutral-500"
-            }`}
-          >
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                  votingOpen ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
             <span
-              className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
-                poll.showPercentages !== false
-                  ? "translate-x-5"
-                  : "translate-x-0"
+              className={`text-sm font-semibold ${
+                votingOpen ? "text-emerald-400" : "text-red-400"
               }`}
-            />
-          </button>
-          <span
-            className={`text-sm font-semibold ${
-              poll.showPercentages !== false
-                ? "text-sky-300"
-                : "text-neutral-400"
-            }`}
-          >
-            {poll.showPercentages !== false
-              ? "Percentages shown"
-              : "Percentages hidden"}
-          </span>
-          {poll.status !== "idle" && poll.correctChoiceId ? (
+            >
+              {votingOpen ? "Voting Live" : "Voting Closed"}
+            </span>
             <button
               type="button"
               disabled={loading}
+              onClick={() => runAction({ action: "clear" })}
+              className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
+            >
+              Clear poll
+            </button>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={poll.showPercentages !== false}
+              aria-label="Toggle live percentages"
+              disabled={loading}
               onClick={() =>
                 void runAction({
-                  action: poll.correctAnswerRevealed
-                    ? "hideCorrectAnswer"
-                    : "revealCorrectAnswer",
+                  action: "setShowPercentages",
+                  showPercentages: poll.showPercentages === false,
                 })
               }
-              className="inline-flex h-10 items-center rounded-md border border-amber-500 bg-amber-600 px-4 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-50"
+              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-40 ${
+                poll.showPercentages !== false ? "bg-sky-500" : "bg-neutral-500"
+              }`}
             >
-              {poll.correctAnswerRevealed
-                ? "Hide correct answer"
-                : "Reveal correct answer"}
+              <span
+                className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                  poll.showPercentages !== false
+                    ? "translate-x-5"
+                    : "translate-x-0"
+                }`}
+              />
             </button>
-          ) : null}
+            <span
+              className={`text-sm font-semibold ${
+                poll.showPercentages !== false
+                  ? "text-sky-300"
+                  : "text-neutral-400"
+              }`}
+            >
+              {poll.showPercentages !== false
+                ? "Percentages shown"
+                : "Percentages hidden"}
+            </span>
+            {poll.status !== "idle" && poll.correctChoiceId ? (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() =>
+                  void runAction({
+                    action: poll.correctAnswerRevealed
+                      ? "hideCorrectAnswer"
+                      : "revealCorrectAnswer",
+                  })
+                }
+                className="inline-flex h-10 items-center rounded-md border border-amber-500 bg-amber-600 px-4 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-50"
+              >
+                {poll.correctAnswerRevealed
+                  ? "Hide correct answer"
+                  : "Reveal correct answer"}
+              </button>
+            ) : null}
+          </div>
+
+          <div className="ml-auto flex flex-wrap items-center gap-3">
+            <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+              Text size
+            </span>
+            <span className="min-w-12 text-right text-sm font-semibold tabular-nums text-neutral-300">
+              {Math.round(scale * 100)}%
+            </span>
+            <div className="inline-flex items-center gap-1">
+              <button
+                type="button"
+                aria-label="Smaller poll text"
+                disabled={scale <= MIN_POLL_SCALE}
+                onClick={() => setScale(scale - POLL_SCALE_STEP)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+              >
+                <Minus size={18} />
+              </button>
+              <button
+                type="button"
+                aria-label="Larger poll text"
+                disabled={scale >= MAX_POLL_SCALE}
+                onClick={() => setScale(scale + POLL_SCALE_STEP)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+              >
+                <Plus size={18} />
+              </button>
+              <button
+                type="button"
+                disabled={scale === DEFAULT_POLL_SCALE}
+                onClick={() => setScale(DEFAULT_POLL_SCALE)}
+                className="ml-1 inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

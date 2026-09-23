@@ -159,6 +159,7 @@ export function DerbyHostPanel() {
   const picked = game.winnerId
     ? getDerbyRacer(game.winnerId, theme, nameOverrides)
     : null;
+  const winningVotes = picked ? (game.voteTallies?.[picked.id] ?? 0) : 0;
   const racerNoun = theme === "wonderbar" ? "Toy" : "Horse";
   const sizeLabel = theme === "wonderbar" ? "Toy size" : "Horse size";
   const racerScale = clampDerbyRacerScale(game.racerScale);
@@ -176,7 +177,9 @@ export function DerbyHostPanel() {
       ? `Racing — ${picked.name} (hidden from audience)`
       : "Racing";
   } else if (game.phase === "finished") {
-    statusText = picked ? `Finished — ${picked.name} wins` : "Finished";
+    statusText = picked
+      ? `Finished — ${picked.name} wins (${winningVotes} ${winningVotes === 1 ? "vote" : "votes"})`
+      : "Finished";
   }
 
   return (
@@ -338,10 +341,12 @@ export function DerbyHostPanel() {
         {finished ? (
           <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
             Race finished
-            {picked ? ` — ${picked.name} wins` : ""}. Winner picks are locked.
-            Use <span className="font-semibold">Race again</span> for a new
-            round, or <span className="font-semibold">Reset</span> to clear the
-            winner.
+            {picked
+              ? ` — ${picked.name} wins with ${winningVotes} ${winningVotes === 1 ? "vote" : "votes"}`
+              : ""}
+            . Winner picks are locked. Use{" "}
+            <span className="font-semibold">Race again</span> for a new round, or{" "}
+            <span className="font-semibold">Reset</span> to clear the winner.
           </div>
         ) : null}
 

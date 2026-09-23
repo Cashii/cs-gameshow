@@ -1,6 +1,6 @@
 "use client";
 
-import type { PollState } from "@/lib/poll/types";
+import { clampPollScale, type PollState } from "@/lib/poll/types";
 import { PlayerVoteQr } from "@/components/poll/PlayerVoteQr";
 import { GameshowLogo } from "@/components/studio/GameshowLogo";
 
@@ -13,6 +13,7 @@ export function PollSpectatorOverlay({
   const showCorrect =
     poll.correctAnswerRevealed && Boolean(poll.correctChoiceId);
   const showPercentages = poll.showPercentages !== false && !idle;
+  const scale = clampPollScale(poll.scale);
 
   let statusLabel = "Poll results";
   if (idle) statusLabel = "Get ready";
@@ -42,7 +43,7 @@ export function PollSpectatorOverlay({
             className="mt-3 font-bold text-white"
             style={{
               fontFamily: "var(--font-oswald), Impact, sans-serif",
-              fontSize: "clamp(2.75rem, 7.5vw, 8rem)",
+              fontSize: `calc(clamp(2.75rem, 7.5vw, 8rem) * ${scale})`,
               lineHeight: 1.05,
             }}
           >
@@ -73,7 +74,7 @@ export function PollSpectatorOverlay({
                   <span
                     className="min-w-0 font-semibold"
                     style={{
-                      fontSize: "clamp(1.75rem, 4.2vw, 4.75rem)",
+                      fontSize: `calc(clamp(1.75rem, 4.2vw, 4.75rem) * ${scale})`,
                       lineHeight: 1.1,
                     }}
                   >
@@ -86,7 +87,7 @@ export function PollSpectatorOverlay({
                         isCorrect ? "text-emerald-300" : "text-amber-300"
                       }`}
                       style={{
-                        fontSize: "clamp(2rem, 5vw, 5.5rem)",
+                        fontSize: `calc(clamp(2rem, 5vw, 5.5rem) * ${scale})`,
                         lineHeight: 1,
                       }}
                     >

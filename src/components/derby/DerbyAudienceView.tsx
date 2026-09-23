@@ -113,6 +113,8 @@ export function DerbyAudienceView({
       ? getDerbyRacer(game.winnerId, theme, nameOverrides)
       : null;
   const racing = game.phase === "racing" && !showWinner;
+  const winningVotes =
+    winner != null ? (game.voteTallies?.[winner.id] ?? 0) : 0;
 
   return (
     <div
@@ -171,7 +173,10 @@ export function DerbyAudienceView({
 
       {winner && (
         <output className="derby-winner-banner" aria-live="polite">
-          {winner.name} wins
+          <span className="derby-winner-banner-title">{winner.name} wins</span>
+          <span className="derby-winner-banner-votes">
+            {winningVotes} {winningVotes === 1 ? "vote" : "votes"}
+          </span>
         </output>
       )}
 

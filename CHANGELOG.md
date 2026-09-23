@@ -1,5 +1,11 @@
 # Updates
 
+## September 23, 2026
+
+1. **Poll** — Use **Text size** (− / + / Reset) on the right side of the operator bar to shrink or enlarge the question and answers on the big screen (50%–250%).
+1. **Derby Race** — When a race finishes, the winner banner on the big screen shows how many phone votes that racer got. The operator status line shows the same count. Racer name tags sit at the top of each lane so toys and horses don’t cover them.
+1. **Wheel of Riches** — Keep a reusable **Phrase bank** of topics and phrases in a compact side-by-side list. Load any entry onto the board when you want (including replaying ones you already used). Save the current phrase into the bank, or update the bank entry that’s already on the board.
+
 ## September 22, 2026
 
 1. **Price Order** — Ranking slots grow to fill available space under the shelf; item curtains cover the photo and the item name; rank numbers are larger; photos and price tags stay matched without clipping.

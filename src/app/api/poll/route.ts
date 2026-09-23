@@ -7,6 +7,7 @@ import {
   ensureEvent,
 } from "@/lib/event/repository";
 import {
+  clampPollScale,
   createEmptyPoll,
   withArchivedPoll,
 } from "@/lib/poll/types";
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
     displayName?: string;
     userAgent?: string;
     showPercentages?: boolean;
+    scale?: number;
   };
 
   if (body.action === "vote") {
@@ -77,6 +79,7 @@ export async function POST(request: Request) {
             correctChoiceId: null,
             correctAnswerRevealed: false,
             showPercentages: event.poll?.showPercentages !== false,
+            scale: clampPollScale(event.poll?.scale),
           },
         }));
         return json(snapshot);
@@ -114,6 +117,7 @@ export async function POST(request: Request) {
               correctChoiceId: null,
               correctAnswerRevealed: false,
               showPercentages: prev.poll?.showPercentages !== false,
+              scale: clampPollScale(prev.poll?.scale),
             },
           };
         });
@@ -176,6 +180,13 @@ export async function POST(request: Request) {
         }));
         return json(snapshot);
       }
+      case "setScale": {
+        const snapshot = await updatePoll((prev) => ({
+          ...prev,
+          scale: clampPollScale(body.scale),
+        }));
+        return json(snapshot);
+      }
       case "clear": {
         const event = await ensureEvent();
         const archived = event.poll?.id
@@ -187,7 +198,11 @@ export async function POST(request: Request) {
           pollHistory: archived
             ? withArchivedPoll(prev.pollHistory, archived)
             : prev.pollHistory ?? [],
-          poll: createEmptyPoll(),
+          poll: {
+            ...createEmptyPoll(),
+            showPercentages: prev.poll?.showPercentages !== false,
+            scale: clampPollScale(prev.poll?.scale),
+          },
         }));
         return json(snapshot);
       }

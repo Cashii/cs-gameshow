@@ -1,6 +1,10 @@
 import { createSampleFeudGame } from "@/lib/feud/defaults";
 import type { FeudGameState } from "@/lib/feud/types";
-import { createDefaultWheelState, type WheelGameState } from "@/lib/wheel/types";
+import {
+  createDefaultWheelState,
+  normalizeWheelBank,
+  type WheelGameState,
+} from "@/lib/wheel/types";
 import {
   createDefaultLiveDrawerState,
   clampLiveDrawerNumberScale,
@@ -20,6 +24,7 @@ import {
   type TakeItPhase,
 } from "@/lib/take-it-or-leave-it/types";
 import {
+  clampPollScale,
   createEmptyPoll,
   MAX_POLL_HISTORY,
   type PollHistoryEntry,
@@ -385,6 +390,7 @@ function normalizePollState(raw: Partial<PollState> | undefined): PollState {
     correctChoiceId,
     correctAnswerRevealed: Boolean(raw.correctAnswerRevealed) && !!correctChoiceId,
     showPercentages: raw.showPercentages !== false,
+    scale: clampPollScale(raw.scale),
   };
 }
 
@@ -901,15 +907,34 @@ export function normalizeSuiteState(
         ? raw.feud.rounds
         : createSampleFeudGame().rounds,
     },
-    wheel: {
-      ...createDefaultWheelState(),
-      ...raw.wheel,
-      zoom: typeof raw.wheel?.zoom === "number" ? raw.wheel.zoom : 1,
-      showLetterLegend: raw.wheel?.showLetterLegend ?? true,
-      topic: typeof raw.wheel?.topic === "string" ? raw.wheel.topic : "",
-      wrongCount:
-        typeof raw.wheel?.wrongCount === "number" ? raw.wheel.wrongCount : 0,
-    },
+    wheel: (() => {
+      const rawWheel = (raw.wheel ?? {}) as Partial<WheelGameState> & {
+        queue?: unknown;
+        history?: unknown;
+        activeBankId?: unknown;
+      };
+      const {
+        queue: _legacyQueue,
+        history: _legacyHistory,
+        ...wheelRest
+      } = rawWheel;
+      const bank = normalizeWheelBank(rawWheel);
+      return {
+        ...createDefaultWheelState(),
+        ...wheelRest,
+        zoom: typeof rawWheel.zoom === "number" ? rawWheel.zoom : 1,
+        showLetterLegend: rawWheel.showLetterLegend ?? true,
+        topic: typeof rawWheel.topic === "string" ? rawWheel.topic : "",
+        wrongCount:
+          typeof rawWheel.wrongCount === "number" ? rawWheel.wrongCount : 0,
+        bank,
+        activeBankId:
+          typeof rawWheel.activeBankId === "string" &&
+          bank.some((item) => item.id === rawWheel.activeBankId)
+            ? rawWheel.activeBankId
+            : null,
+      };
+    })(),
     liveDrawer: normalizeLiveDrawerState(raw.liveDrawer ?? raw.draw),
     takeIt: normalizeTakeItState(raw.takeIt ?? raw.deal),
     poll: normalizePollState(raw.poll),
