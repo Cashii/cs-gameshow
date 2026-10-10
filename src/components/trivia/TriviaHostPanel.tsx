@@ -5,15 +5,20 @@ import { useSuite } from "@/lib/suite-provider";
 import {
   createTriviaQueuedQuestion,
   MAX_TRIVIA_OPTIONS,
+  mergeTriviaBank,
   MIN_TRIVIA_OPTIONS,
+  syncTriviaOptionsFields,
   triviaChoiceIdAt,
   triviaChoiceIndex,
   triviaChoiceLetter,
+  type TriviaBankQuestion,
   type TriviaChoiceId,
   type TriviaQueuedQuestion,
   type TriviaStatus,
 } from "@/lib/trivia/types";
+import { TriviaQuestionBank } from "@/components/trivia/TriviaQuestionBank";
 import { OperatorNotice } from "@/components/operator/OperatorNotice";
+import { uid } from "@/lib/utils";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 
 function triviaStatusLabel(
@@ -49,7 +54,7 @@ function triviaStatusClass(
 }
 
 export function TriviaHostPanel() {
-  const { state, refreshSnapshot } = useSuite();
+  const { state, refreshSnapshot, setState } = useSuite();
   const trivia = state.trivia;
   const spectatorLive = state.spectatorGame === "trivia";
   const [question, setQuestion] = useState(trivia.question || "");
@@ -202,7 +207,74 @@ export function TriviaHostPanel() {
   const history = trivia.history ?? [];
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto px-6 py-6">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <TriviaQuestionBank
+        questions={trivia.library ?? []}
+        canSaveCurrent={Boolean(question.trim())}
+        canSaveUpcoming={queue.some((item) => item.question.trim())}
+        onSaveCurrent={() => {
+          const synced = syncTriviaOptionsFields({ options });
+          const entry: TriviaBankQuestion = {
+            id: uid(),
+            question,
+            options: synced.options,
+            optionA: synced.optionA,
+            optionB: synced.optionB,
+          };
+          setState((prev) => ({
+            ...prev,
+            trivia: {
+              ...prev.trivia,
+              library: mergeTriviaBank(prev.trivia.library ?? [], [entry]),
+            },
+          }));
+        }}
+        onSaveUpcoming={() => {
+          const incoming = queue
+            .filter((item) => item.question.trim())
+            .map((item) => {
+              const synced = syncTriviaOptionsFields(item);
+              return {
+                id: uid(),
+                question: item.question,
+                options: synced.options,
+                optionA: synced.optionA,
+                optionB: synced.optionB,
+              };
+            });
+          setState((prev) => ({
+            ...prev,
+            trivia: {
+              ...prev.trivia,
+              library: mergeTriviaBank(prev.trivia.library ?? [], incoming),
+            },
+          }));
+        }}
+        onLoad={(id) => {
+          const entry = (trivia.library ?? []).find((item) => item.id === id);
+          if (!entry) return;
+          const next = createTriviaQueuedQuestion({ ...entry, id: uid() });
+          setState((prev) => ({
+            ...prev,
+            trivia: {
+              ...prev.trivia,
+              queue: [...(prev.trivia.queue ?? []), next],
+            },
+          }));
+        }}
+        onDelete={(id) =>
+          setState((prev) => ({
+            ...prev,
+            trivia: {
+              ...prev.trivia,
+              library: (prev.trivia.library ?? []).filter(
+                (item) => item.id !== id,
+              ),
+            },
+          }))
+        }
+      />
+      <div className="min-h-0 flex-1 overflow-auto px-6 py-6">
       {!spectatorLive && (
         <OperatorNotice className="mb-6">
           Spectator is not on Elimination Trivia. Use the Spectator screen list
@@ -712,6 +784,7 @@ export function TriviaHostPanel() {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }

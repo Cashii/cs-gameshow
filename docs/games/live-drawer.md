@@ -10,7 +10,11 @@ Colored numbered token pool with multi-draw reveal on the spectator screen.
    - **Specific tokens** — pick from the filtered list
 3. **Spectator** animates the reveal: one large tile or a grid for multiple tokens.
 4. **Clear** hides the spectator display without returning tokens to the pool.
-5. **Undo last batch** returns those tokens to the pool.
+5. **Draw history** lists each draw in a compact row, newest first. Hover a number and choose **Return** to put that one number back in the pool if it was a mistake. The rest of the draw stays called.
+
+## Countdown
+
+Optional, and its own section under **Draw controls**. Turn it on, pick a length, then **Start**. The big screen shows only the time. **Reset** hides it until the next start. Turning the countdown off hides it immediately.
 
 ## Colors
 
@@ -19,3 +23,9 @@ Red, blue, green, yellow, orange, purple, black, white — same presets as physi
 ## Operator corrections
 
 The operator can add or remove tokens from the pool (e.g. fix hostess entry errors), or **Clear pool** from the pool summary to delete every remaining pool token. That action asks for confirmation and does not touch called numbers or the spectator display.
+
+## Birthday and VIP marks
+
+Under each token, click the mark until it shows a cake (birthday), a star (VIP), or a plain circle (no mark). Filter the pool or called list to Birthday or VIP, select that token, and use **Draw selected** when that guest should play. The spectator screen never shows the mark.
+
+The number pool, colors, and birthday or VIP marks stay in the pool. There is no separate save list. Called numbers stay called.

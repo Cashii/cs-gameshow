@@ -553,35 +553,15 @@ export function WheelHostPanel() {
               )}
             </div>
 
-            <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
-              <h2 className="mb-4 text-xl font-bold text-white">Letter Controls</h2>
-              <div className="flex flex-wrap gap-3">
-                {ALPHABET.map((letter) => {
-                  const disabled = isLetterRevealed(letter) || !wheel.phrase;
-                  return (
-                    <button
-                      key={letter}
-                      type="button"
-                      onClick={() => handleRevealLetter(letter)}
-                      disabled={disabled}
-                      className={letterControlClass(disabled)}
-                    >
-                      {letter}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
             <section className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h2 className="text-xl font-bold text-white">
-                    Phrase bank ({bank.length})
+                    Phrases and topics ({bank.length})
                   </h2>
                   <p className="mt-1 text-sm text-neutral-500">
-                    Preload topics and phrases, then load any one onto the board
-                    whenever you want — including ones you already played.
+                    Set up every topic and phrase here, then load any one onto
+                    the board — including ones you already played.
                   </p>
                 </div>
                 <button
@@ -597,8 +577,8 @@ export function WheelHostPanel() {
               </div>
               {bank.length === 0 ? (
                 <p className="text-sm text-neutral-500">
-                  No saved phrases yet. Add entries here, or use Save to bank
-                  from the current phrase.
+                  No phrases yet. Add entries here, or use Save to bank from
+                  the current phrase.
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -708,6 +688,27 @@ export function WheelHostPanel() {
                 </div>
               )}
             </section>
+
+            <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
+              <h2 className="mb-4 text-xl font-bold text-white">Letter Controls</h2>
+              <div className="flex flex-wrap gap-3">
+                {ALPHABET.map((letter) => {
+                  const disabled = isLetterRevealed(letter) || !wheel.phrase;
+                  return (
+                    <button
+                      key={letter}
+                      type="button"
+                      onClick={() => handleRevealLetter(letter)}
+                      disabled={disabled}
+                      className={letterControlClass(disabled)}
+                    >
+                      {letter}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -716,7 +717,7 @@ export function WheelHostPanel() {
         open={resetConfirmOpen}
         onOpenChange={setResetConfirmOpen}
         title="Reset Game"
-        message="Clear the current phrase and revealed letters? Your phrase bank stays saved."
+        message="Clear the current phrase and revealed letters? Your phrases and topics stay saved."
         confirmLabel="Reset Game"
         variant="danger"
         onConfirm={() =>

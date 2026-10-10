@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
+  formatLiveDrawerClock,
   getLiveDrawerColor,
   liveDrawerHexLuminance,
+  liveDrawerRemainingMs,
+  liveDrawerTimerOnScreen,
   type LiveDrawerGameState,
   type LiveDrawerToken,
 } from "@/lib/live-drawer/types";
@@ -183,6 +186,41 @@ function LiveDrawerFittedNumbers({
   );
 }
 
+function LiveDrawerCountdown({
+  game,
+}: Readonly<{ game: LiveDrawerGameState }>) {
+  const [now, setNow] = useState<number | null>(null);
+  const visible = liveDrawerTimerOnScreen(game);
+
+  useEffect(() => {
+    if (!visible) return;
+    const tick = () => setNow(Date.now());
+    tick();
+    if (!game.timerRunning) return;
+    const id = window.setInterval(tick, 200);
+    return () => window.clearInterval(id);
+  }, [visible, game.timerRunning, game.timerEndsAt]);
+
+  if (!visible) return null;
+
+  const remaining =
+    now == null ? game.timerRemainingMs : liveDrawerRemainingMs(game, now);
+  const clock = formatLiveDrawerClock(remaining);
+
+  return (
+    <div
+      className={`live-drawer-countdown${
+        remaining > 0 && remaining <= 10_000 ? " is-urgent" : ""
+      }`}
+      role="timer"
+      aria-live="polite"
+      aria-label={clock}
+    >
+      <p className="live-drawer-countdown-time">{clock}</p>
+    </div>
+  );
+}
+
 export function LiveDrawerReveal({
   game,
 }: Readonly<{ game: LiveDrawerGameState }>) {
@@ -246,8 +284,13 @@ export function LiveDrawerReveal({
     "--live-drawer-text-scale": String(game.numberScale ?? 1),
   } as React.CSSProperties;
 
+  const showTimer = liveDrawerTimerOnScreen(game);
+
   return (
-    <div className="live-drawer-audience" style={themeStyle}>
+    <div
+      className={`live-drawer-audience${showTimer ? " has-timer" : ""}`}
+      style={themeStyle}
+    >
       {phase === "empty" || displayTokens.length === 0 ? (
         <LiveDrawerWaitingReel />
       ) : (
@@ -261,6 +304,7 @@ export function LiveDrawerReveal({
           />
         </div>
       )}
+      <LiveDrawerCountdown game={game} />
     </div>
   );
 }

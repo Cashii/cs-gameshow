@@ -4,6 +4,7 @@ import {
   BarChart3,
   Briefcase,
   CircleDollarSign,
+  Coins,
   Download,
   Flag,
   Home,
@@ -56,6 +57,7 @@ import { JeoparodyHostPanel } from "@/components/jeoparody/JeoparodyHostPanel";
 import { TriviaHostPanel } from "@/components/trivia/TriviaHostPanel";
 import { PriceGuesserHostPanel } from "@/components/price-guesser/PriceGuesserHostPanel";
 import { PriceOrderHostPanel } from "@/components/price-order/PriceOrderHostPanel";
+import { PriceWheelHostPanel } from "@/components/price-wheel/PriceWheelHostPanel";
 import { QuestionTimeHostPanel } from "@/components/question-time/QuestionTimeHostPanel";
 import { PictionaryHostPanel } from "@/components/pictionary/PictionaryHostPanel";
 import { PinSettingsPanel } from "@/components/operator/PinSettingsPanel";
@@ -74,6 +76,7 @@ const NAV_GAMES: ActiveGame[] = [
   "trivia",
   "priceGuesser",
   "priceOrder",
+  "priceWheel",
   "questionTime",
   "pictionary",
   "takeIt",
@@ -93,6 +96,7 @@ const GAME_ICONS: Record<ActiveGame, LucideIcon> = {
   trivia: Brain,
   priceGuesser: Tag,
   priceOrder: ListOrdered,
+  priceWheel: Coins,
   questionTime: Heart,
   poll: BarChart3,
   messageBoard: Megaphone,
@@ -664,10 +668,11 @@ function OperatorContent({
           {state.activeGame === "trivia" && <TriviaHostPanel />}
           {state.activeGame === "priceGuesser" && <PriceGuesserHostPanel />}
           {state.activeGame === "priceOrder" && <PriceOrderHostPanel />}
+          {state.activeGame === "priceWheel" && <PriceWheelHostPanel />}
           {state.activeGame === "questionTime" && <QuestionTimeHostPanel />}
           {state.activeGame === "poll" && <PollHostPanel />}
           {state.activeGame === "messageBoard" && (
-            <div className="min-h-0 flex-1 overflow-auto">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <MessageBoardHostPanel />
             </div>
           )}

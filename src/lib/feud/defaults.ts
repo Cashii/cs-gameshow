@@ -11,6 +11,7 @@ export function createSampleFeudGame(): FeudGameState {
     showTeamScores: true,
     showAnswerScores: true,
     awardTeam: "left",
+    library: [],
     rounds: [
       {
         id: uid(),

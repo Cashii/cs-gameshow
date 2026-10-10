@@ -1,4 +1,11 @@
+import { appendUnique, claimBankId, legacyNamedPayload } from "@/lib/content-bank";
 import { uid } from "@/lib/utils";
+
+export type QuestionTimeBankEntry = {
+  id: string;
+  title: string;
+  question: string;
+};
 
 export type QuestionTimeTeam = {
   id: string;
@@ -18,6 +25,7 @@ export type QuestionTimeState = {
   timerRunning: boolean;
   /** Epoch ms when a running clock hits zero. */
   timerEndsAt: number | null;
+  library: QuestionTimeBankEntry[];
 };
 
 export const DEFAULT_QUESTION_TIME_TITLE = "Question Time";
@@ -51,7 +59,66 @@ export function createDefaultQuestionTimeState(): QuestionTimeState {
     timerRemainingMs: DEFAULT_QUESTION_TIME_DURATION_MS,
     timerRunning: false,
     timerEndsAt: null,
+    library: [],
   };
+}
+
+export function questionTimeBankKey(entry: {
+  title: string;
+  question: string;
+}): string {
+  return JSON.stringify({
+    title: entry.title.trim(),
+    question: entry.question.trim(),
+  });
+}
+
+export function mergeQuestionTimeBank(
+  library: QuestionTimeBankEntry[],
+  incoming: QuestionTimeBankEntry[],
+): QuestionTimeBankEntry[] {
+  return appendUnique(library, incoming, questionTimeBankKey);
+}
+
+function readQuestionTimePrompt(
+  raw: unknown,
+  fallbackQuestion: string,
+): { title: string; question: string } | null {
+  if (!raw || typeof raw !== "object") return null;
+  const record = raw as { title?: unknown; question?: unknown };
+  const title = typeof record.title === "string" ? record.title : "";
+  const question =
+    typeof record.question === "string" && record.question.trim()
+      ? record.question
+      : fallbackQuestion;
+  if (!title.trim() && !question.trim()) return null;
+  return { title, question };
+}
+
+export function normalizeQuestionTimeLibrary(
+  raw: unknown,
+): QuestionTimeBankEntry[] {
+  if (!Array.isArray(raw)) return [];
+  const entries: QuestionTimeBankEntry[] = [];
+  const seen = new Set<string>();
+  raw.forEach((item, index) => {
+    const legacy = legacyNamedPayload(item);
+    const source = legacy ? legacy.payload : item;
+    const prompt = readQuestionTimePrompt(source, legacy?.name ?? "");
+    if (!prompt) return;
+    const id =
+      !legacy &&
+      item &&
+      typeof item === "object" &&
+      typeof (item as { id?: unknown }).id === "string"
+        ? (item as { id: string }).id
+        : legacy?.id ?? "";
+    entries.push({
+      id: claimBankId(id, seen, `question-${index}`),
+      ...prompt,
+    });
+  });
+  return entries;
 }
 
 export function clampQuestionTimeDurationMs(ms: unknown): number {

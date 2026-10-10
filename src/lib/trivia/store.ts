@@ -586,6 +586,9 @@ export async function triviaResetSeries(): Promise<EventSnapshot> {
   await playersCol(db).then((c) => c.deleteMany({ eventId: EVENT_ID }));
   return updateEventSuite((prev) => ({
     ...prev,
-    trivia: createDefaultTriviaState(),
+    trivia: {
+      ...createDefaultTriviaState(),
+      library: prev.trivia?.library ?? [],
+    },
   }));
 }

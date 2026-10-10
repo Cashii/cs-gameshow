@@ -1,9 +1,16 @@
-import { ObjectId, type Collection, type Db } from "mongodb";
+import { ObjectId, type AnyBulkWriteOperation, type Collection, type Db } from "mongodb";
 import { getDb } from "@/lib/db/mongo";
 import { hashPin } from "@/lib/auth/session";
 import { publishSnapshot } from "@/lib/event/pubsub"; // live event fan-out
 import { sampleTokensByColor, normalizeTokenNumber } from "@/lib/live-drawer/draw";
-import type { LiveDrawerToken, PoolSummary } from "@/lib/live-drawer/types";
+import {
+  normalizeTokenMark,
+  type LiveDrawerDraw,
+  type LiveDrawerSavedToken,
+  type LiveDrawerToken,
+  type PoolSummary,
+  type TokenMark,
+} from "@/lib/live-drawer/types";
 import { createEmptyPoll, withArchivedPoll, type PollState, type PollVoteLogEntry } from "@/lib/poll/types";
 import {
   createDefaultSuiteState,
@@ -33,6 +40,7 @@ export type TokenDoc = {
   eventId: string;
   number: string;
   colorId: string;
+  mark?: TokenMark | null;
   status: "pool" | "drawn";
   drawBatchId: string | null;
   createdAt: Date;
@@ -124,13 +132,15 @@ async function loadPool(): Promise<{
   summary: PoolSummary;
   tokens: LiveDrawerToken[];
   called: LiveDrawerToken[];
+  drawHistory: LiveDrawerDraw[];
 }> {
-  const [summary, tokens, called] = await Promise.all([
+  const [summary, tokens, called, drawHistory] = await Promise.all([
     getPoolSummary(),
     getPoolTokens(),
     getCalledTokens(),
+    getDrawHistory(),
   ]);
-  return { summary, tokens, called };
+  return { summary, tokens, called, drawHistory };
 }
 
 function deviceCodeFromId(deviceId: string): string {
@@ -222,6 +232,7 @@ function eventDocToSnapshot(
     summary: PoolSummary;
     tokens: LiveDrawerToken[];
     called: LiveDrawerToken[];
+    drawHistory: LiveDrawerDraw[];
   },
 ): EventSnapshot {
   const { _id: _id, revision, pinHashes: _pins, ...suite } = doc;
@@ -231,6 +242,7 @@ function eventDocToSnapshot(
     pool.summary,
     pool.tokens,
     pool.called,
+    pool.drawHistory,
   );
 }
 
@@ -335,7 +347,66 @@ function tokenDocToClient(doc: TokenDoc): LiveDrawerToken {
     id: doc._id.toString(),
     number: doc.number,
     colorId: doc.colorId,
+    mark: normalizeTokenMark(doc.mark),
   };
+}
+
+export async function getDrawHistory(): Promise<LiveDrawerDraw[]> {
+  const db = await getDb();
+  const [batches, tokens] = await Promise.all([
+    drawBatchesCol(db).then((c) =>
+      c
+        .find({ eventId: EVENT_ID })
+        .sort({ createdAt: -1 })
+        .limit(40)
+        .toArray(),
+    ),
+    tokensCol(db).then((c) =>
+      c.find({ eventId: EVENT_ID, status: "drawn" }).toArray(),
+    ),
+  ]);
+  const byId = new Map(
+    tokens.map((doc) => [doc._id.toString(), tokenDocToClient(doc)]),
+  );
+  const history: LiveDrawerDraw[] = [];
+  for (const batch of batches) {
+    const drawn = batch.tokenIds
+      .map((id) => byId.get(id.toString()))
+      .filter((token): token is LiveDrawerToken => token != null);
+    if (drawn.length === 0) continue;
+    history.push({
+      id: batch._id.toString(),
+      drawnAt: batch.createdAt.toISOString(),
+      tokens: drawn,
+    });
+  }
+  return history;
+}
+
+async function removeTokensFromBatches(tokenIds: ObjectId[]): Promise<void> {
+  if (tokenIds.length === 0) return;
+  const db = await getDb();
+  const col = await drawBatchesCol(db);
+  const remove = new Set(tokenIds.map((id) => id.toString()));
+  const batches = await col
+    .find({ eventId: EVENT_ID, tokenIds: { $in: tokenIds } })
+    .toArray();
+  const writes: AnyBulkWriteOperation<DrawBatchDoc>[] = [];
+  for (const batch of batches) {
+    const next = batch.tokenIds.filter((id) => !remove.has(id.toString()));
+    if (next.length === batch.tokenIds.length) continue;
+    if (next.length === 0) {
+      writes.push({ deleteOne: { filter: { _id: batch._id } } });
+      continue;
+    }
+    writes.push({
+      updateOne: {
+        filter: { _id: batch._id },
+        update: { $set: { tokenIds: next } },
+      },
+    });
+  }
+  if (writes.length > 0) await col.bulkWrite(writes);
 }
 
 export async function buildSnapshot(
@@ -413,6 +484,7 @@ export async function addTokens(
         eventId: EVENT_ID,
         number,
         colorId: entry.colorId,
+        mark: null,
         status: "pool",
         drawBatchId: null,
         createdAt: new Date(),
@@ -435,6 +507,86 @@ export async function addTokens(
   return { added, skipped, restored };
 }
 
+export async function setTokenMark(
+  tokenId: string,
+  mark: TokenMark | null,
+): Promise<EventSnapshot> {
+  if (!isHexObjectId(tokenId)) throw new Error("Unknown token");
+  const db = await getDb();
+  const result = await tokensCol(db).then((c) =>
+    c.updateOne(
+      { _id: new ObjectId(tokenId), eventId: EVENT_ID },
+      { $set: { mark } },
+    ),
+  );
+  if (result.matchedCount === 0) throw new Error("Unknown token");
+  return updateEventSuite((prev) => ({
+    ...prev,
+    liveDrawer: {
+      ...prev.liveDrawer,
+      revealedTokens: prev.liveDrawer.revealedTokens.map((token) =>
+        token.id === tokenId ? { ...token, mark } : token,
+      ),
+    },
+  }));
+}
+
+export async function replacePoolWithSaved(
+  entries: LiveDrawerSavedToken[],
+): Promise<EventSnapshot> {
+  const db = await getDb();
+  const col = await tokensCol(db);
+  const wanted = new Map<string, LiveDrawerSavedToken>();
+  for (const entry of entries) {
+    const number = normalizeTokenNumber(entry.number);
+    if (!number || !entry.colorId) continue;
+    wanted.set(`${number}:${entry.colorId}`, {
+      number,
+      colorId: entry.colorId,
+      mark: normalizeTokenMark(entry.mark),
+    });
+  }
+
+  const existing = await col.find({ eventId: EVENT_ID }).toArray();
+  const existingKeys = new Set(
+    existing.map((doc) => `${doc.number}:${doc.colorId}`),
+  );
+  const removeIds = existing
+    .filter(
+      (doc) =>
+        doc.status === "pool" && !wanted.has(`${doc.number}:${doc.colorId}`),
+    )
+    .map((doc) => doc._id);
+  if (removeIds.length > 0) {
+    await col.deleteMany({ _id: { $in: removeIds } });
+  }
+
+  for (const doc of existing) {
+    if (doc.status !== "pool") continue;
+    const next = wanted.get(`${doc.number}:${doc.colorId}`);
+    if (!next) continue;
+    if (normalizeTokenMark(doc.mark) !== next.mark) {
+      await col.updateOne({ _id: doc._id }, { $set: { mark: next.mark } });
+    }
+  }
+
+  for (const [key, entry] of wanted) {
+    if (existingKeys.has(key)) continue;
+    await col.insertOne({
+      _id: new ObjectId(),
+      eventId: EVENT_ID,
+      number: entry.number,
+      colorId: entry.colorId,
+      mark: entry.mark,
+      status: "pool",
+      drawBatchId: null,
+      createdAt: new Date(),
+    });
+  }
+
+  return bumpAndPublish(true);
+}
+
 export async function returnTokensToPool(
   tokenIds?: string[],
 ): Promise<EventSnapshot> {
@@ -445,13 +597,18 @@ export async function returnTokensToPool(
     _id?: { $in: InstanceType<typeof ObjectId>[] };
   } = { eventId: EVENT_ID, status: "drawn" };
   if (tokenIds?.length) {
-    filter._id = { $in: tokenIds.map((id) => new ObjectId(id)) };
+    const objectIds = tokenIds
+      .filter((id) => isHexObjectId(id))
+      .map((id) => new ObjectId(id));
+    filter._id = { $in: objectIds };
   }
   await tokensCol(db).then((c) =>
     c.updateMany(filter, { $set: { status: "pool", drawBatchId: null } }),
   );
   if (!tokenIds?.length) {
     await drawBatchesCol(db).then((c) => c.deleteMany({ eventId: EVENT_ID }));
+  } else if (filter._id) {
+    await removeTokensFromBatches(filter._id.$in);
   }
   const returnedIds = tokenIds?.length ? new Set(tokenIds) : null;
   return updateEventSuite((prev) => {
@@ -504,12 +661,14 @@ export async function removeToken(
   let deleted = 0;
 
   if (isHexObjectId(tokenId)) {
+    const objectId = new ObjectId(tokenId);
     deleted += (
       await col.deleteOne({
-        _id: new ObjectId(tokenId),
+        _id: objectId,
         eventId: EVENT_ID,
       })
     ).deletedCount;
+    await removeTokensFromBatches([objectId]);
   }
 
   if (deleted === 0 && extra?.number && extra.colorId) {

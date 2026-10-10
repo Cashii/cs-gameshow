@@ -51,6 +51,10 @@ body {
   font-size: 16px;
 }
 
+.operator-ui main {
+  background-color: var(--color-neutral-900);
+}
+
 /* Light studio theme (html.studio-ui). Hostess and spectator stay dark. */
 .studio-ui,
 html.studio-ui {

@@ -19,3 +19,7 @@ Photos are stored in MongoDB (`media`) and referenced from game state. Replacing
 ## Spectator
 
 Shows the current photo, optional name, and a price tag. A red velvet curtain covers the photo and name until the operator reveals them together. The tag reads `???` until the operator reveals the price. The operator can then show a **Correct** or **Not quite** overlay over a darkened mask.
+
+## Saved items
+
+**Save this item** stores the photo, name, and price on the desk. **Load** puts that item back with the curtain closed and the price hidden. Clearing the live item does not delete a saved photo.

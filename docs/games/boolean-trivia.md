@@ -39,3 +39,7 @@ Question, both labels, and remaining count. While open, shows how many answers a
 ## Notes
 
 Device IDs stay in Mongo (`triviaVotes`, `triviaPlayers`), not on the public event snapshot. Snapshot only carries counts and round metadata. Unique vote index: `(eventId, roundId, deviceId)`.
+
+## Questions
+
+**Save this question** stores the question on screen and its answer choices. **Save upcoming** stores the queue. **Load** adds that question to the end of the upcoming queue. The question on screen, votes, and history stay. **Reset series** does not delete the list.

@@ -16,10 +16,13 @@ import {
   questionTimeRemainingMs,
   resetQuestionTimeTimer,
   setQuestionTimeDuration,
+  mergeQuestionTimeBank,
   startQuestionTimeTimer,
   type QuestionTimeState,
 } from "@/lib/question-time/types";
+import { QuestionRepository } from "@/components/question-time/QuestionRepository";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { uid } from "@/lib/utils";
 import { OperatorNotice } from "@/components/operator/OperatorNotice";
 
 function durationParts(ms: number) {
@@ -134,11 +137,51 @@ export function QuestionTimeHostPanel() {
       teams: prev.teams.map((team) => ({ ...team, score: 0 })),
       timerDurationMs: prev.timerDurationMs,
       timerRemainingMs: prev.timerDurationMs,
+      library: prev.library ?? [],
     }));
   };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <QuestionRepository
+        entries={game.library ?? []}
+        canSave={Boolean(game.question.trim())}
+        onSave={() =>
+          updateQuestionTime((prev) => ({
+            ...prev,
+            library: mergeQuestionTimeBank(prev.library ?? [], [
+              {
+                id: uid(),
+                title: prev.title,
+                question: prev.question,
+              },
+            ]),
+          }))
+        }
+        onLoad={(id) => {
+          const entry = (game.library ?? []).find((item) => item.id === id);
+          if (!entry) return;
+          updateQuestionTime((prev) => ({
+            ...prev,
+            title: entry.title,
+            question: entry.question,
+          }));
+        }}
+        onDelete={(id) =>
+          updateQuestionTime((prev) => ({
+            ...prev,
+            library: (prev.library ?? []).filter((item) => item.id !== id),
+          }))
+        }
+        onUpdate={(id, patch) =>
+          updateQuestionTime((prev) => ({
+            ...prev,
+            library: (prev.library ?? []).map((item) =>
+              item.id === id ? { ...item, ...patch } : item,
+            ),
+          }))
+        }
+      />
       <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">

@@ -137,6 +137,17 @@ export async function uploadMedia(file: File): Promise<string> {
   return data.url;
 }
 
+export async function copyMediaUrl(url: string): Promise<string> {
+  if (!url) return "";
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Could not copy photo");
+  const blob = await res.blob();
+  const file = new File([blob], "saved-photo.jpg", {
+    type: blob.type || "image/jpeg",
+  });
+  return uploadMedia(file);
+}
+
 export async function deleteMediaByUrl(url: string): Promise<void> {
   const id = mediaIdFromUrl(url);
   if (!id) return;

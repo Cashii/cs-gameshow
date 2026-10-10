@@ -17,11 +17,33 @@ import {
   createEmptyContestant,
   DEFAULT_CLUE_VALUES,
 } from "@/lib/jeoparody/defaults";
-import { findClue } from "@/lib/jeoparody/types";
-import type { JeoparodyGameState } from "@/lib/jeoparody/types";
+import {
+  findClue,
+  jeoparodyCategoryHasContent,
+  mergeJeoparodyBank,
+  type JeoparodyBankCategory,
+  type JeoparodyCategory,
+  type JeoparodyGameState,
+} from "@/lib/jeoparody/types";
+import { JeoparodyCategoryBank } from "@/components/jeoparody/JeoparodyCategoryBank";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { uid } from "@/lib/utils";
 
 type Tab = "play" | "setup";
+
+function categoryFromBank(entry: JeoparodyBankCategory): JeoparodyCategory {
+  return {
+    id: uid(),
+    name: entry.name,
+    clues: entry.clues.map((clue) => ({
+      id: uid(),
+      value: clue.value,
+      prompt: clue.prompt,
+      response: clue.response,
+      played: false,
+    })),
+  };
+}
 
 export function JeoparodyHostPanel() {
   const { state, updateJeoparody } = useSuite();
@@ -119,6 +141,61 @@ export function JeoparodyHostPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <JeoparodyCategoryBank
+        categories={game.library ?? []}
+        canSave={game.categories.some((category) =>
+          jeoparodyCategoryHasContent({
+            name: category.name,
+            clues: category.clues.map((clue) => ({
+              value: clue.value,
+              prompt: clue.prompt,
+              response: clue.response,
+            })),
+          }),
+        )}
+        onSaveAll={() => {
+          const incoming = game.categories.flatMap((category) => {
+            const saved = {
+              name: category.name,
+              clues: category.clues.map((clue) => ({
+                value: clue.value,
+                prompt: clue.prompt,
+                response: clue.response,
+              })),
+            };
+            if (!jeoparodyCategoryHasContent(saved)) return [];
+            return [{ id: uid(), ...saved }];
+          });
+          updateJeoparody((prev) => ({
+            ...prev,
+            library: mergeJeoparodyBank(prev.library ?? [], incoming),
+          }));
+        }}
+        onLoad={(id) => {
+          const entry = (game.library ?? []).find((item) => item.id === id);
+          if (!entry) return;
+          updateJeoparody((prev) => ({
+            ...prev,
+            categories: [...prev.categories, categoryFromBank(entry)],
+          }));
+        }}
+        onLoadAll={() => {
+          const library = game.library ?? [];
+          if (library.length === 0) return;
+          updateJeoparody((prev) => ({
+            ...prev,
+            selectedClueId: null,
+            phase: "board",
+            categories: library.map(categoryFromBank),
+          }));
+        }}
+        onDelete={(id) =>
+          updateJeoparody((prev) => ({
+            ...prev,
+            library: (prev.library ?? []).filter((item) => item.id !== id),
+          }))
+        }
+      />
       <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
         <div className="flex rounded-md border border-neutral-700 p-0.5">
           {(["play", "setup"] as const).map((id) => (

@@ -5,6 +5,7 @@ import {
   formatQuestionTimeClock,
   formatQuestionTimePreset,
 } from "@/lib/question-time/types";
+import { appendUnique, claimBankId, legacyNamedPayload } from "@/lib/content-bank";
 
 type LegacyPictionaryReveal = "covered" | "word" | "hint";
 
@@ -20,6 +21,12 @@ export type PictionaryState = {
   timerRemainingMs: number;
   timerRunning: boolean;
   timerEndsAt: number | null;
+  library: PictionaryBankWord[];
+};
+
+export type PictionaryBankWord = {
+  id: string;
+  word: string;
 };
 
 export const PICTIONARY_DURATION_PRESETS_MS = QUESTION_TIME_DURATION_PRESETS_MS;
@@ -37,7 +44,53 @@ export function createDefaultPictionaryState(): PictionaryState {
     timerRemainingMs: DEFAULT_PICTIONARY_DURATION_MS,
     timerRunning: false,
     timerEndsAt: null,
+    library: [],
   };
+}
+
+export function pictionaryBankKey(word: string): string {
+  return word.trim().toUpperCase();
+}
+
+export function mergePictionaryBank(
+  library: PictionaryBankWord[],
+  incoming: PictionaryBankWord[],
+): PictionaryBankWord[] {
+  return appendUnique(library, incoming, (item) => pictionaryBankKey(item.word));
+}
+
+function readPictionaryWord(raw: unknown, fallback: string): string {
+  if (raw && typeof raw === "object") {
+    const word = (raw as { word?: unknown }).word;
+    if (typeof word === "string" && word.trim()) return word;
+  }
+  return fallback.trim();
+}
+
+export function normalizePictionaryLibrary(raw: unknown): PictionaryBankWord[] {
+  if (!Array.isArray(raw)) return [];
+  const words: PictionaryBankWord[] = [];
+  const seen = new Set<string>();
+  raw.forEach((item, index) => {
+    const legacy = legacyNamedPayload(item);
+    const word = readPictionaryWord(
+      legacy ? legacy.payload : item,
+      legacy?.name ?? "",
+    );
+    if (!word.trim()) return;
+    const id =
+      !legacy &&
+      item &&
+      typeof item === "object" &&
+      typeof (item as { id?: unknown }).id === "string"
+        ? (item as { id: string }).id
+        : legacy?.id ?? "";
+    words.push({
+      id: claimBankId(id, seen, `word-${index}`),
+      word,
+    });
+  });
+  return words;
 }
 
 function isLegacyPictionaryReveal(
@@ -201,5 +254,6 @@ export function normalizePictionaryState(
     timerRemainingMs,
     timerRunning: timerRunning && timerEndsAt != null,
     timerEndsAt: timerRunning ? timerEndsAt : null,
+    library: normalizePictionaryLibrary(raw.library),
   };
 }

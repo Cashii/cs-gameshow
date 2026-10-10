@@ -1,3 +1,5 @@
+import { appendUnique, claimBankId, legacyNamedPayload } from "@/lib/content-bank";
+
 export type TriviaStatus =
   | "idle"
   | "open"
@@ -64,6 +66,15 @@ export type TriviaGameState = {
   winnerCodes: string[];
   queue: TriviaQueuedQuestion[];
   history: TriviaRoundHistory[];
+  library: TriviaBankQuestion[];
+};
+
+export type TriviaBankQuestion = {
+  id: string;
+  question: string;
+  options: string[];
+  optionA: string;
+  optionB: string;
 };
 
 export function isTriviaChoiceId(value: unknown): value is TriviaChoiceId {
@@ -228,7 +239,88 @@ export function createDefaultTriviaState(): TriviaGameState {
     winnerCodes: [],
     queue: [],
     history: [],
+    library: [],
   };
+}
+
+export function triviaBankKey(entry: {
+  question: string;
+  options: string[];
+}): string {
+  return JSON.stringify({
+    question: entry.question.trim(),
+    options: entry.options.map((option) => option.trim()),
+  });
+}
+
+export function mergeTriviaBank(
+  library: TriviaBankQuestion[],
+  incoming: TriviaBankQuestion[],
+): TriviaBankQuestion[] {
+  return appendUnique(library, incoming, triviaBankKey);
+}
+
+function readTriviaBankQuestion(
+  raw: unknown,
+): Omit<TriviaBankQuestion, "id"> | null {
+  if (!raw || typeof raw !== "object") return null;
+  const record = raw as Partial<TriviaQueuedQuestion>;
+  const question = typeof record.question === "string" ? record.question : "";
+  if (!question.trim()) return null;
+  const options = normalizeTriviaOptions(
+    record.options,
+    record.optionA,
+    record.optionB,
+  );
+  return {
+    question,
+    options,
+    optionA: options[0] ?? "",
+    optionB: options[1] ?? "",
+  };
+}
+
+export function normalizeTriviaLibrary(raw: unknown): TriviaBankQuestion[] {
+  if (!Array.isArray(raw)) return [];
+  const questions: TriviaBankQuestion[] = [];
+  const seen = new Set<string>();
+  raw.forEach((item, index) => {
+    const legacy = legacyNamedPayload(item);
+    if (legacy && Array.isArray(legacy.payload)) {
+      legacy.payload.forEach((question, questionIndex) => {
+        const saved = readTriviaBankQuestion(question);
+        if (!saved) return;
+        const nestedId =
+          question &&
+          typeof question === "object" &&
+          typeof (question as { id?: unknown }).id === "string"
+            ? (question as { id: string }).id
+            : "";
+        questions.push({
+          id: claimBankId(
+            nestedId || (legacy.id ? `${legacy.id}-${questionIndex}` : ""),
+            seen,
+            `trivia-${index}-${questionIndex}`,
+          ),
+          ...saved,
+        });
+      });
+      return;
+    }
+    const saved = readTriviaBankQuestion(item);
+    if (!saved) return;
+    const id =
+      item &&
+      typeof item === "object" &&
+      typeof (item as { id?: unknown }).id === "string"
+        ? (item as { id: string }).id
+        : "";
+    questions.push({
+      id: claimBankId(id, seen, `trivia-${index}`),
+      ...saved,
+    });
+  });
+  return questions;
 }
 
 export function createTriviaQueuedQuestion(

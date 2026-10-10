@@ -8,7 +8,14 @@ import {
   type PriceGuesserState,
 } from "@/lib/price-guesser/types";
 import { parsePriceInput, priceInputValue } from "@/lib/price/format";
-import { deleteMediaByUrl } from "@/lib/media/upload";
+import { copyMediaUrl, deleteMediaByUrl } from "@/lib/media/upload";
+import { PriceItemLibrary } from "@/components/price/PriceItemLibrary";
+import {
+  mergePriceCatalog,
+  priceCatalogKey,
+  type PriceCatalogItem,
+} from "@/lib/price/catalog";
+import { uid } from "@/lib/utils";
 import { SquarePhotoEditor } from "@/components/price/SquarePhotoEditor";
 import { DEFAULT_PHOTO_FIT } from "@/lib/price/photo-fit";
 import { Toast, useToast } from "@/components/ui/Toast";
@@ -27,15 +34,23 @@ export function PriceGuesserHostPanel() {
 
   useEffect(() => {
     setPriceText(priceInputValue(game.price));
-  }, [game.imageUrl]);
+  }, [game.imageUrl, game.price]);
 
   const patch = (updater: (prev: PriceGuesserState) => PriceGuesserState) => {
     updatePriceGuesser(updater);
   };
 
   const reset = () => {
-    if (game.imageUrl) void deleteMediaByUrl(game.imageUrl);
-    patch(() => createDefaultPriceGuesserState());
+    const savedUrls = new Set(
+      (game.library ?? []).map((entry) => entry.imageUrl).filter(Boolean),
+    );
+    if (game.imageUrl && !savedUrls.has(game.imageUrl)) {
+      void deleteMediaByUrl(game.imageUrl);
+    }
+    patch((prev) => ({
+      ...createDefaultPriceGuesserState(),
+      library: prev.library ?? [],
+    }));
   };
 
   const itemShowing = game.itemRevealed !== false;
@@ -51,6 +66,75 @@ export function PriceGuesserHostPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <PriceItemLibrary
+        items={game.library ?? []}
+        saveLabel="Save this item"
+        saveDisabled={!game.imageUrl && !game.label.trim() && game.price == null}
+        hint="Each saved item keeps its photo, name, and price. Load puts that item on the desk with the curtain closed."
+        loadMessage="This puts the saved item on the desk with the curtain closed. The saved copy stays in the list."
+        deleteMessage="This removes the saved item. The desk stays as it is."
+        onSave={async () => {
+          const draft: PriceCatalogItem = {
+            id: "draft",
+            imageUrl: game.imageUrl,
+            label: game.label,
+            price: game.price,
+            photoFit: game.photoFit,
+          };
+          const key = priceCatalogKey(draft);
+          if ((game.library ?? []).some((item) => priceCatalogKey(item) === key)) {
+            return;
+          }
+          const imageUrl = game.imageUrl ? await copyMediaUrl(game.imageUrl) : "";
+          const entry: PriceCatalogItem = { ...draft, id: uid(), imageUrl };
+          updatePriceGuesser((prev) => ({
+            ...prev,
+            library: mergePriceCatalog(prev.library ?? [], [entry]),
+          }));
+        }}
+        onLoad={async (id) => {
+          const entry = (game.library ?? []).find((item) => item.id === id);
+          if (!entry) return;
+          const imageUrl = entry.imageUrl ? await copyMediaUrl(entry.imageUrl) : "";
+          updatePriceGuesser((prev) => {
+            const savedUrls = new Set(
+              (prev.library ?? []).map((item) => item.imageUrl),
+            );
+            if (
+              prev.imageUrl &&
+              prev.imageUrl !== imageUrl &&
+              !savedUrls.has(prev.imageUrl)
+            ) {
+              void deleteMediaByUrl(prev.imageUrl);
+            }
+            return {
+              ...prev,
+              imageUrl,
+              label: entry.label,
+              price: entry.price,
+              photoFit: entry.photoFit,
+              priceRevealed: false,
+              itemRevealed: false,
+              resultOverlay: null,
+            };
+          });
+        }}
+        onDelete={(id) => {
+          const entry = (game.library ?? []).find((item) => item.id === id);
+          updatePriceGuesser((prev) => ({
+            ...prev,
+            library: (prev.library ?? []).filter((item) => item.id !== id),
+          }));
+          const url = entry?.imageUrl;
+          if (!url) return;
+          const stillUsed =
+            game.imageUrl === url ||
+            (game.library ?? []).some(
+              (item) => item.id !== id && item.imageUrl === url,
+            );
+          if (!stillUsed) void deleteMediaByUrl(url);
+        }}
+      />
       <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">

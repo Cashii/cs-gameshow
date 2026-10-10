@@ -21,3 +21,7 @@ There is no player phone board.
 - Unplaced photos stay on the top shelf (curtains closed until revealed).
 - The bottom row is cheapest → most expensive, with empty slots until the operator inserts items.
 - Price tags stay hidden until revealed. The operator can then show a **Perfect order** or **Not quite** overlay over a darkened mask.
+
+## Saved items
+
+**Save all items** stores each item on the board, with its photo, name, and price. **Load** adds that one item, up to five, and leaves the others in place. Resetting the live game does not delete saved photos.

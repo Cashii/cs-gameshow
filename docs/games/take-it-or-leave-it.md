@@ -24,3 +24,5 @@ While Spectator is on Take It or Leave It (or Take It is the active operator gam
 ## Spectator
 
 Centered case grid only. Opened cases show a green or red card. Claimed cases are marked until opened.
+
+The green and red deck stays on the setup screen. There is no separate save list.

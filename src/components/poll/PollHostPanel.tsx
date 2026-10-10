@@ -2,11 +2,14 @@
 
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { PollQuestionBank } from "@/components/poll/PollQuestionBank";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { uid } from "@/lib/utils";
 import {
   clampPollScale,
   DEFAULT_POLL_SCALE,
   MAX_POLL_SCALE,
+  mergePollBank,
   MIN_POLL_SCALE,
   POLL_SCALE_STEP,
 } from "@/lib/poll/types";
@@ -100,6 +103,73 @@ export function PollHostPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <PollQuestionBank
+        questions={poll.library ?? []}
+        canSave={
+          Boolean(question.trim()) &&
+          choices.filter((choice) => choice.trim()).length >= 2
+        }
+        onSave={() => {
+          const texts = choices
+            .map((choice) => choice.trim())
+            .filter(Boolean)
+            .slice(0, 6);
+          if (!question.trim() || texts.length < 2) return;
+          const liveTexts = poll.choices.map((choice) => choice.text);
+          const sameChoices =
+            liveTexts.length === choices.length &&
+            liveTexts.every((text, index) => text === choices[index]);
+          const correctIndex = sameChoices
+            ? poll.choices.findIndex(
+                (choice) => choice.id === poll.correctChoiceId,
+              )
+            : -1;
+          updatePoll((prev) => ({
+            ...prev,
+            library: mergePollBank(prev.library ?? [], [
+              {
+                id: uid(),
+                question,
+                choices: texts.map((text) => ({ text })),
+                correctChoiceIndex:
+                  correctIndex >= 0 && correctIndex < texts.length
+                    ? correctIndex
+                    : null,
+              },
+            ]),
+          }));
+        }}
+        onLoad={(id) => {
+          const entry = (poll.library ?? []).find((item) => item.id === id);
+          if (!entry) return;
+          const nextChoices = entry.choices.map((choice, index) => ({
+            id: String.fromCharCode(97 + index),
+            text: choice.text,
+            votes: 0,
+          }));
+          setQuestion(entry.question);
+          setChoices(nextChoices.map((choice) => choice.text));
+          updatePoll((prev) => ({
+            ...prev,
+            id: uid(),
+            question: entry.question,
+            choices: nextChoices,
+            status: "idle",
+            voteLog: [],
+            correctChoiceId:
+              entry.correctChoiceIndex == null
+                ? null
+                : (nextChoices[entry.correctChoiceIndex]?.id ?? null),
+            correctAnswerRevealed: false,
+          }));
+        }}
+        onDelete={(id) =>
+          updatePoll((prev) => ({
+            ...prev,
+            library: (prev.library ?? []).filter((item) => item.id !== id),
+          }))
+        }
+      />
       <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
         <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
           <div className="flex flex-wrap items-center gap-3">

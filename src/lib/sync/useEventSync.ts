@@ -107,7 +107,13 @@ export function useEventSync(
 }
 
 export function snapshotToSuite(snapshot: EventSnapshot): SuiteState {
-  const { revision: _r, poolSummary: _ps, poolTokens: _pt, ...suite } =
-    snapshot;
+  const {
+    revision: _r,
+    poolSummary: _ps,
+    poolTokens: _pt,
+    calledTokens: _ct,
+    drawHistory: _dh,
+    ...suite
+  } = snapshot;
   return normalizeSuiteState(suite);
 }

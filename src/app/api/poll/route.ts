@@ -80,6 +80,7 @@ export async function POST(request: Request) {
             correctAnswerRevealed: false,
             showPercentages: event.poll?.showPercentages !== false,
             scale: clampPollScale(event.poll?.scale),
+            library: prev.poll?.library ?? [],
           },
         }));
         return json(snapshot);
@@ -118,6 +119,7 @@ export async function POST(request: Request) {
               correctAnswerRevealed: false,
               showPercentages: prev.poll?.showPercentages !== false,
               scale: clampPollScale(prev.poll?.scale),
+              library: prev.poll?.library ?? [],
             },
           };
         });
@@ -202,6 +204,7 @@ export async function POST(request: Request) {
             ...createEmptyPoll(),
             showPercentages: prev.poll?.showPercentages !== false,
             scale: clampPollScale(prev.poll?.scale),
+            library: prev.poll?.library ?? [],
           },
         }));
         return json(snapshot);

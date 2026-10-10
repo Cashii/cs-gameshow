@@ -1,3 +1,16 @@
+import { appendUnique, claimBankId, legacyNamedPayload } from "@/lib/content-bank";
+
+export type PollSavedChoice = {
+  text: string;
+};
+
+export type PollBankQuestion = {
+  id: string;
+  question: string;
+  choices: PollSavedChoice[];
+  correctChoiceIndex: number | null;
+};
+
 export type PollChoice = {
   id: string;
   text: string;
@@ -28,6 +41,7 @@ export type PollState = {
   showPercentages: boolean;
   /** Spectator question/answer text size multiplier. */
   scale: number;
+  library: PollBankQuestion[];
 };
 
 export const DEFAULT_POLL_SCALE = 1;
@@ -73,7 +87,90 @@ export function createDefaultPollState(): PollState {
     correctAnswerRevealed: false,
     showPercentages: true,
     scale: DEFAULT_POLL_SCALE,
+    library: [],
   };
+}
+
+export function pollBankKey(entry: {
+  question: string;
+  choices: PollSavedChoice[];
+  correctChoiceIndex: number | null;
+}): string {
+  return JSON.stringify({
+    question: entry.question.trim(),
+    choices: entry.choices.map((choice) => choice.text.trim()),
+    correctChoiceIndex: entry.correctChoiceIndex,
+  });
+}
+
+export function mergePollBank(
+  library: PollBankQuestion[],
+  incoming: PollBankQuestion[],
+): PollBankQuestion[] {
+  return appendUnique(library, incoming, pollBankKey);
+}
+
+function readPollBankQuestion(
+  raw: unknown,
+  fallbackQuestion: string,
+): Omit<PollBankQuestion, "id"> | null {
+  if (!raw || typeof raw !== "object") return null;
+  const record = raw as {
+    question?: unknown;
+    choices?: unknown;
+    correctChoiceIndex?: unknown;
+  };
+  const choices = Array.isArray(record.choices)
+    ? record.choices
+        .filter((choice) => choice && typeof choice === "object")
+        .map((choice) => ({
+          text:
+            typeof (choice as { text?: unknown }).text === "string"
+              ? (choice as { text: string }).text
+              : "",
+        }))
+        .filter((choice) => choice.text.trim())
+        .slice(0, 8)
+    : [];
+  if (choices.length < 2) return null;
+  const correctChoiceIndex =
+    typeof record.correctChoiceIndex === "number" &&
+    Number.isInteger(record.correctChoiceIndex) &&
+    record.correctChoiceIndex >= 0 &&
+    record.correctChoiceIndex < choices.length
+      ? record.correctChoiceIndex
+      : null;
+  const question =
+    typeof record.question === "string" && record.question.trim()
+      ? record.question
+      : fallbackQuestion;
+  return { question, choices, correctChoiceIndex };
+}
+
+export function normalizePollLibrary(raw: unknown): PollBankQuestion[] {
+  if (!Array.isArray(raw)) return [];
+  const questions: PollBankQuestion[] = [];
+  const seen = new Set<string>();
+  raw.forEach((item, index) => {
+    const legacy = legacyNamedPayload(item);
+    const saved = readPollBankQuestion(
+      legacy ? legacy.payload : item,
+      legacy?.name ?? "",
+    );
+    if (!saved) return;
+    const id =
+      !legacy &&
+      item &&
+      typeof item === "object" &&
+      typeof (item as { id?: unknown }).id === "string"
+        ? (item as { id: string }).id
+        : legacy?.id ?? "";
+    questions.push({
+      id: claimBankId(id, seen, `poll-${index}`),
+      ...saved,
+    });
+  });
+  return questions;
 }
 
 export function createEmptyPoll(): PollState {

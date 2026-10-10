@@ -7,6 +7,7 @@ import {
   Heart,
   ImageIcon,
   LayoutGrid,
+  Coins,
   ListOrdered,
   Pencil,
   ScrollText,
@@ -26,6 +27,24 @@ export function gamesForChangelogItem(
 ): Array<Exclude<ActiveGame, "idle">> {
   const text = `${item.title} ${item.detail}`.toLowerCase();
 
+  if (text.includes("saved setups")) {
+    return [
+      "feud",
+      "derby",
+      "trivia",
+      "priceGuesser",
+      "priceOrder",
+      "priceWheel",
+      "questionTime",
+      "pictionary",
+      "takeIt",
+      "jeoparody",
+      "poll",
+      "liveDrawer",
+    ];
+  }
+  if (text.includes("price wheel")) return ["priceWheel"];
+  if (text.includes("message board")) return ["messageBoard"];
   if (text.includes("price order") && !text.includes("uploaded photos")) {
     return ["priceOrder"];
   }
@@ -87,6 +106,8 @@ export function iconForChangelogGame(
       return Tag;
     case "priceOrder":
       return ListOrdered;
+    case "priceWheel":
+      return Coins;
     case "questionTime":
       return Heart;
     case "poll":
@@ -122,6 +143,8 @@ export function labelForChangelogGame(
       return "Price Guesser";
     case "priceOrder":
       return "Price Order";
+    case "priceWheel":
+      return "Price Wheel";
     case "questionTime":
       return "Question Time";
     case "poll":

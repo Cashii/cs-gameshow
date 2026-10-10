@@ -2,6 +2,10 @@ import {
   DEFAULT_PHOTO_FIT,
   type PhotoFit,
 } from "@/lib/price/photo-fit";
+import {
+  normalizePriceCatalog,
+  type PriceCatalogItem,
+} from "@/lib/price/catalog";
 
 export type PriceGuesserResult = "correct" | "wrong";
 
@@ -15,6 +19,7 @@ export type PriceGuesserState = {
   photoFit: PhotoFit;
   /** Spectator result overlay chosen by the operator. */
   resultOverlay: PriceGuesserResult | null;
+  library: PriceCatalogItem[];
 };
 
 export function createDefaultPriceGuesserState(): PriceGuesserState {
@@ -26,7 +31,12 @@ export function createDefaultPriceGuesserState(): PriceGuesserState {
     itemRevealed: true,
     photoFit: { ...DEFAULT_PHOTO_FIT },
     resultOverlay: null,
+    library: [],
   };
+}
+
+export function normalizePriceGuesserLibrary(raw: unknown): PriceCatalogItem[] {
+  return normalizePriceCatalog(raw);
 }
 
 export function parsePriceGuesserResult(

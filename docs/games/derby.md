@@ -24,7 +24,7 @@ Starting again after a finish (same winner or a new one) opens a new voting wind
 
 ## Player (`/player`)
 
-While Spectator is on Derby and the race is idle: four large buttons for the themed racers. After picking, the phone confirms the choice. During the race or after finish, voting is locked.
+While Spectator is on Derby and the race is idle: four large buttons for the themed racers. After picking, the phone confirms the choice. During the race, voting is locked. When the race finishes, the phone shows the winner, how many votes that racer got, and whether that was your pick.
 
 ## Spectator
 
@@ -33,3 +33,5 @@ While Spectator is on Derby and the race is idle: four large buttons for the the
 - **Finished:** winner banner. Wonderbar winner sprays from the tip. Reduced-motion clients jump to this state.
 
 The spectator does not stream racer positions. Every screen derives progress from the shared start time, duration, winner, and seed. Vote tallies stay on the operator panel only.
+
+Theme and racer names stay on the race controls. There is no separate save list.

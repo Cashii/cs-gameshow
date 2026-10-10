@@ -13,10 +13,12 @@ import { JeoparodyAudienceView } from "@/components/jeoparody/JeoparodyAudienceV
 import { TriviaAudienceView } from "@/components/trivia/TriviaAudienceView";
 import { PriceGuesserAudienceView } from "@/components/price-guesser/PriceGuesserAudienceView";
 import { PriceOrderAudienceView } from "@/components/price-order/PriceOrderAudienceView";
+import { PriceWheelAudienceView } from "@/components/price-wheel/PriceWheelAudienceView";
 import { QuestionTimeAudienceView } from "@/components/question-time/QuestionTimeAudienceView";
 import { PictionaryAudienceView } from "@/components/pictionary/PictionaryAudienceView";
 import { createDefaultPriceGuesserState } from "@/lib/price-guesser/types";
 import { createDefaultPriceOrderState } from "@/lib/price-order/types";
+import { createDefaultPriceWheelState } from "@/lib/price-wheel/types";
 import { createDefaultQuestionTimeState } from "@/lib/question-time/types";
 import { createDefaultPictionaryState } from "@/lib/pictionary/types";
 import { createDefaultMessageBoardState } from "@/lib/message-board/types";
@@ -119,6 +121,14 @@ export function ActiveGameBoard({
       <div className="h-full w-full overflow-hidden">
         <PriceOrderAudienceView
           game={state.priceOrder ?? createDefaultPriceOrderState()}
+        />
+      </div>
+    );
+  } else if (activeGame === "priceWheel") {
+    content = (
+      <div className="h-full w-full overflow-hidden">
+        <PriceWheelAudienceView
+          game={state.priceWheel ?? createDefaultPriceWheelState()}
         />
       </div>
     );

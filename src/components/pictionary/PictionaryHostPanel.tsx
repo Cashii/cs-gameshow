@@ -13,11 +13,14 @@ import {
   pictionaryRemainingMs,
   resetPictionaryTimer,
   setPictionaryDuration,
+  mergePictionaryBank,
   startPictionaryTimer,
   togglePictionaryHiddenIndex,
   type PictionaryState,
 } from "@/lib/pictionary/types";
+import { PictionaryWordBank } from "@/components/pictionary/PictionaryWordBank";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { uid } from "@/lib/utils";
 import { OperatorNotice } from "@/components/operator/OperatorNotice";
 import { StatusSwitch } from "@/components/operator/StatusSwitch";
 
@@ -100,6 +103,38 @@ export function PictionaryHostPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <PictionaryWordBank
+        words={game.library ?? []}
+        canSave={Boolean(game.word.trim())}
+        onSave={() =>
+          updatePictionary((prev) => ({
+            ...prev,
+            library: mergePictionaryBank(prev.library ?? [], [
+              { id: uid(), word: prev.word },
+            ]),
+          }))
+        }
+        onLoad={(id) => {
+          const entry = (game.library ?? []).find((item) => item.id === id);
+          if (!entry) return;
+          updatePictionary((prev) => ({
+            ...prev,
+            word: entry.word,
+            hiddenIndexes: [],
+            curtainCovered: true,
+            hintEnabled: false,
+            timerRunning: false,
+            timerEndsAt: null,
+            timerRemainingMs: prev.timerDurationMs,
+          }));
+        }}
+        onDelete={(id) =>
+          updatePictionary((prev) => ({
+            ...prev,
+            library: (prev.library ?? []).filter((item) => item.id !== id),
+          }))
+        }
+      />
       <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
@@ -391,6 +426,7 @@ export function PictionaryHostPanel() {
             ...createDefaultPictionaryState(),
             timerDurationMs: prev.timerDurationMs,
             timerRemainingMs: prev.timerDurationMs,
+            library: prev.library ?? [],
           }))
         }
       />

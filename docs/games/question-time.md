@@ -16,3 +16,7 @@ There is no player phone board.
 ## Spectator
 
 Indigo night-sky board with a glass question card, a row of team scores, and a large ring countdown. The clock turns urgent in the last ten seconds and holds at `0:00` when time is up.
+
+## Question repository
+
+**Save this question** stores the question on screen. You can edit a saved question in the list. **Load** replaces the title and question and leaves teams, scores, and the clock alone.

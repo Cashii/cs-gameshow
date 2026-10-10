@@ -1,5 +1,5 @@
 import { createSampleFeudGame } from "@/lib/feud/defaults";
-import type { FeudGameState } from "@/lib/feud/types";
+import { normalizeFeudLibrary, type FeudGameState } from "@/lib/feud/types";
 import {
   createDefaultWheelState,
   normalizeWheelBank,
@@ -7,8 +7,11 @@ import {
 } from "@/lib/wheel/types";
 import {
   createDefaultLiveDrawerState,
+  clampLiveDrawerDurationMs,
   clampLiveDrawerNumberScale,
   DEFAULT_LIVE_DRAWER_NUMBER_SCALE,
+  normalizeTokenMark,
+  type LiveDrawerDraw,
   type LiveDrawerGameState,
   type LiveDrawerToken,
   type PoolSummary,
@@ -27,12 +30,15 @@ import {
   clampPollScale,
   createEmptyPoll,
   MAX_POLL_HISTORY,
+  normalizePollLibrary,
   type PollHistoryEntry,
   type PollState,
 } from "@/lib/poll/types";
 import {
   clampMessageBoardScale,
   createDefaultMessageBoardState,
+  normalizeMessageBoardGroups,
+  normalizeMessageBoardPresets,
   type MessageBoardState,
 } from "@/lib/message-board/types";
 import {
@@ -48,13 +54,18 @@ import {
   type DerbyRacerId,
 } from "@/lib/derby/types";
 import { createSampleJeoparodyGame } from "@/lib/jeoparody/defaults";
-import type { JeoparodyGameState, JeoparodyPhase } from "@/lib/jeoparody/types";
+import {
+  normalizeJeoparodyLibrary,
+  type JeoparodyGameState,
+  type JeoparodyPhase,
+} from "@/lib/jeoparody/types";
 import {
   createDefaultTriviaState,
   createTriviaQueuedQuestion,
   isTriviaChoiceId,
   normalizeTriviaChoiceCounts,
   normalizeTriviaOptions,
+  normalizeTriviaLibrary,
   syncTriviaOptionsFields,
   type TriviaGameState,
   type TriviaQueuedQuestion,
@@ -63,12 +74,14 @@ import {
 } from "@/lib/trivia/types";
 import {
   createDefaultPriceGuesserState,
+  normalizePriceGuesserLibrary,
   parsePriceGuesserResult,
   withSyncedPriceGuesserResult,
   type PriceGuesserState,
 } from "@/lib/price-guesser/types";
 import {
   createDefaultPriceOrderState,
+  normalizePriceOrderLibrary,
   PRICE_ORDER_MAX_ITEMS,
   syncPriceOrderSlots,
   withSyncedPriceOrderResult,
@@ -83,6 +96,7 @@ import {
   clampQuestionTimeScore,
   createDefaultQuestionTimeState,
   createQuestionTimeTeam,
+  normalizeQuestionTimeLibrary,
   type QuestionTimeState,
   type QuestionTimeTeam,
 } from "@/lib/question-time/types";
@@ -91,6 +105,11 @@ import {
   normalizePictionaryState,
   type PictionaryState,
 } from "@/lib/pictionary/types";
+import {
+  createDefaultPriceWheelState,
+  normalizePriceWheelState,
+  type PriceWheelState,
+} from "@/lib/price-wheel/types";
 
 export type ActiveGame =
   | "feud"
@@ -105,6 +124,7 @@ export type ActiveGame =
   | "trivia"
   | "priceGuesser"
   | "priceOrder"
+  | "priceWheel"
   | "questionTime"
   | "pictionary";
 export type SpectatorScreen = ActiveGame;
@@ -127,6 +147,7 @@ export type SuiteState = {
   trivia: TriviaGameState;
   priceGuesser: PriceGuesserState;
   priceOrder: PriceOrderState;
+  priceWheel: PriceWheelState;
   questionTime: QuestionTimeState;
   pictionary: PictionaryState;
 };
@@ -136,6 +157,7 @@ export type EventSnapshot = SuiteState & {
   poolSummary: PoolSummary;
   poolTokens: LiveDrawerToken[];
   calledTokens: LiveDrawerToken[];
+  drawHistory: LiveDrawerDraw[];
 };
 
 type LegacySuiteState = Partial<Omit<SuiteState, "activeGame" | "liveDrawer">> & {
@@ -166,6 +188,7 @@ function normalizeActiveGame(
     raw === "trivia" ||
     raw === "priceGuesser" ||
     raw === "priceOrder" ||
+    raw === "priceWheel" ||
     raw === "questionTime" ||
     raw === "pictionary"
   ) {
@@ -210,6 +233,7 @@ export function createDefaultSuiteState(): SuiteState {
     trivia: createDefaultTriviaState(),
     priceGuesser: createDefaultPriceGuesserState(),
     priceOrder: createDefaultPriceOrderState(),
+    priceWheel: createDefaultPriceWheelState(),
     questionTime: createDefaultQuestionTimeState(),
     pictionary: createDefaultPictionaryState(),
   };
@@ -319,7 +343,9 @@ function normalizeLiveDrawerState(
   const defaults = createDefaultLiveDrawerState();
   if (!raw) return defaults;
 
-  const { colors: _ignored, number, colorId, ...rest } = raw;
+  const withoutLibrary = { ...raw };
+  delete (withoutLibrary as { library?: unknown }).library;
+  const { colors: _ignored, number, colorId, ...rest } = withoutLibrary;
 
   let revealedTokens = rest.revealedTokens;
   if (!Array.isArray(revealedTokens) && number != null) {
@@ -328,19 +354,44 @@ function normalizeLiveDrawerState(
         id: "legacy",
         number: String(number),
         colorId: colorId ?? "blue",
+        mark: null,
       },
     ];
   }
 
+  const timerDurationMs = clampLiveDrawerDurationMs(rest.timerDurationMs);
+  const timerRunning = Boolean(rest.timerRunning);
+  const timerEndsAt =
+    timerRunning &&
+    typeof rest.timerEndsAt === "number" &&
+    Number.isFinite(rest.timerEndsAt)
+      ? rest.timerEndsAt
+      : null;
+  const timerRemainingMs =
+    typeof rest.timerRemainingMs === "number" &&
+    Number.isFinite(rest.timerRemainingMs)
+      ? Math.max(0, Math.round(rest.timerRemainingMs))
+      : timerDurationMs;
+
   return {
     ...defaults,
     ...rest,
-    revealedTokens: Array.isArray(revealedTokens) ? revealedTokens : [],
+    revealedTokens: Array.isArray(revealedTokens)
+      ? revealedTokens.map((token) => ({
+          ...token,
+          mark: normalizeTokenMark(token?.mark),
+        }))
+      : [],
     numberScale:
       typeof rest.numberScale === "number"
         ? clampLiveDrawerNumberScale(rest.numberScale)
         : DEFAULT_LIVE_DRAWER_NUMBER_SCALE,
     sequence: typeof rest.sequence === "number" ? rest.sequence : 0,
+    timerEnabled: Boolean(rest.timerEnabled),
+    timerDurationMs,
+    timerRemainingMs,
+    timerRunning: timerRunning && timerEndsAt != null,
+    timerEndsAt: timerRunning ? timerEndsAt : null,
   };
 }
 
@@ -391,6 +442,7 @@ function normalizePollState(raw: Partial<PollState> | undefined): PollState {
     correctAnswerRevealed: Boolean(raw.correctAnswerRevealed) && !!correctChoiceId,
     showPercentages: raw.showPercentages !== false,
     scale: clampPollScale(raw.scale),
+    library: normalizePollLibrary(raw.library),
   };
 }
 
@@ -435,9 +487,19 @@ function normalizeMessageBoardState(
 ): MessageBoardState {
   const defaults = createDefaultMessageBoardState();
   if (!raw || typeof raw !== "object") return defaults;
+  const groups = normalizeMessageBoardGroups(raw.groups);
+  const presets = normalizeMessageBoardPresets(raw.presets, groups);
+  const activePresetId =
+    typeof raw.activePresetId === "string" &&
+    presets.some((preset) => preset.id === raw.activePresetId)
+      ? raw.activePresetId
+      : null;
   return {
     text: typeof raw.text === "string" ? raw.text : defaults.text,
     scale: clampMessageBoardScale(raw.scale),
+    groups,
+    presets,
+    activePresetId,
   };
 }
 
@@ -568,6 +630,7 @@ function normalizeTriviaState(
           .map((item) => normalizeTriviaHistoryEntry(item))
           .filter((item): item is TriviaRoundHistory => item != null)
       : [],
+    library: normalizeTriviaLibrary(raw.library),
   };
 }
 
@@ -669,6 +732,7 @@ function normalizePriceGuesserState(
       typeof raw.itemRevealed === "boolean" ? raw.itemRevealed : true,
     photoFit: normalizePhotoFit(raw.photoFit),
     resultOverlay: parsePriceGuesserResult(raw.resultOverlay),
+    library: normalizePriceGuesserLibrary(raw.library),
   });
 }
 
@@ -759,6 +823,7 @@ function normalizeQuestionTimeState(
     timerRemainingMs,
     timerRunning: timerRunning && timerEndsAt != null,
     timerEndsAt: timerRunning ? timerEndsAt : null,
+    library: normalizeQuestionTimeLibrary(raw.library),
   };
 }
 
@@ -782,6 +847,7 @@ function normalizePriceOrderState(
     items,
     order,
     resultShown: Boolean(raw.resultShown),
+    library: normalizePriceOrderLibrary(raw.library),
   });
 }
 
@@ -850,6 +916,7 @@ function normalizeJeoparodyState(
     selectedClueId: hasSelected ? selectedClueId : null,
     phase,
     showScores: raw.showScores ?? true,
+    library: normalizeJeoparodyLibrary(raw.library),
   };
 }
 
@@ -906,6 +973,7 @@ export function normalizeSuiteState(
       rounds: raw.feud?.rounds?.length
         ? raw.feud.rounds
         : createSampleFeudGame().rounds,
+      library: normalizeFeudLibrary(raw.feud?.library),
     },
     wheel: (() => {
       const rawWheel = (raw.wheel ?? {}) as Partial<WheelGameState> & {
@@ -945,6 +1013,7 @@ export function normalizeSuiteState(
     trivia: normalizeTriviaState(raw.trivia),
     priceGuesser: normalizePriceGuesserState(raw.priceGuesser),
     priceOrder: normalizePriceOrderState(raw.priceOrder),
+    priceWheel: normalizePriceWheelState(raw.priceWheel),
     questionTime: normalizeQuestionTimeState(raw.questionTime),
     pictionary: normalizePictionaryState(raw.pictionary),
   };
@@ -956,6 +1025,7 @@ export function suiteToSnapshot(
   poolSummary: PoolSummary,
   poolTokens: LiveDrawerToken[],
   calledTokens: LiveDrawerToken[] = [],
+  drawHistory: LiveDrawerDraw[] = [],
 ): EventSnapshot {
   return {
     ...suite,
@@ -963,6 +1033,7 @@ export function suiteToSnapshot(
     poolSummary,
     poolTokens,
     calledTokens,
+    drawHistory,
   };
 }
 
@@ -999,6 +1070,7 @@ export const ACTIVE_GAME_LABELS: Record<ActiveGame, string> = {
   trivia: "Elimination Trivia",
   priceGuesser: "Price Guesser",
   priceOrder: "Price Order",
+  priceWheel: "Price Wheel",
   questionTime: "Question Time",
   pictionary: "Pictionary",
 };
@@ -1014,6 +1086,7 @@ export const SPECTATOR_SCREENS: SpectatorScreen[] = [
   "trivia",
   "priceGuesser",
   "priceOrder",
+  "priceWheel",
   "questionTime",
   "pictionary",
   "takeIt",

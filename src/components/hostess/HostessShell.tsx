@@ -22,6 +22,7 @@ function createOptimisticToken(number: string, colorId: string): LiveDrawerToken
     id: `opt-${crypto.randomUUID()}`,
     number,
     colorId,
+    mark: null,
   };
 }
 

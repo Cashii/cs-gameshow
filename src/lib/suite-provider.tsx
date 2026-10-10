@@ -24,8 +24,12 @@ import {
 } from "@/lib/sync/useLocalSuiteSync";
 import type { FeudGameState, FeudRound } from "@/lib/feud/types";
 import type { WheelGameState } from "@/lib/wheel/types";
-import type { LiveDrawerGameState } from "@/lib/live-drawer/types";
-import type { PoolSummary, LiveDrawerToken } from "@/lib/live-drawer/types";
+import type {
+  LiveDrawerGameState,
+  LiveDrawerDraw,
+  LiveDrawerToken,
+  PoolSummary,
+} from "@/lib/live-drawer/types";
 import {
   createDefaultDerbyState,
   emptyDerbyVoteTallies,
@@ -60,6 +64,10 @@ import {
   createDefaultPictionaryState,
   type PictionaryState,
 } from "@/lib/pictionary/types";
+import {
+  createDefaultPriceWheelState,
+  type PriceWheelState,
+} from "@/lib/price-wheel/types";
 
 export type SuiteRole = "operator" | "spectator" | "hostess" | "player";
 
@@ -70,6 +78,7 @@ type SuiteContextValue = {
   poolSummary: PoolSummary;
   poolTokens: LiveDrawerToken[];
   calledTokens: LiveDrawerToken[];
+  drawHistory: LiveDrawerDraw[];
   revision: number;
   connected: boolean;
   setState: React.Dispatch<React.SetStateAction<SuiteState>>;
@@ -96,6 +105,9 @@ type SuiteContextValue = {
   updatePriceOrder: (
     updater: (game: PriceOrderState) => PriceOrderState,
   ) => void;
+  updatePriceWheel: (
+    updater: (game: PriceWheelState) => PriceWheelState,
+  ) => void;
   updateQuestionTime: (
     updater: (game: QuestionTimeState) => QuestionTimeState,
   ) => void;
@@ -118,6 +130,7 @@ function emptySnapshot(): EventSnapshot {
     poolSummary: {},
     poolTokens: [],
     calledTokens: [],
+    drawHistory: [],
   };
 }
 
@@ -131,6 +144,7 @@ function mergeSuiteIntoSnapshot(
     poolSummary: prev.poolSummary,
     poolTokens: prev.poolTokens,
     calledTokens: prev.calledTokens,
+    drawHistory: prev.drawHistory ?? [],
     revision: prev.revision,
   };
 }
@@ -149,6 +163,20 @@ function pickLiveDrawer(
   return {
     ...b,
     numberScale: a.numberScale,
+  };
+}
+
+function withLiveDrawerTimer(
+  base: LiveDrawerGameState,
+  timerFrom: LiveDrawerGameState,
+): LiveDrawerGameState {
+  return {
+    ...base,
+    timerEnabled: Boolean(timerFrom.timerEnabled),
+    timerDurationMs: timerFrom.timerDurationMs,
+    timerRemainingMs: timerFrom.timerRemainingMs,
+    timerRunning: Boolean(timerFrom.timerRunning),
+    timerEndsAt: timerFrom.timerEndsAt ?? null,
   };
 }
 
@@ -235,11 +263,15 @@ export function SuiteProvider({
         poolSummary: next.poolSummary,
         poolTokens: next.poolTokens,
         calledTokens: next.calledTokens ?? [],
+        drawHistory: next.drawHistory ?? [],
         poll: next.poll,
         trivia: next.trivia,
         derby: mergeDerbyVotes(base.derby, next.derby),
         takeIt: mergeTakeItPicks(base.takeIt, next.takeIt),
-        liveDrawer: pickLiveDrawer(base.liveDrawer, next.liveDrawer),
+        liveDrawer: withLiveDrawerTimer(
+          pickLiveDrawer(base.liveDrawer, next.liveDrawer),
+          base.liveDrawer,
+        ),
         revision: Math.max(base.revision, next.revision),
       });
 
@@ -291,7 +323,10 @@ export function SuiteProvider({
       replaceSnapshot(
         mergeSuiteIntoSnapshot(prev, {
           ...suite,
-          liveDrawer: pickLiveDrawer(prev.liveDrawer, suite.liveDrawer),
+          liveDrawer: withLiveDrawerTimer(
+            pickLiveDrawer(prev.liveDrawer, suite.liveDrawer),
+            suite.liveDrawer,
+          ),
         }),
       );
       setConnected(true);
@@ -544,6 +579,16 @@ export function SuiteProvider({
     [applyLocalSuite],
   );
 
+  const updatePriceWheel = useCallback(
+    (updater: (game: PriceWheelState) => PriceWheelState) => {
+      applyLocalSuite((prev) => ({
+        ...prev,
+        priceWheel: updater(prev.priceWheel ?? createDefaultPriceWheelState()),
+      }));
+    },
+    [applyLocalSuite],
+  );
+
   const updateQuestionTime = useCallback(
     (updater: (game: QuestionTimeState) => QuestionTimeState) => {
       applyLocalSuite((prev) => ({
@@ -615,6 +660,7 @@ export function SuiteProvider({
       poolSummary: snapshot?.poolSummary ?? {},
       poolTokens: snapshot?.poolTokens ?? [],
       calledTokens: snapshot?.calledTokens ?? [],
+      drawHistory: snapshot?.drawHistory ?? [],
       revision: snapshot?.revision ?? 0,
       connected,
       setState,
@@ -631,6 +677,7 @@ export function SuiteProvider({
       updateJeoparody,
       updatePriceGuesser,
       updatePriceOrder,
+      updatePriceWheel,
       updateQuestionTime,
       updatePictionary,
       patchSuite,
@@ -657,6 +704,7 @@ export function SuiteProvider({
       updateJeoparody,
       updatePriceGuesser,
       updatePriceOrder,
+      updatePriceWheel,
       updateQuestionTime,
       updatePictionary,
       patchSuite,

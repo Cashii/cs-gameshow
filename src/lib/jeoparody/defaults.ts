@@ -117,5 +117,6 @@ export function createSampleJeoparodyGame(): JeoparodyGameState {
     selectedClueId: null,
     phase: "board",
     showScores: true,
+    library: [],
   };
 }

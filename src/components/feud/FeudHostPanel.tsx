@@ -15,7 +15,16 @@ import {
 import { useSuite } from "@/lib/suite-provider";
 import { useSound } from "@/lib/feud/useSound";
 import { clamp, uid } from "@/lib/utils";
-import type { FeudAnswer, FeudGameState, FeudRound } from "@/lib/feud/types";
+import {
+  feudBankQuestionFromRound,
+  feudRoundsFromLibrary,
+  mergeFeudBank,
+  type FeudAnswer,
+  type FeudBankQuestion,
+  type FeudGameState,
+  type FeudRound,
+} from "@/lib/feud/types";
+import { FeudQuestionBank } from "@/components/feud/FeudQuestionBank";
 import { IconButton, NumberInput, TextInput } from "@/components/ui/Primitives";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { Select } from "@/components/ui/Select";
@@ -248,6 +257,66 @@ export function FeudHostPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <FeudQuestionBank
+        questions={feud.library ?? []}
+        canSaveCurrent={feudBankQuestionFromRound(round, "draft") != null}
+        canSaveAll={feud.rounds.some(
+          (item) => feudBankQuestionFromRound(item, "draft") != null,
+        )}
+        onSaveCurrent={() => {
+          const entry = feudBankQuestionFromRound(round, uid());
+          if (!entry) return;
+          updateFeud((prev) => ({
+            ...prev,
+            library: mergeFeudBank(prev.library ?? [], [entry]),
+          }));
+        }}
+        onSaveAll={() => {
+          const incoming = feud.rounds
+            .map((item) => feudBankQuestionFromRound(item, uid()))
+            .filter((item): item is FeudBankQuestion => item != null);
+          updateFeud((prev) => ({
+            ...prev,
+            library: mergeFeudBank(prev.library ?? [], incoming),
+          }));
+        }}
+        onLoad={(id) => {
+          const entry = (feud.library ?? []).find((item) => item.id === id);
+          if (!entry) return;
+          const nextRound = feudRoundsFromLibrary([entry], uid)[0];
+          if (!nextRound) return;
+          updateFeud((prev) => {
+            if (prev.rounds.length === 0) {
+              return { ...prev, currentRoundIndex: 0, rounds: [nextRound] };
+            }
+            const index = Math.min(
+              prev.currentRoundIndex,
+              prev.rounds.length - 1,
+            );
+            return {
+              ...prev,
+              rounds: prev.rounds.map((item, itemIndex) =>
+                itemIndex === index ? { ...nextRound, id: item.id } : item,
+              ),
+            };
+          });
+        }}
+        onLoadAll={() => {
+          const library = feud.library ?? [];
+          if (library.length === 0) return;
+          updateFeud((prev) => ({
+            ...prev,
+            currentRoundIndex: 0,
+            rounds: feudRoundsFromLibrary(library, uid),
+          }));
+        }}
+        onDelete={(id) =>
+          updateFeud((prev) => ({
+            ...prev,
+            library: (prev.library ?? []).filter((item) => item.id !== id),
+          }))
+        }
+      />
       <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">

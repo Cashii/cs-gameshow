@@ -100,7 +100,7 @@ export function TakeItOrLeaveItHostPanel() {
   const lastOpened = game.cases.find((c) => c.id === game.lastOpenedCaseId);
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 p-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
       <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>

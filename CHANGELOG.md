@@ -1,5 +1,21 @@
 # Updates
 
+## October 9, 2026
+
+1. **Operator desk** — The main work area uses the same background as the top bar.
+1. **Message Board** — Groups sit in a labeled list on the left, with saved messages beside them. Add a message from the message-plus button next to those messages, and add a group from the folder-plus button. Each opens a small box for the name or text.
+1. **Price Wheel** — New spectator scoreboard. Add as many players as you need, each with a name and a score. Names and scores fill the big screen.
+1. **Question lists** — Friendly Feud, Question Time, Elimination Trivia, and Poll keep a list of the actual questions, with answers or choices shown on each row. Jeoparody keeps categories with their clues. Pictionary keeps words. Price Guesser and Price Order keep items with the photo, name, and price. Load brings that content back.
+1. **Wheel of Riches** — Phrases and topics sit above the letter controls. Each row is a topic and a phrase you can edit and load onto the board.
+1. **No extra save bar** — Derby, Take It or Leave It, Live Drawer, and Price Wheel no longer ask you to name a setup. The race controls, the deck, the number pool, and the player list already keep what you typed.
+1. **Live Drawer** — Mark a token as a birthday or VIP. Filter the pool to those marks, then draw that token on purpose. The audience never sees the mark.
+
+## October 7, 2026
+
+1. **Message Board** — Quick messages can be saved and displayed quickly on the spectator screene.
+1. **Live Drawer** — A configurable countdown sits under Draw controls and draw history is available, hover a number to return it to the pool if it was drawn by mistake.
+1. **Derby Race** — When a race finishes, phones show who won, how many votes that racer got, and whether that was your pick.
+
 ## September 23, 2026
 
 1. **Poll** — Use **Text size** (− / + / Reset) on the right side of the operator bar to shrink or enlarge the question and answers on the big screen (50%–250%).

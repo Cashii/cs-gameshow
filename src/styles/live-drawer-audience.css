@@ -375,7 +375,60 @@
   .live-drawer-audience .live-drawer-waiting-dots span,
   .live-drawer-audience .live-drawer-balls.enter .live-drawer-ball,
   .live-drawer-audience .live-drawer-balls.visible .live-drawer-ball,
-  .live-drawer-audience .live-drawer-stage.enter .live-drawer-burst {
+  .live-drawer-audience .live-drawer-stage.enter .live-drawer-burst,
+  .live-drawer-audience .live-drawer-countdown.is-urgent {
     animation: none;
+  }
+}
+
+.live-drawer-audience .live-drawer-countdown {
+  position: absolute;
+  bottom: 4vh;
+  left: 50%;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: min(88vw, 28rem);
+  margin: 0;
+  padding: 0.55rem 1.6rem 0.7rem;
+  border: 2px solid rgba(56, 189, 248, 0.55);
+  border-radius: 1.4rem;
+  background: rgba(2, 6, 23, 0.82);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.live-drawer-audience .live-drawer-countdown-time {
+  margin: 0;
+  font-size: clamp(3.2rem, 9vw, 6.75rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+
+.live-drawer-audience .live-drawer-countdown.is-urgent {
+  border-color: rgba(251, 191, 36, 0.85);
+  animation: live-drawer-countdown-pulse 1s ease-in-out infinite;
+}
+
+.live-drawer-audience .live-drawer-countdown.is-urgent .live-drawer-countdown-time {
+  color: #fde68a;
+}
+
+.live-drawer-audience.has-timer .live-drawer-stage {
+  padding-bottom: 22vh;
+}
+
+@keyframes live-drawer-countdown-pulse {
+  0%,
+  100% {
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(251, 191, 36, 0.18), 0 16px 48px rgba(0, 0, 0, 0.5);
   }
 }

@@ -17,3 +17,7 @@ No Daily Double or Final Jeopardy.
 ## Spectator
 
 Shows the category grid with unused dollar values. Played cells are blank. While a clue is open, the display shows the prompt, then the response when the operator reveals it. Contestant scores sit along the bottom when enabled.
+
+## Categories
+
+**Save all categories** stores each category with its clue values, prompts, and responses. **Load** adds that category to the board with every clue unplayed. **Load all** replaces the board. Contestant names and scores stay.

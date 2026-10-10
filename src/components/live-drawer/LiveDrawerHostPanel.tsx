@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus } from "lucide-react";
+import { Cake, Circle, Minus, Plus, Star } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useSuite } from "@/lib/suite-provider";
 import {
@@ -9,6 +9,7 @@ import {
   liveDrawerFillStyle,
   liveDrawerOutlineClass,
   type LiveDrawerColor,
+  type LiveDrawerDraw,
 } from "@/lib/live-drawer/types";
 import {
   clampColorCount,
@@ -17,11 +18,26 @@ import {
 } from "@/lib/live-drawer/draw";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import type { LiveDrawerToken, TokenMark } from "@/lib/live-drawer/types";
+import { LiveDrawerTimerPanel } from "@/components/live-drawer/LiveDrawerTimerPanel";
 import type { EventSnapshot } from "@/lib/suite-state";
+
+function historyWithoutTokens(
+  history: LiveDrawerDraw[] | undefined,
+  tokenIds: Set<string>,
+): LiveDrawerDraw[] {
+  if (tokenIds.size === 0) return history ?? [];
+  return (history ?? [])
+    .map((batch) => ({
+      ...batch,
+      tokens: batch.tokens.filter((token) => !tokenIds.has(token.id)),
+    }))
+    .filter((batch) => batch.tokens.length > 0);
+}
 
 function snapshotWithAddedTokens(
   snapshot: EventSnapshot,
-  entries: { id: string; number: string; colorId: string }[],
+  entries: { id: string; number: string; colorId: string; mark?: null }[],
 ): EventSnapshot {
   const poolKeys = new Set(
     snapshot.poolTokens.map((token) => `${token.colorId}:${token.number}`),
@@ -34,6 +50,7 @@ function snapshotWithAddedTokens(
   );
   const poolSummary = { ...snapshot.poolSummary };
   const toPool: EventSnapshot["poolTokens"] = [];
+  const returnedIds = new Set<string>();
   let calledTokens = snapshot.calledTokens;
 
   for (const entry of entries) {
@@ -44,12 +61,14 @@ function snapshotWithAddedTokens(
     const called = calledByKey.get(key);
     if (called) {
       calledTokens = calledTokens.filter((token) => token.id !== called.id);
+      returnedIds.add(called.id);
       toPool.push(called);
     } else {
       toPool.push({
         id: entry.id,
         number: entry.number,
         colorId: entry.colorId,
+        mark: null,
       });
     }
     poolSummary[entry.colorId] = (poolSummary[entry.colorId] ?? 0) + 1;
@@ -62,6 +81,7 @@ function snapshotWithAddedTokens(
     poolTokens: [...snapshot.poolTokens, ...toPool],
     calledTokens,
     poolSummary,
+    drawHistory: historyWithoutTokens(snapshot.drawHistory, returnedIds),
   };
 }
 
@@ -91,6 +111,10 @@ function snapshotWithoutToken(
         (token) => token.id !== tokenId,
       ),
     },
+    drawHistory: historyWithoutTokens(
+      snapshot.drawHistory,
+      new Set([tokenId]),
+    ),
   };
 }
 
@@ -111,6 +135,16 @@ function addTokensSummary(
   return parts.join(", ");
 }
 
+function formatDrawTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
 function revealedChipClass(number: string): string {
   const digits = number.trim().length;
   if (digits >= 3) return "size-14 px-1 text-base";
@@ -123,6 +157,41 @@ function summaryTokenClass(number: string): string {
   if (digits >= 3) return "size-12 text-sm";
   if (digits === 2) return "size-12 text-lg";
   return "size-12 text-xl";
+}
+
+function historyTokenClass(number: string): string {
+  const digits = number.trim().length;
+  if (digits >= 3) return "h-8 min-w-8 px-1.5 text-xs";
+  if (digits === 2) return "size-8 text-sm";
+  return "size-8 text-base";
+}
+
+function TokenMarkButton({
+  mark,
+  onClick,
+}: {
+  mark: TokenMark | null;
+  onClick: () => void;
+}) {
+  const label =
+    mark === "birthday" ? "Birthday" : mark === "vip" ? "VIP" : "No special mark";
+  return (
+    <button
+      type="button"
+      title={`${label}. Click to change.`}
+      aria-label={label}
+      onClick={onClick}
+      className="inline-flex h-5 w-5 items-center justify-center text-amber-300 hover:text-white"
+    >
+      {mark === "birthday" ? (
+        <Cake size={12} aria-hidden />
+      ) : mark === "vip" ? (
+        <Star size={12} aria-hidden />
+      ) : (
+        <Circle size={12} className="text-neutral-500" aria-hidden />
+      )}
+    </button>
+  );
 }
 
 function summaryTokenStyle(color: LiveDrawerColor): CSSProperties {
@@ -140,6 +209,7 @@ export function LiveDrawerHostPanel() {
     poolSummary,
     poolTokens,
     calledTokens,
+    drawHistory,
     refreshSnapshot,
     applyServerSnapshot,
   } = useSuite();
@@ -151,6 +221,7 @@ export function LiveDrawerHostPanel() {
   const [addNumber, setAddNumber] = useState("");
   const [addColorId, setAddColorId] = useState<string | null>("blue");
   const [listTab, setListTab] = useState<"pool" | "called">("pool");
+  const [markFilter, setMarkFilter] = useState<"all" | TokenMark>("all");
   const [clearPoolOpen, setClearPoolOpen] = useState(false);
   const [returnCalledOpen, setReturnCalledOpen] = useState(false);
   const [clearCalledOpen, setClearCalledOpen] = useState(false);
@@ -213,6 +284,7 @@ export function LiveDrawerHostPanel() {
   const poolRows = useMemo(() => {
     const byColor = new Map<string, typeof poolTokens>();
     for (const token of poolTokens) {
+      if (markFilter !== "all" && token.mark !== markFilter) continue;
       const list = byColor.get(token.colorId) ?? [];
       list.push(token);
       byColor.set(token.colorId, list);
@@ -223,11 +295,12 @@ export function LiveDrawerHostPanel() {
       );
       return { color, tokens };
     }).filter((row) => row.tokens.length > 0);
-  }, [poolTokens]);
+  }, [poolTokens, markFilter]);
 
   const calledRows = useMemo(() => {
     const byColor = new Map<string, typeof calledTokens>();
     for (const token of calledTokens) {
+      if (markFilter !== "all" && token.mark !== markFilter) continue;
       const list = byColor.get(token.colorId) ?? [];
       list.push(token);
       byColor.set(token.colorId, list);
@@ -238,7 +311,7 @@ export function LiveDrawerHostPanel() {
       );
       return { color, tokens };
     }).filter((row) => row.tokens.length > 0);
-  }, [calledTokens]);
+  }, [calledTokens, markFilter]);
 
   const revealed = state.liveDrawer.revealedTokens;
 
@@ -416,6 +489,19 @@ export function LiveDrawerHostPanel() {
     showToast(summary);
   };
 
+  const handleReturnOne = async (token: {
+    id: string;
+    number: string;
+    colorId: string;
+  }) => {
+    const ok = await runAction({ action: "return", tokenIds: [token.id] });
+    if (!ok) return;
+    const colorName = getLiveDrawerColor(token.colorId)?.name ?? "Number";
+    const summary = `Returned ${colorName} ${token.number} to the pool`;
+    setMessage(summary);
+    showToast(summary);
+  };
+
   const handleRemove = async (token: {
     id: string;
     number: string;
@@ -462,6 +548,25 @@ export function LiveDrawerHostPanel() {
       else next.add(id);
       return next;
     });
+  };
+
+  const cycleMark = async (token: LiveDrawerToken) => {
+    const next: TokenMark | null =
+      token.mark === "birthday" ? "vip" : token.mark === "vip" ? null : "birthday";
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/tokens/${token.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mark: next }),
+      });
+      if (!res.ok) throw new Error("Could not update mark");
+      await refreshSnapshot();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Could not update mark");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const drawTotal = LIVE_DRAWER_COLORS.reduce(
@@ -522,7 +627,8 @@ export function LiveDrawerHostPanel() {
               </div>
             </div>
 
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-neutral-700 bg-neutral-800 shadow-lg">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-6">
+              <div className="flex min-h-0 min-w-0 flex-col rounded-lg border border-neutral-700 bg-neutral-800 shadow-lg">
                 <div className="shrink-0 border-b border-neutral-700 p-6">
                   <div className="flex items-start justify-between gap-3">
                     <h2 className="text-xl font-bold text-white">On Display</h2>
@@ -649,7 +755,65 @@ export function LiveDrawerHostPanel() {
                   </div>
                 </div>
               </div>
+              <LiveDrawerTimerPanel />
+              </div>
             </div>
+
+            <section className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-3 shadow-lg">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <h2 className="text-xl font-bold text-white">Draw history</h2>
+                <p className="text-sm text-neutral-400">
+                  Newest first. Hover a number to return it.
+                </p>
+              </div>
+              {drawHistory.length === 0 ? (
+                <p className="mt-2 text-neutral-400">No draws yet</p>
+              ) : (
+                <ol className="mt-2 divide-y divide-neutral-700/80">
+                  {drawHistory.map((batch, index) => (
+                    <li
+                      key={batch.id}
+                      className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1.5"
+                    >
+                      <div className="flex w-36 shrink-0 items-center gap-1.5 text-xs">
+                        {index === 0 ? (
+                          <span className="font-semibold text-white">Latest</span>
+                        ) : null}
+                        <span className="tabular-nums text-neutral-400">
+                          {formatDrawTime(batch.drawnAt)}
+                        </span>
+                      </div>
+                      <ul className="flex flex-wrap items-center gap-1">
+                        {batch.tokens.map((token) => {
+                          const color = getLiveDrawerColor(token.colorId);
+                          return (
+                            <li key={token.id} className="group relative">
+                              <span
+                                className={`inline-flex items-center justify-center rounded-full font-bold tabular-nums leading-none ${historyTokenClass(token.number)} ${liveDrawerOutlineClass(color)}`}
+                                style={
+                                  color ? summaryTokenStyle(color) : undefined
+                                }
+                              >
+                                {token.number}
+                              </span>
+                              <button
+                                type="button"
+                                disabled={loading}
+                                aria-label={`Return ${color?.name ?? "token"} ${token.number}`}
+                                onClick={() => handleReturnOne(token)}
+                                className="pointer-events-none absolute top-1/2 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-neutral-950 px-2 py-1 text-[10px] leading-none font-semibold whitespace-nowrap text-teal-200 opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
+                              >
+                                Return
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
 
             <div className="flex min-w-0 shrink-0 flex-col">
               <h2 className="mb-3 text-xl font-bold text-white">
@@ -755,6 +919,28 @@ export function LiveDrawerHostPanel() {
                   )}
                 </div>
 
+                <div className="flex flex-wrap gap-2 px-4 pt-3">
+                  {(
+                    [
+                      ["all", "All"],
+                      ["birthday", "Birthday"],
+                      ["vip", "VIP"],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setMarkFilter(id)}
+                      className={`h-7 rounded-full px-2.5 text-xs font-semibold ${
+                        markFilter === id
+                          ? "bg-teal-600 text-white"
+                          : "bg-neutral-900 text-neutral-300 hover:bg-neutral-700"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 <div className="px-4 pt-2 pb-3">
                   {listTab === "called" ? (
                     calledRows.length === 0 ? (
@@ -775,6 +961,10 @@ export function LiveDrawerHostPanel() {
                                   >
                                     {t.number}
                                   </span>
+                                  <TokenMarkButton
+                                    mark={t.mark}
+                                    onClick={() => void cycleMark(t)}
+                                  />
                                   <button
                                     type="button"
                                     onClick={() => handleRemove(t)}
@@ -823,6 +1013,10 @@ export function LiveDrawerHostPanel() {
                                   >
                                     {t.number}
                                   </button>
+                                  <TokenMarkButton
+                                    mark={t.mark}
+                                    onClick={() => void cycleMark(t)}
+                                  />
                                   <button
                                     type="button"
                                     onClick={() => handleRemove(t)}
