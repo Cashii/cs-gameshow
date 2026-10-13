@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Minus, Plus } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import {
   clampDerbyRacerScale,
   emptyDerbyVoteTallies,
   createDefaultDerbyState,
   DERBY_DURATION_MS,
+  MAX_DERBY_RACER_SCALE,
+  MIN_DERBY_RACER_SCALE,
   getDerbyRacer,
   getDerbyRacers,
   getDerbyRacerNameOverrides,
@@ -15,6 +18,8 @@ import {
   WONDERBAR_RACERS,
   DERBY_RACERS,
 } from "@/lib/derby/types";
+import { DerbyHorse } from "@/components/derby/DerbyHorse";
+import { DerbyToy } from "@/components/derby/DerbyToy";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 
 function newRaceId(): string {
@@ -151,6 +156,14 @@ export function DerbyHostPanel() {
     : null;
   const winningVotes = picked ? (game.voteTallies?.[picked.id] ?? 0) : 0;
   const racerNoun = theme === "wonderbar" ? "Toy" : "Horse";
+  const racerScale = clampDerbyRacerScale(game.racerScale);
+
+  const setRacerScale = (next: number) => {
+    updateDerby((prev) => ({
+      ...prev,
+      racerScale: clampDerbyRacerScale(next),
+    }));
+  };
 
   const voteTotal = racers.reduce(
     (sum, racer) => sum + (game.voteTallies?.[racer.id] ?? 0),
@@ -173,22 +186,50 @@ export function DerbyHostPanel() {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <p className="shrink-0 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-              Status
-            </p>
-            <p className="truncate text-sm font-semibold text-white">
-              {statusText}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <p className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-              Phone votes
-            </p>
-            <p className="text-3xl font-bold tabular-nums text-amber-300">
-              {voteTotal}
-            </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+              Game actions
+            </span>
+            {finished ? (
+              <button
+                type="button"
+                onClick={raceAgain}
+                className="inline-flex h-10 items-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-500"
+              >
+                Race again
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={!game.winnerId || racing}
+                onClick={startRace}
+                className="inline-flex h-10 items-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500"
+              >
+                Start race
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={reset}
+              className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
+            >
+              Reset
+            </button>
+            {game.phase === "idle" ? (
+              <button
+                type="button"
+                onClick={() =>
+                  updateDerby((prev) => ({
+                    ...prev,
+                    showJoinQr: !prev.showJoinQr,
+                  }))
+                }
+                className="inline-flex h-10 items-center rounded-md border border-neutral-600 bg-neutral-800 px-4 text-sm font-semibold text-white hover:bg-neutral-700"
+              >
+                {game.showJoinQr ? "Hide QR code" : "Show QR code"}
+              </button>
+            ) : null}
           </div>
           {racing ? (
             <div className="flex shrink-0 items-center gap-2">
@@ -205,46 +246,31 @@ export function DerbyHostPanel() {
               </p>
             </div>
           ) : null}
-          <div className="ml-auto flex flex-wrap items-center gap-2">
-            {finished ? (
-              <button
-                type="button"
-                onClick={raceAgain}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
-              >
-                Race again
-              </button>
-            ) : (
-              <button
-                type="button"
-                disabled={!game.winnerId || racing}
-                onClick={startRace}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500"
-              >
-                Start race
-              </button>
-            )}
+          <div className="ml-auto flex items-center gap-3">
+            <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+              Zoom
+            </span>
+            <span className="min-w-12 text-right text-sm font-semibold tabular-nums text-neutral-300">
+              {Math.round(racerScale * 100)}%
+            </span>
             <button
               type="button"
-              onClick={reset}
-              className="rounded-lg border border-teal-500 bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-500"
+              aria-label="Zoom out"
+              disabled={racerScale <= MIN_DERBY_RACER_SCALE}
+              onClick={() => setRacerScale(racerScale - 0.1)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-neutral-700 disabled:bg-neutral-800 disabled:text-neutral-500"
             >
-              Reset
+              <Minus size={18} />
             </button>
-            {game.phase === "idle" ? (
-              <button
-                type="button"
-                onClick={() =>
-                  updateDerby((prev) => ({
-                    ...prev,
-                    showJoinQr: !prev.showJoinQr,
-                  }))
-                }
-                className="rounded-lg border border-neutral-600 bg-neutral-800 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-700"
-              >
-                {game.showJoinQr ? "Hide QR code" : "Show QR code"}
-              </button>
-            ) : null}
+            <button
+              type="button"
+              aria-label="Zoom in"
+              disabled={racerScale >= MAX_DERBY_RACER_SCALE}
+              onClick={() => setRacerScale(racerScale + 0.1)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-neutral-700 disabled:bg-neutral-800 disabled:text-neutral-500"
+            >
+              <Plus size={18} />
+            </button>
           </div>
         </div>
       </div>
@@ -259,6 +285,24 @@ export function DerbyHostPanel() {
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex w-full flex-col gap-6 px-6 py-6">
         <div>
+          <div className="mb-4 flex flex-wrap items-end gap-x-8 gap-y-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                Status
+              </p>
+              <p className="mt-1 text-sm font-semibold text-white">
+                {statusText}
+              </p>
+            </div>
+            <div className="shrink-0">
+              <p className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                Phone votes
+              </p>
+              <p className="mt-1 text-3xl font-bold tabular-nums leading-none text-amber-300">
+                {voteTotal}
+              </p>
+            </div>
+          </div>
           <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
             Racers &amp; phone votes
           </p>
@@ -285,11 +329,24 @@ export function DerbyHostPanel() {
                     onClick={() => pickWinner(racer.id)}
                     className="w-full disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <span
-                      className="mx-auto mb-2 block h-8 w-8 rounded-full border border-black/30 shadow-inner"
-                      style={{ background: racer.hex }}
+                    <div
+                      className="mx-auto mb-2 flex h-20 w-full items-center justify-center"
                       aria-hidden
-                    />
+                    >
+                      <div
+                        className="h-full [&_.derby-toy]:h-full [&_.derby-toy]:w-full [&_svg]:h-full [&_svg]:w-full"
+                        style={{
+                          aspectRatio:
+                            theme === "wonderbar" ? "280 / 176" : "220 / 148",
+                        }}
+                      >
+                        {theme === "wonderbar" ? (
+                          <DerbyToy racer={racer} />
+                        ) : (
+                          <DerbyHorse racer={racer} />
+                        )}
+                      </div>
+                    </div>
                     <span className="block text-sm font-bold text-white">
                       {racer.name}
                     </span>

@@ -72,7 +72,7 @@ export function PriceGuesserHostPanel() {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
             Game actions
           </span>

@@ -68,6 +68,10 @@ export function PriceOrderHostPanel() {
   const unplaced = unplacedPriceOrderItems(game);
   const ordered = orderedPriceOrderItems(game);
   const slots = priceOrderSlots(game);
+  const visibleItems = visiblePriceOrderItems(game);
+  const allItemsRevealed =
+    visibleItems.length > 0 &&
+    visibleItems.every((item) => item.itemRevealed !== false);
   const canAdd = game.items.length < PRICE_ORDER_MAX_ITEMS;
   const selectedUnplaced =
     selectedId && unplaced.some((item) => item.id === selectedId)
@@ -203,6 +207,44 @@ export function PriceOrderHostPanel() {
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
             Game actions
           </span>
+          <div className="inline-flex h-10 items-center gap-2">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={allItemsRevealed}
+              aria-label="Toggle all item curtains"
+              disabled={visibleItems.length === 0}
+              onClick={() =>
+                patch((prev) => ({
+                  ...prev,
+                  items: allItemsRevealed
+                    ? prev.items.map((item) => ({
+                        ...item,
+                        itemRevealed: false,
+                      }))
+                    : prev.items.map((item) =>
+                        item.imageUrl ? { ...item, itemRevealed: true } : item,
+                      ),
+                }))
+              }
+              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                allItemsRevealed ? "bg-emerald-500" : "bg-neutral-500"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                  allItemsRevealed ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+            <span
+              className={`text-sm font-semibold ${
+                allItemsRevealed ? "text-emerald-400" : "text-neutral-300"
+              }`}
+            >
+              {allItemsRevealed ? "Items revealed" : "Curtains closed"}
+            </span>
+          </div>
           <button
             type="button"
             disabled={ordered.length === 0}
@@ -213,37 +255,6 @@ export function PriceOrderHostPanel() {
           </button>
           <button
             type="button"
-            disabled={visiblePriceOrderItems(game).length === 0}
-            onClick={() =>
-              patch((prev) => ({
-                ...prev,
-                items: prev.items.map((item) =>
-                  item.imageUrl ? { ...item, itemRevealed: true } : item,
-                ),
-              }))
-            }
-            className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Reveal all items
-          </button>
-          <button
-            type="button"
-            disabled={visiblePriceOrderItems(game).length === 0}
-            onClick={() =>
-              patch((prev) => ({
-                ...prev,
-                items: prev.items.map((item) => ({
-                  ...item,
-                  itemRevealed: false,
-                })),
-              }))
-            }
-            className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Close all curtains
-          </button>
-          <button
-            type="button"
             disabled={!resultReady && !game.resultShown}
             onClick={() =>
               patch((prev) => ({ ...prev, resultShown: !prev.resultShown }))
@@ -251,14 +262,6 @@ export function PriceOrderHostPanel() {
             className={`inline-flex h-10 items-center rounded-md border px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500 ${resultAction.className}`}
           >
             {resultAction.label}
-          </button>
-          <button
-            type="button"
-            disabled={ordered.length === 0}
-            onClick={clearOrder}
-            className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Clear list
           </button>
           <button
             type="button"
@@ -411,9 +414,19 @@ export function PriceOrderHostPanel() {
               )}
 
               <section className="flex flex-col gap-2">
-                <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-                  Player order (cheapest → most expensive)
-                </h3>
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="min-w-0 flex-1 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+                    Player order (cheapest → most expensive)
+                  </h3>
+                  <button
+                    type="button"
+                    disabled={ordered.length === 0}
+                    onClick={clearOrder}
+                    className="inline-flex h-8 shrink-0 items-center rounded-md border border-teal-500 bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Clear list
+                  </button>
+                </div>
                 {slots.length === 0 && game.items.length > 0 && (
                   <p className="text-sm text-neutral-500">Empty list</p>
                 )}

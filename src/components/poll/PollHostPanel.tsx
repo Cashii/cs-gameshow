@@ -161,7 +161,7 @@ export function PollHostPanel() {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
               Spectator actions
@@ -257,7 +257,6 @@ export function PollHostPanel() {
                 ? "Percentages shown"
                 : "Percentages hidden"}
             </span>
-            {questionBank}
           </div>
         </div>
       </div>
@@ -270,39 +269,23 @@ export function PollHostPanel() {
       )}
 
       <div className="min-h-0 flex-1 overflow-auto px-6 py-6">
-      <div>
-        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-          <h3 className="text-lg font-bold text-white">Poll Control</h3>
-          <p className="text-sm text-neutral-400">
-            Status:{" "}
-            <span className="font-semibold text-white">{statusLabel}</span>
-            {poll.status !== "idle" && (
-              <>
-                {" "}
-                — {totalVotes} vote{totalVotes === 1 ? "" : "s"}
-              </>
-            )}
-          </p>
-        </div>
-        <p className="text-sm text-neutral-400">
-          Edit the question, then open voting. Set Spectator screen to Poll to
-          show it on the projector and guest phones.
-        </p>
-      </div>
-
-      <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.8fr)]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.8fr)]">
         <div className="space-y-4">
-          <label className="block">
+          <div>
             <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
               Question
             </span>
-            <input
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder="What should we ask?"
-              className="mt-1.5 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-white"
-            />
-          </label>
+            <div className="mt-1.5 flex items-center gap-2">
+              <input
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="What should we ask?"
+                aria-label="Question"
+                className="min-w-0 flex-1 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-white"
+              />
+              {questionBank}
+            </div>
+          </div>
 
           <div>
             <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
@@ -358,9 +341,11 @@ export function PollHostPanel() {
               <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                 Live tally
               </span>
-              <p className="mt-1 text-xs text-neutral-500">
-                Optional: mark the correct choice, then reveal it on the big
-                screen.
+              <p className="mt-1 text-sm text-neutral-400">
+                Status:{" "}
+                <span className="font-semibold text-white">{statusLabel}</span>
+                {" "}
+                — {totalVotes} vote{totalVotes === 1 ? "" : "s"}
               </p>
               <ul className="mt-1.5 space-y-1.5 text-sm">
                 {poll.choices.map((c) => {

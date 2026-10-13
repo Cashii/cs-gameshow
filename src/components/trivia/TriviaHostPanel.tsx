@@ -401,6 +401,7 @@ export function TriviaHostPanel() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(16rem,0.9fr)]">
         <div className="space-y-4">
+          <div className="space-y-2">
           <label className="block">
             <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
               Question {questionNumber}
@@ -412,14 +413,14 @@ export function TriviaHostPanel() {
               placeholder="True or false: …"
               autoFocus={settingUpNext}
               disabled={trivia.status === "open" || trivia.status === "locked"}
-              className={`mt-1.5 w-full rounded-lg border bg-neutral-800 px-3 py-2.5 text-white disabled:opacity-60 ${
+              className={`mt-1 w-full rounded-lg border bg-neutral-800 px-3 py-2 text-sm text-white disabled:opacity-60 ${
                 settingUpNext
                   ? "border-sky-400 ring-2 ring-sky-400/40"
                   : "border-neutral-700"
               }`}
             />
           </label>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {options.map((option, index) => {
               const letter = triviaChoiceLetter(
                 triviaChoiceIdAt(index) ?? "a",
@@ -450,7 +451,7 @@ export function TriviaHostPanel() {
                     }
                     onBlur={persistQuestionDraft}
                     disabled={answersLocked}
-                    className="mt-1.5 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-white disabled:opacity-60"
+                    className="mt-1 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-white disabled:opacity-60"
                   />
                 </label>
               );
@@ -465,6 +466,7 @@ export function TriviaHostPanel() {
                 Add answer
               </button>
             ) : null}
+          </div>
           </div>
 
           {(trivia.status !== "idle" || trivia.remainingCount > 0) && (
@@ -534,7 +536,7 @@ export function TriviaHostPanel() {
           </div>
           )}
 
-          <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+          <section className="border-t border-neutral-800 pt-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                 Upcoming questions ({queue.length})
@@ -558,7 +560,7 @@ export function TriviaHostPanel() {
                   className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
                 >
                   <Plus size={14} />
-                  Add to queue
+                  Add Question
                 </button>
               </div>
             </div>
@@ -572,7 +574,7 @@ export function TriviaHostPanel() {
                 {queue.map((item, index) => (
                   <article
                     key={item.id}
-                    className="rounded-lg border border-neutral-700 bg-neutral-950 p-3"
+                    className="rounded-lg border border-neutral-700 bg-neutral-800 p-3"
                   >
                     <div className="mb-2 flex items-center justify-between gap-2">
                       <span className="text-xs font-semibold text-neutral-500">

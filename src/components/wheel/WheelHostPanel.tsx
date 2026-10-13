@@ -311,7 +311,7 @@ export function WheelHostPanel() {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
               Game actions
@@ -372,7 +372,7 @@ export function WheelHostPanel() {
             <span className="min-w-12 text-right text-sm font-semibold tabular-nums text-neutral-300">
               {Math.round((wheel.zoom || 1) * 100)}%
             </span>
-            <div className="inline-flex items-center gap-1">
+            <div className="inline-flex items-center gap-3">
               <button
                 type="button"
                 aria-label="Zoom out"

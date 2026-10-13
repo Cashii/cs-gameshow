@@ -11,6 +11,8 @@
 1. **Price Wheel** — New spectator scoreboard. Add as many players as you need, each with a name and a score. Names and scores fill the big screen.
 1. **Live Drawer** — Mark a token as a birthday or VIP. Filter the pool to those marks, then draw that token on purpose. The audience never sees the mark. Show a countdown on the big screen. In draw history, hover a number to return it to the pool if it was drawn by mistake.
 1. **Hostess** — Tap Birthday or VIP before adding a token. A cake or star is saved with that number. Tap the same button again to add a normal token. The audience still does not see the icon.
+1. **Derby Race** — Each racer card shows that toy or horse instead of a color dot.
+1. **Derby Race** — Start and Reset sit on the left of the control bar. Zoom uses minus and plus on the far right. Status and the phone vote total sit above the racer cards.
 1. **Derby Race** — When a race finishes, phones show who won, how many votes that racer got, and whether that was your pick.
 
 ## September 23, 2026

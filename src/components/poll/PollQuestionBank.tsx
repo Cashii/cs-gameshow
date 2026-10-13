@@ -79,20 +79,20 @@ export function PollQuestionBank({
                 {questions.map((entry, index) => (
                   <li
                     key={entry.id}
-                    className="flex items-start gap-3 rounded-lg border border-neutral-700 bg-neutral-800/60 px-3 py-3"
+                    className="flex items-center gap-3 rounded-lg border border-neutral-700 bg-neutral-800/60 px-3 py-2"
                   >
-                    <span className="mt-0.5 w-5 shrink-0 text-sm font-semibold text-neutral-400">
+                    <span className="w-5 shrink-0 text-sm font-semibold text-neutral-400">
                       {index + 1}
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-white">
                         {entry.question.trim() || "(no question)"}
                       </p>
-                      <ul className="mt-1.5 space-y-0.5">
+                      <ul className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
                         {entry.choices.map((choice, choiceIndex) => (
                           <li
                             key={`${entry.id}-${choiceIndex}`}
-                            className="text-xs leading-relaxed text-neutral-300"
+                            className="text-xs text-neutral-300"
                           >
                             <span className="font-semibold text-neutral-400">
                               {String.fromCharCode(65 + choiceIndex)}

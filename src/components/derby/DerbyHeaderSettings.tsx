@@ -5,13 +5,10 @@ import { Settings } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import { Select } from "@/components/ui/Select";
 import {
-  clampDerbyRacerScale,
   createDefaultDerbyState,
   DERBY_THEME_OPTIONS,
   getDerbyTheme,
   isDerbyTheme,
-  MAX_DERBY_RACER_SCALE,
-  MIN_DERBY_RACER_SCALE,
   type DerbyTheme,
 } from "@/lib/derby/types";
 
@@ -20,8 +17,6 @@ export function DerbyHeaderSettings() {
   const [open, setOpen] = useState(false);
   const game = state.derby ?? createDefaultDerbyState();
   const theme = getDerbyTheme(game);
-  const racerScale = clampDerbyRacerScale(game.racerScale);
-  const sizeLabel = theme === "wonderbar" ? "Toy size" : "Horse size";
 
   const setTheme = (next: DerbyTheme) => {
     updateDerby((prev) => ({ ...prev, theme: next }));
@@ -51,33 +46,6 @@ export function DerbyHeaderSettings() {
               Settings
             </p>
             <div className="space-y-4">
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium text-neutral-200">
-                    {sizeLabel}
-                  </span>
-                  <span className="text-sm font-semibold tabular-nums text-white">
-                    {Math.round(racerScale * 100)}%
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={MIN_DERBY_RACER_SCALE}
-                  max={MAX_DERBY_RACER_SCALE}
-                  step={0.05}
-                  value={racerScale}
-                  aria-label={sizeLabel}
-                  onChange={(e) =>
-                    updateDerby((prev) => ({
-                      ...prev,
-                      racerScale: clampDerbyRacerScale(
-                        Number.parseFloat(e.target.value),
-                      ),
-                    }))
-                  }
-                  className="w-full accent-sky-500"
-                />
-              </div>
               <div>
                 <p className="mb-2 text-sm font-medium text-neutral-200">
                   Theme

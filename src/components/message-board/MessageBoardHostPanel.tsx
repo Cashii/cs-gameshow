@@ -683,7 +683,10 @@ export function MessageBoardHostPanel() {
         </aside>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <div className="flex shrink-0 items-center justify-end border-b border-neutral-800 px-8 py-2">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-neutral-800 px-8 py-2">
+            <h2 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+              Messages
+            </h2>
             <button
               type="button"
               aria-label="Add quick message"

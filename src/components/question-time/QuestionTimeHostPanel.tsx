@@ -412,60 +412,66 @@ export function QuestionTimeHostPanel() {
                         <Trash2 size={16} />
                       </button>
                     </div>
-                    <input
-                      type="text"
-                      value={team.name}
-                      onChange={(event) =>
-                        patch((prev) => ({
-                          ...prev,
-                          teams: prev.teams.map((entry) =>
-                            entry.id === team.id
-                              ? { ...entry, name: event.target.value }
-                              : entry,
-                          ),
-                        }))
-                      }
-                      placeholder={`Team ${index + 1}`}
-                      className="h-10 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
-                    />
-                    <div className="flex items-center gap-3">
-                      <span className="min-w-16 text-4xl font-bold tabular-nums text-white">
-                        {team.score}
-                      </span>
-                      <input
-                        type="number"
-                        min={0}
-                        max={9999}
-                        value={team.score}
-                        onChange={(event) =>
-                          patch((prev) => ({
-                            ...prev,
-                            teams: prev.teams.map((entry) =>
-                              entry.id === team.id
-                                ? {
-                                    ...entry,
-                                    score: clampQuestionTimeScore(
-                                      Number.parseInt(
-                                        event.target.value || "0",
-                                        10,
+                    <div className="grid grid-cols-[minmax(0,1fr)_5rem] gap-2">
+                      <label className="flex min-w-0 flex-col gap-1">
+                        <span className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+                          Team name
+                        </span>
+                        <input
+                          type="text"
+                          value={team.name}
+                          onChange={(event) =>
+                            patch((prev) => ({
+                              ...prev,
+                              teams: prev.teams.map((entry) =>
+                                entry.id === team.id
+                                  ? { ...entry, name: event.target.value }
+                                  : entry,
+                              ),
+                            }))
+                          }
+                          placeholder={`Team ${index + 1}`}
+                          className="h-10 min-w-0 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1">
+                        <span className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+                          Score
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={9999}
+                          value={team.score}
+                          onChange={(event) =>
+                            patch((prev) => ({
+                              ...prev,
+                              teams: prev.teams.map((entry) =>
+                                entry.id === team.id
+                                  ? {
+                                      ...entry,
+                                      score: clampQuestionTimeScore(
+                                        Number.parseInt(
+                                          event.target.value || "0",
+                                          10,
+                                        ),
                                       ),
-                                    ),
-                                  }
-                                : entry,
-                            ),
-                          }))
-                        }
-                        className="h-10 w-24 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white focus:border-sky-500 focus:outline-none"
-                        aria-label={`${team.name.trim() || `Team ${index + 1}`} score`}
-                      />
+                                    }
+                                  : entry,
+                              ),
+                            }))
+                          }
+                          className="h-10 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white focus:border-sky-500 focus:outline-none"
+                        />
+                      </label>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid grid-cols-4 gap-2">
                       {[-1, 1, 5, 10].map((delta) => (
                         <button
                           key={`${team.id}-${delta}`}
                           type="button"
                           onClick={() => adjustScore(team.id, delta)}
-                          className="inline-flex h-10 min-w-14 items-center justify-center rounded-md border border-teal-500 bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-500"
+                          className="inline-flex h-10 items-center justify-center rounded-md border border-teal-500 bg-teal-600 px-2 text-sm font-semibold text-white hover:bg-teal-500"
                         >
                           {delta > 0 ? `+${delta}` : delta}
                         </button>
