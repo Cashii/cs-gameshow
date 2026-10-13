@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { FolderOpen, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -19,6 +19,8 @@ export function PriceItemLibrary({
   onSave,
   onLoad,
   onDelete,
+  openRequest = 0,
+  closeOnLoad = false,
 }: {
   items: PriceCatalogItem[];
   saveLabel: string;
@@ -28,10 +30,16 @@ export function PriceItemLibrary({
   onSave: () => void | Promise<void>;
   onLoad: (id: string) => void | Promise<void>;
   onDelete: (id: string) => void | Promise<void>;
+  openRequest?: number;
+  closeOnLoad?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (openRequest > 0) setOpen(true);
+  }, [openRequest]);
 
   const run = async (work: () => void | Promise<void>) => {
     setBusy(true);
@@ -106,7 +114,12 @@ export function PriceItemLibrary({
                       <button
                         type="button"
                         disabled={busy || loadDisabled}
-                        onClick={() => void run(() => onLoad(item.id))}
+                        onClick={() =>
+                          void run(async () => {
+                            await onLoad(item.id);
+                            if (closeOnLoad) setOpen(false);
+                          })
+                        }
                         className="flex h-full w-full flex-col gap-2 rounded-xl border border-neutral-700 bg-neutral-800/70 p-2 text-left hover:border-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <span className="relative block aspect-square overflow-hidden rounded-lg bg-neutral-950">

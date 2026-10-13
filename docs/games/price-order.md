@@ -8,11 +8,11 @@ There is no player phone board.
 
 1. Select **Price Order** in the left nav.
 2. Put **Price Order** on the Spectator screen.
-3. **Add item** up to five times. Upload a photo and enter the real price (name is optional). New photos start behind a closed curtain.
+3. On the dashed tile, **Add item** starts a blank item, or **Choose from bank** loads a saved photo, name, and price. Up to five. New photos start behind a closed curtain.
 4. Use each item’s **Curtain closed** / **Curtain open** switch (or **Reveal all items** / **Close all curtains**) so the audience sees the photo when you are ready.
 5. As the player picks an order, select an unplaced item and insert it at a slot. Placing does not open the curtain.
 6. Use the up/down arrows to rearrange placed items, or remove one back to the unplaced row.
-7. Use each placed item’s **Price hidden** / **Price showing** switch to reveal prices one at a time. **Hide all prices** covers them again.
+7. Under each placed tile, **Curtain closed** / **Curtain open** and **Price hidden** / **Price showing** sit side by side. **Hide all prices** covers the prices again.
 8. After every placed item’s price is showing, **Show Perfect order** or **Show Not quite** puts a masked result overlay on the spectator screen. **Hide result** takes it down.
 9. **Clear list** empties the player order but keeps the items. **Reset game** removes everything.
 
@@ -24,4 +24,4 @@ There is no player phone board.
 
 ## Saved items
 
-The folder icon on the game actions bar opens the same gallery Price Guesser uses. **Save all items** stores each item on the board, with its photo, name, and price. Pick a photo to add that item, up to five. Resetting the live game does not delete saved photos.
+The folder icon on the game actions bar, and **Choose from bank** on the dashed tile, open the same gallery Price Guesser uses. **Save all items** stores each item on the board, with its photo, name, and price. Pick a photo to add that item, up to five. Resetting the live game does not delete saved photos.

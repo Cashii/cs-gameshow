@@ -7,6 +7,7 @@ Survey-style board game with team scores, strikes, and answer reveals.
 - Pick a question, reveal answers, add strikes
 - Adjust team names and scores
 - Toggle header, team scores, and answer point values on spectator
+- A warning shows when the spectator screen is on another game
 
 ## Spectator
 

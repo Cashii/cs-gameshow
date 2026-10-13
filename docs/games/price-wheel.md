@@ -7,6 +7,7 @@ A spectator scoreboard. The operator adds as many players as they want. Each pla
 - **Add player**, then type the name and score.
 - Remove a player with the trash button.
 - Set Spectator screen to **Price Wheel** to put the board on the projector.
+- A warning shows when the spectator screen is on another game.
 
 ## Spectator
 

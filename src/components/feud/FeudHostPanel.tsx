@@ -21,6 +21,7 @@ import { clamp, uid } from "@/lib/utils";
 import type { FeudAnswer, FeudGameState, FeudRound } from "@/lib/feud/types";
 import { IconButton, NumberInput, TextInput } from "@/components/ui/Primitives";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FeudAudienceView } from "./FeudAudienceView";
 
@@ -36,6 +37,7 @@ const ghostIconButtonStyle: CSSProperties = {
 
 export function FeudHostPanel() {
   const { state, updateFeud, currentFeudRound } = useSuite();
+  const spectatorLive = state.spectatorGame === "feud";
   const sounds = useSound();
   const feud = state.feud;
   const round = currentFeudRound;
@@ -331,6 +333,13 @@ export function FeudHostPanel() {
           </button>
         </div>
       </div>
+
+      {!spectatorLive && (
+        <SpectatorScreenNotice>
+          Spectator is not on Friendly Feud. Use the Spectator screen list so
+          the projector shows the board.
+        </SpectatorScreenNotice>
+      )}
 
       <div
         style={{

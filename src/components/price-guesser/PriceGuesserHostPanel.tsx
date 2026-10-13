@@ -1,6 +1,6 @@
 "use client";
 
-import { RotateCcw } from "lucide-react";
+import { FolderOpen, RotateCcw } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import {
   createDefaultPriceGuesserState,
@@ -32,6 +32,7 @@ export function PriceGuesserHostPanel() {
   const { toastMessage, showToast } = useToast();
   const spectatorLive = state.spectatorGame === "priceGuesser";
   const [confirmReset, setConfirmReset] = useState(false);
+  const [bankOpenRequest, setBankOpenRequest] = useState(0);
   const [priceText, setPriceText] = useState(() => priceInputValue(game.price));
 
   useEffect(() => {
@@ -75,26 +76,6 @@ export function PriceGuesserHostPanel() {
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
             Game actions
           </span>
-          <StatusSwitch
-            checked={itemShowing}
-            disabled={!game.imageUrl}
-            labelOn="Item showing"
-            labelOff="Curtain closed"
-            ariaLabel="Toggle curtain"
-            onToggle={() =>
-              patch((prev) => ({ ...prev, itemRevealed: !prev.itemRevealed }))
-            }
-          />
-          <StatusSwitch
-            checked={priceShowing}
-            disabled={!game.imageUrl || game.price == null}
-            labelOn="Price showing"
-            labelOff="Price hidden"
-            ariaLabel="Toggle price"
-            onToggle={() =>
-              patch((prev) => ({ ...prev, priceRevealed: !prev.priceRevealed }))
-            }
-          />
           <button
             type="button"
             disabled={!hasItem && game.resultOverlay !== "correct"}
@@ -130,6 +111,8 @@ export function PriceGuesserHostPanel() {
           <div className="ml-auto">
             <PriceItemLibrary
               items={catalog}
+              openRequest={bankOpenRequest}
+              closeOnLoad
               saveLabel="Save this item"
               saveDisabled={
                 !game.imageUrl && !game.label.trim() && game.price == null
@@ -207,47 +190,89 @@ export function PriceGuesserHostPanel() {
 
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex w-full flex-col gap-6 px-6 py-6">
-          <div className="flex flex-col items-stretch gap-6 md:flex-row md:items-start">
-            <div className="flex min-w-0 flex-1 flex-col gap-4">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+          <div className="flex flex-wrap items-start gap-6">
+            <div className="flex w-[28rem] max-w-full shrink-0 flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="price-guesser-name"
+                  className="text-xs font-semibold tracking-wide text-neutral-500 uppercase"
+                >
                   Item name (optional)
-                </span>
-                <input
-                  type="text"
-                  value={game.label}
-                  onChange={(event) =>
-                    patch((prev) => ({ ...prev, label: event.target.value }))
-                  }
-                  placeholder="Espresso machine"
-                  className="h-10 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
-                />
-              </label>
+                </label>
+                <div className="flex items-center gap-4">
+                  <input
+                    id="price-guesser-name"
+                    type="text"
+                    value={game.label}
+                    onChange={(event) =>
+                      patch((prev) => ({ ...prev, label: event.target.value }))
+                    }
+                    placeholder="Espresso machine"
+                    className="h-10 min-w-0 flex-1 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
+                  />
+                  <div className="w-48 shrink-0">
+                    <StatusSwitch
+                      checked={itemShowing}
+                      disabled={!game.imageUrl}
+                      labelOn="Item showing"
+                      labelOff="Curtain closed"
+                      ariaLabel="Toggle curtain"
+                      onToggle={() =>
+                        patch((prev) => ({
+                          ...prev,
+                          itemRevealed: !prev.itemRevealed,
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
 
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="price-guesser-price"
+                  className="text-xs font-semibold tracking-wide text-neutral-500 uppercase"
+                >
                   Price
-                </span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={priceText}
-                  onChange={(event) => {
-                    const next = event.target.value;
-                    setPriceText(next);
-                    patch((prev) => ({
-                      ...prev,
-                      price: parsePriceInput(next),
-                      priceRevealed: false,
-                    }));
-                  }}
-                  placeholder="49.99"
-                  className="h-10 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
-                />
-              </label>
+                </label>
+                <div className="flex items-center gap-4">
+                  <input
+                    id="price-guesser-price"
+                    type="text"
+                    inputMode="decimal"
+                    value={priceText}
+                    onChange={(event) => {
+                      const next = event.target.value;
+                      setPriceText(next);
+                      patch((prev) => ({
+                        ...prev,
+                        price: parsePriceInput(next),
+                        priceRevealed: false,
+                      }));
+                    }}
+                    placeholder="49.99"
+                    className="h-10 min-w-0 flex-1 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
+                  />
+                  <div className="w-48 shrink-0">
+                    <StatusSwitch
+                      checked={priceShowing}
+                      disabled={!game.imageUrl || game.price == null}
+                      labelOn="Price showing"
+                      labelOff="Price hidden"
+                      ariaLabel="Toggle price"
+                      onToggle={() =>
+                        patch((prev) => ({
+                          ...prev,
+                          priceRevealed: !prev.priceRevealed,
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="mx-auto w-full max-w-sm shrink-0 md:mx-0">
+            <div className="flex w-80 max-w-full shrink-0 flex-col gap-3">
               <SquarePhotoEditor
                 imageUrl={game.imageUrl}
                 fit={game.photoFit ?? DEFAULT_PHOTO_FIT}
@@ -266,6 +291,14 @@ export function PriceGuesserHostPanel() {
                 }
                 onError={showToast}
               />
+              <button
+                type="button"
+                onClick={() => setBankOpenRequest((current) => current + 1)}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-sky-500 bg-sky-600 px-3 text-sm font-semibold text-white hover:bg-sky-500"
+              >
+                <FolderOpen size={16} />
+                Choose from item bank
+              </button>
             </div>
           </div>
         </div>

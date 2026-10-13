@@ -3,6 +3,7 @@
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { PollQuestionBank } from "@/components/poll/PollQuestionBank";
+import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { uid } from "@/lib/utils";
 import { mergePollBank } from "@/lib/poll/types";
@@ -20,6 +21,7 @@ function formatVoteTime(iso: string): string {
 
 export function PollHostPanel() {
   const { state, refreshSnapshot, updatePoll } = useSuite();
+  const spectatorLive = state.spectatorGame === "poll";
   const poll = state.poll;
   const [question, setQuestion] = useState(poll.question || "");
   const [choices, setChoices] = useState(
@@ -220,7 +222,6 @@ export function PollHostPanel() {
           </div>
 
           <div className="ml-auto flex flex-wrap items-center gap-3">
-            {questionBank}
             <button
               type="button"
               role="switch"
@@ -256,28 +257,36 @@ export function PollHostPanel() {
                 ? "Percentages shown"
                 : "Percentages hidden"}
             </span>
+            {questionBank}
           </div>
         </div>
       </div>
 
+      {!spectatorLive && (
+        <SpectatorScreenNotice>
+          Spectator is not on Poll. Use the Spectator screen list so the
+          projector shows the poll.
+        </SpectatorScreenNotice>
+      )}
+
       <div className="min-h-0 flex-1 overflow-auto px-6 py-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
+      <div>
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
           <h3 className="text-lg font-bold text-white">Poll Control</h3>
           <p className="text-sm text-neutral-400">
-            Edit the question, then open voting. Set Spectator screen to Poll to
-            show it on the projector and guest phones.
+            Status:{" "}
+            <span className="font-semibold text-white">{statusLabel}</span>
+            {poll.status !== "idle" && (
+              <>
+                {" "}
+                — {totalVotes} vote{totalVotes === 1 ? "" : "s"}
+              </>
+            )}
           </p>
         </div>
         <p className="text-sm text-neutral-400">
-          Status:{" "}
-          <span className="font-semibold text-white">{statusLabel}</span>
-          {poll.status !== "idle" && (
-            <>
-              {" "}
-              — {totalVotes} vote{totalVotes === 1 ? "" : "s"}
-            </>
-          )}
+          Edit the question, then open voting. Set Spectator screen to Poll to
+          show it on the projector and guest phones.
         </p>
       </div>
 

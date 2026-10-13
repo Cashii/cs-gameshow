@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Pause, Play } from "lucide-react";
+import { StatusSwitch } from "@/components/operator/StatusSwitch";
 import { useSuite } from "@/lib/suite-provider";
 import {
   LIVE_DRAWER_DURATION_PRESETS_MS,
@@ -101,26 +102,19 @@ export function LiveDrawerTimerPanel() {
         >
           Reset
         </button>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={game.timerEnabled}
-          aria-label="Show countdown on the big screen"
-          onClick={() =>
-            updateLiveDrawer((prev) =>
-              setLiveDrawerTimerEnabled(prev, !prev.timerEnabled),
-            )
-          }
-          className={`relative ml-auto h-6 w-11 shrink-0 rounded-full transition-colors ${
-            game.timerEnabled ? "bg-emerald-500" : "bg-neutral-600"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-              game.timerEnabled ? "translate-x-5" : "translate-x-0"
-            }`}
+        <div className="ml-auto">
+          <StatusSwitch
+            checked={game.timerEnabled}
+            labelOn="Showing Countdown"
+            labelOff="Countdown Hidden"
+            ariaLabel="Show countdown on the big screen"
+            onToggle={() =>
+              updateLiveDrawer((prev) =>
+                setLiveDrawerTimerEnabled(prev, !prev.timerEnabled),
+              )
+            }
           />
-        </button>
+        </div>
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5">

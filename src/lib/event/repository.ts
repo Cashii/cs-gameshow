@@ -2,7 +2,7 @@ import { ObjectId, type AnyBulkWriteOperation, type Collection, type Db } from "
 import { getDb } from "@/lib/db/mongo";
 import { hashPin } from "@/lib/auth/session";
 import { publishSnapshot } from "@/lib/event/pubsub"; // live event fan-out
-import { sampleTokensByColor, normalizeTokenNumber } from "@/lib/live-drawer/draw";
+import { sampleDrawTokens, normalizeTokenNumber } from "@/lib/live-drawer/draw";
 import {
   normalizeTokenMark,
   type LiveDrawerDraw,
@@ -724,6 +724,7 @@ export async function clearPool(): Promise<EventSnapshot> {
 
 export async function drawTokens(options: {
   colorCounts?: { colorId: string; count: number }[];
+  anyCount?: number;
   tokenIds?: string[];
 }): Promise<EventSnapshot> {
   const db = await getDb();
@@ -736,8 +737,12 @@ export async function drawTokens(options: {
     if (selected.length !== options.tokenIds.length) {
       throw new Error("One or more selected tokens are not in the pool");
     }
-  } else if (options.colorCounts?.length) {
-    selected = sampleTokensByColor(pool, options.colorCounts);
+  } else if (options.colorCounts?.length || (options.anyCount ?? 0) > 0) {
+    selected = sampleDrawTokens(
+      pool,
+      options.colorCounts ?? [],
+      options.anyCount ?? 0,
+    );
   } else {
     throw new Error("Specify colorCounts or tokenIds");
   }

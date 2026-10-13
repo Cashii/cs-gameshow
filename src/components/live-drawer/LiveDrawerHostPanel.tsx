@@ -1,6 +1,6 @@
 "use client";
 
-import { Cake, Circle, Minus, Plus, Star } from "lucide-react";
+import { Cake, Circle, Info, Minus, Plus, Star } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useSuite } from "@/lib/suite-provider";
 import {
@@ -14,9 +14,12 @@ import {
 import {
   clampColorCount,
   parseNumberRange,
+  poolTokenCount,
   validateColorDrawRequests,
 } from "@/lib/live-drawer/draw";
+import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { Toast, useToast } from "@/components/ui/Toast";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { LiveDrawerToken, TokenMark } from "@/lib/live-drawer/types";
 import { LiveDrawerTimerPanel } from "@/components/live-drawer/LiveDrawerTimerPanel";
@@ -37,7 +40,12 @@ function historyWithoutTokens(
 
 function snapshotWithAddedTokens(
   snapshot: EventSnapshot,
-  entries: { id: string; number: string; colorId: string; mark?: null }[],
+  entries: {
+    id: string;
+    number: string;
+    colorId: string;
+    mark?: TokenMark | null;
+  }[],
 ): EventSnapshot {
   const poolKeys = new Set(
     snapshot.poolTokens.map((token) => `${token.colorId}:${token.number}`),
@@ -52,6 +60,11 @@ function snapshotWithAddedTokens(
   const toPool: EventSnapshot["poolTokens"] = [];
   const returnedIds = new Set<string>();
   let calledTokens = snapshot.calledTokens;
+  const markByKey = new Map(
+    entries.flatMap((entry) =>
+      entry.mark ? [[`${entry.colorId}:${entry.number}`, entry.mark] as const] : [],
+    ),
+  );
 
   for (const entry of entries) {
     const key = `${entry.colorId}:${entry.number}`;
@@ -62,23 +75,33 @@ function snapshotWithAddedTokens(
     if (called) {
       calledTokens = calledTokens.filter((token) => token.id !== called.id);
       returnedIds.add(called.id);
-      toPool.push(called);
+      toPool.push(
+        entry.mark ? { ...called, mark: entry.mark } : called,
+      );
     } else {
       toPool.push({
         id: entry.id,
         number: entry.number,
         colorId: entry.colorId,
-        mark: null,
+        mark: entry.mark ?? null,
       });
     }
     poolSummary[entry.colorId] = (poolSummary[entry.colorId] ?? 0) + 1;
   }
 
-  if (toPool.length === 0) return snapshot;
+  let marksChanged = false;
+  const poolTokens = snapshot.poolTokens.map((token) => {
+    const mark = markByKey.get(`${token.colorId}:${token.number}`);
+    if (!mark || token.mark === mark) return token;
+    marksChanged = true;
+    return { ...token, mark };
+  });
+
+  if (toPool.length === 0 && !marksChanged) return snapshot;
 
   return {
     ...snapshot,
-    poolTokens: [...snapshot.poolTokens, ...toPool],
+    poolTokens: [...poolTokens, ...toPool],
     calledTokens,
     poolSummary,
     drawHistory: historyWithoutTokens(snapshot.drawHistory, returnedIds),
@@ -122,12 +145,16 @@ function addTokensSummary(
   added: number,
   skipped: number,
   restored: number,
+  marked: number,
 ): string {
   const parts = [`Added ${added}`];
   if (restored > 0) {
     parts.push(
       `returned ${restored} called number${restored === 1 ? "" : "s"} to the pool`,
     );
+  }
+  if (marked > 0) {
+    parts.push(`marked ${marked}`);
   }
   if (skipped > 0) {
     parts.push(`skipped ${skipped} already in pool`);
@@ -215,11 +242,13 @@ export function LiveDrawerHostPanel() {
   } = useSuite();
   const { toastMessage, showToast } = useToast();
   const [colorCounts, setColorCounts] = useState<Record<string, number>>({});
+  const [anyCount, setAnyCount] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [addNumber, setAddNumber] = useState("");
   const [addColorId, setAddColorId] = useState<string | null>("blue");
+  const [addMark, setAddMark] = useState<TokenMark | null>(null);
   const [listTab, setListTab] = useState<"pool" | "called">("pool");
   const [markFilter, setMarkFilter] = useState<"all" | TokenMark>("all");
   const [clearPoolOpen, setClearPoolOpen] = useState(false);
@@ -241,6 +270,16 @@ export function LiveDrawerHostPanel() {
       return changed ? next : prev;
     });
   }, [poolSummary]);
+
+  const colorDrawTotal = LIVE_DRAWER_COLORS.reduce(
+    (sum, c) => sum + (colorCounts[c.id] ?? 0),
+    0,
+  );
+  const anyAvailable = Math.max(0, poolTokenCount(poolSummary) - colorDrawTotal);
+
+  useEffect(() => {
+    setAnyCount((prev) => (prev > anyAvailable ? anyAvailable : prev));
+  }, [anyAvailable]);
 
   useEffect(() => {
     if (!snapshot) return;
@@ -357,18 +396,32 @@ export function LiveDrawerHostPanel() {
     }));
   };
 
+  const setAnyDrawCount = (raw: number) => {
+    if (anyAvailable === 0 && raw > 0) {
+      showToast("No tokens left in the pool");
+      setAnyCount(0);
+      return;
+    }
+    if (raw > anyAvailable) {
+      showToast(
+        `Only ${anyAvailable} token${anyAvailable === 1 ? "" : "s"} left in the pool`,
+      );
+    }
+    setAnyCount(Math.min(Math.max(0, raw), anyAvailable));
+  };
+
   const handleRandomDraw = () => {
     const requests = LIVE_DRAWER_COLORS.map((c) => ({
       colorId: c.id,
       count: colorCounts[c.id] ?? 0,
     })).filter((r) => r.count > 0);
 
-    const error = validateColorDrawRequests(requests, poolSummary);
+    const error = validateColorDrawRequests(requests, poolSummary, anyCount);
     if (error) {
       showToast(error);
       return;
     }
-    void runAction({ action: "draw", colorCounts: requests });
+    void runAction({ action: "draw", colorCounts: requests, anyCount });
   };
 
   const handleSelectedDraw = () => {
@@ -380,7 +433,7 @@ export function LiveDrawerHostPanel() {
   };
 
   const postTokens = async (
-    tokens: { number: string; colorId: string }[],
+    tokens: { number: string; colorId: string; mark: TokenMark | null }[],
   ) => {
     const res = await fetch("/api/tokens", {
       method: "POST",
@@ -392,6 +445,7 @@ export function LiveDrawerHostPanel() {
       added?: number;
       skipped?: number;
       restored?: number;
+      marked?: number;
       snapshot?: EventSnapshot;
     };
     if (!res.ok) throw new Error(data.error ?? "Failed");
@@ -415,6 +469,7 @@ export function LiveDrawerHostPanel() {
       id: `opt-${crypto.randomUUID()}`,
       number,
       colorId: addColorId,
+      mark: addMark,
     }));
     const previous = snapshot;
     if (previous) {
@@ -425,13 +480,18 @@ export function LiveDrawerHostPanel() {
     addInFlightRef.current = true;
     try {
       const data = await postTokens(
-        numbers.map((number) => ({ number, colorId: addColorId })),
+        numbers.map((number) => ({
+          number,
+          colorId: addColorId,
+          mark: addMark,
+        })),
       );
       const added = data.added ?? 0;
       const skipped = data.skipped ?? 0;
       const restored = data.restored ?? 0;
-      if (numbers.length > 1 || skipped > 0 || restored > 0) {
-        const summary = addTokensSummary(added, skipped, restored);
+      const marked = data.marked ?? 0;
+      if (numbers.length > 1 || skipped > 0 || restored > 0 || marked > 0) {
+        const summary = addTokensSummary(added, skipped, restored, marked);
         setMessage(summary);
         showToast(summary);
       }
@@ -569,19 +629,39 @@ export function LiveDrawerHostPanel() {
     }
   };
 
-  const drawTotal = LIVE_DRAWER_COLORS.reduce(
-    (sum, c) => sum + (colorCounts[c.id] ?? 0),
-    0,
-  );
+  const drawTotal = colorDrawTotal + anyCount;
+  const spectatorLive = state.spectatorGame === "liveDrawer";
 
   return (
     <>
       <Toast message={toastMessage} />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {!spectatorLive && (
+        <SpectatorScreenNotice>
+          Spectator is not on Live Drawer. Use the Spectator screen list so the
+          projector shows the draw.
+        </SpectatorScreenNotice>
+      )}
+      <div className="min-h-0 flex-1 overflow-auto">
       <div className="flex flex-col gap-6 p-6">
             <div className="flex flex-col gap-6 xl:flex-row xl:items-stretch">
             <div className="flex w-full shrink-0 flex-col xl:w-80">
               <div className="flex flex-1 flex-col rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
-                <h2 className="text-xl font-bold text-white">Add token</h2>
+                <div className="flex items-center gap-1.5">
+                  <h2 className="text-xl font-bold text-white">Add token</h2>
+                  <Tooltip
+                    side="bottom"
+                    content="One number, a comma list, or a range like 1-10. All use the selected color."
+                  >
+                    <button
+                      type="button"
+                      aria-label="How to enter numbers"
+                      className="inline-flex size-6 items-center justify-center rounded-full text-neutral-400 hover:text-white"
+                    >
+                      <Info size={16} aria-hidden />
+                    </button>
+                  </Tooltip>
+                </div>
                 <input
                   value={addNumber}
                   onChange={(e) => setAddNumber(e.target.value)}
@@ -594,11 +674,7 @@ export function LiveDrawerHostPanel() {
                   placeholder="1-10"
                   className="mt-2 h-12 w-full rounded-lg border border-neutral-600 bg-neutral-700 px-3 text-2xl font-bold tabular-nums text-white placeholder:text-lg placeholder:font-normal placeholder:text-neutral-500 focus:ring-2 focus:ring-teal-500 focus:outline-none"
                 />
-                <p className="mt-1.5 text-xs text-neutral-400">
-                  One number, a comma list, or a range like 1-10. All use the
-                  selected color.
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-4 flex flex-wrap gap-2">
                   {LIVE_DRAWER_COLORS.map((c) => (
                     <button
                       key={c.id}
@@ -615,15 +691,42 @@ export function LiveDrawerHostPanel() {
                     </button>
                   ))}
                 </div>
-                <div className="min-h-4 flex-1" />
-                <button
-                  type="button"
-                  onClick={handleAddToken}
-                  disabled={loading || !addNumber.trim()}
-                  className="mt-3 w-full rounded-md bg-teal-600 py-3 text-base font-semibold text-white"
-                >
-                  Add to pool
-                </button>
+                <div className="mt-4 border-t border-neutral-400 pt-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    {(
+                      [
+                        ["birthday", "Birthday", Cake],
+                        ["vip", "VIP", Star],
+                      ] as const
+                    ).map(([id, label, Icon]) => {
+                      const selected = addMark === id;
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => setAddMark(selected ? null : id)}
+                          className={`flex items-center justify-center gap-2 rounded-md px-3 py-3 text-sm font-semibold ${
+                            selected
+                              ? "bg-amber-400 text-neutral-950"
+                              : "border border-neutral-600 text-neutral-200 hover:border-neutral-400"
+                          }`}
+                        >
+                          <Icon size={16} aria-hidden />
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddToken}
+                    disabled={loading || !addNumber.trim()}
+                    className="mt-3 w-full rounded-md bg-teal-600 py-3 text-base font-semibold text-white"
+                  >
+                    Add to pool
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -734,6 +837,56 @@ export function LiveDrawerHostPanel() {
                         </div>
                       );
                     })}
+                    <div
+                      className={`min-w-0 text-sm font-semibold ${
+                        anyAvailable === 0 && anyCount === 0
+                          ? "text-neutral-600"
+                          : "text-neutral-300"
+                      }`}
+                    >
+                      Any
+                      <div
+                        className={`mt-1.5 flex h-12 w-full items-stretch overflow-hidden rounded-lg border-2 border-neutral-400 bg-neutral-700 ${
+                          anyAvailable === 0 && anyCount === 0 ? "opacity-40" : ""
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          aria-label="Decrease Any"
+                          disabled={loading || anyCount <= 0}
+                          onClick={() => setAnyDrawCount(anyCount - 1)}
+                          className="inline-flex w-8 shrink-0 items-center justify-center text-white hover:bg-black/25 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <Minus size={18} />
+                        </button>
+                        {anyAvailable === 0 && anyCount === 0 ? (
+                          <div className="flex min-w-0 flex-1 items-center justify-center text-xl font-bold leading-none tabular-nums text-neutral-400">
+                            0
+                          </div>
+                        ) : (
+                          <input
+                            type="number"
+                            min={0}
+                            max={anyAvailable}
+                            value={anyCount}
+                            aria-label="Any draw count"
+                            onChange={(e) =>
+                              setAnyDrawCount(Number(e.target.value) || 0)
+                            }
+                            className="h-full min-w-0 flex-1 bg-transparent px-0.5 text-center text-xl font-bold leading-none tabular-nums text-white [appearance:textfield] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          />
+                        )}
+                        <button
+                          type="button"
+                          aria-label="Increase Any"
+                          disabled={loading || anyCount >= anyAvailable}
+                          onClick={() => setAnyDrawCount(anyCount + 1)}
+                          className="inline-flex w-8 shrink-0 items-center justify-center text-white hover:bg-black/25 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <Plus size={18} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
@@ -1042,6 +1195,8 @@ export function LiveDrawerHostPanel() {
                 )}
               </div>
             </div>
+      </div>
+      </div>
       </div>
       <ConfirmDialog
         open={clearPoolOpen}

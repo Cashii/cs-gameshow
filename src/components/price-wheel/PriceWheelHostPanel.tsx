@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
+import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { useSuite } from "@/lib/suite-provider";
 import { uid } from "@/lib/utils";
 import {
@@ -11,9 +12,16 @@ import {
 export function PriceWheelHostPanel() {
   const { state, updatePriceWheel } = useSuite();
   const game = state.priceWheel ?? createDefaultPriceWheelState();
+  const spectatorLive = state.spectatorGame === "priceWheel";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {!spectatorLive && (
+        <SpectatorScreenNotice>
+          Spectator is not on Price Wheel. Use the Spectator screen list so the
+          projector shows the scoreboard.
+        </SpectatorScreenNotice>
+      )}
       <div className="min-h-0 flex-1 overflow-auto px-6 py-5">
         <h2 className="mb-4 text-base font-bold text-white">Players</h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">

@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
+  FolderOpen,
   Plus,
   RotateCcw,
   Trash2,
@@ -57,6 +58,7 @@ export function PriceOrderHostPanel() {
   const spectatorLive = state.spectatorGame === "priceOrder";
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [bankOpenRequest, setBankOpenRequest] = useState(0);
   const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
 
   const patch = (updater: (prev: PriceOrderState) => PriceOrderState) => {
@@ -269,6 +271,7 @@ export function PriceOrderHostPanel() {
           <div className="ml-auto">
             <PriceItemLibrary
               items={catalog}
+              openRequest={bankOpenRequest}
               saveLabel="Save all items"
               saveDisabled={
                 !game.items.some(
@@ -372,8 +375,8 @@ export function PriceOrderHostPanel() {
       )}
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex w-full flex-col gap-6 px-6 py-6">
-          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)]">
-            <div className="flex flex-col gap-4 lg:sticky lg:top-4">
+          <div className="grid grid-cols-1 items-start lg:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)]">
+            <div className="flex flex-col gap-4 pb-6 lg:sticky lg:top-4 lg:pr-6 lg:pb-0">
               {unplaced.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {unplaced.map((item) => {
@@ -416,28 +419,56 @@ export function PriceOrderHostPanel() {
                 )}
                 {slots.map((item, index) =>
                   item ? (
-                    <div
-                      key={item.id}
-                      className="flex items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-2"
-                    >
-                      <span className="w-6 text-center text-sm font-bold text-amber-300">
-                        {index + 1}
-                      </span>
-                      <CroppedThumb
-                        src={item.imageUrl}
-                        fit={item.photoFit}
-                        className="h-12 w-12 rounded"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline justify-between gap-2">
+                    <div key={item.id} className="flex flex-col gap-2">
+                      <div className="flex items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-2">
+                        <span className="w-6 text-center text-sm font-bold text-amber-300">
+                          {index + 1}
+                        </span>
+                        <CroppedThumb
+                          src={item.imageUrl}
+                          fit={item.photoFit}
+                          className="h-12 w-12 rounded"
+                        />
+                        <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold text-white">
                             {item.label.trim() || "Untitled"}
                           </p>
-                          <p className="shrink-0 text-sm font-semibold tabular-nums text-amber-300">
+                          <p className="text-sm font-semibold tabular-nums text-amber-300">
                             {formatPrice(item.price)}
                           </p>
                         </div>
+                        <div className="flex shrink-0 items-center gap-1">
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            onClick={() => moveOrdered(index, -1)}
+                            className="rounded-md p-1.5 text-neutral-300 hover:bg-neutral-800 disabled:opacity-30"
+                            aria-label="Move up"
+                          >
+                            <ChevronUp size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={index === slots.length - 1}
+                            onClick={() => moveOrdered(index, 1)}
+                            className="rounded-md p-1.5 text-neutral-300 hover:bg-neutral-800 disabled:opacity-30"
+                            aria-label="Move down"
+                          >
+                            <ChevronDown size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeFromOrder(item.id)}
+                            className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-800 hover:text-red-300"
+                            aria-label="Clear from list"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-nowrap items-center gap-2 px-1">
                         <StatusSwitch
+                          size="sm"
                           checked={item.itemRevealed !== false}
                           labelOn="Curtain open"
                           labelOff="Curtain closed"
@@ -450,6 +481,7 @@ export function PriceOrderHostPanel() {
                           }
                         />
                         <StatusSwitch
+                          size="sm"
                           checked={item.priceRevealed}
                           disabled={item.price == null}
                           labelOn="Price showing"
@@ -459,34 +491,6 @@ export function PriceOrderHostPanel() {
                             revealItem(item.id, !item.priceRevealed)
                           }
                         />
-                      </div>
-                      <div className="flex shrink-0 items-center gap-1">
-                        <button
-                          type="button"
-                          disabled={index === 0}
-                          onClick={() => moveOrdered(index, -1)}
-                          className="rounded-md p-1.5 text-neutral-300 hover:bg-neutral-800 disabled:opacity-30"
-                          aria-label="Move up"
-                        >
-                          <ChevronUp size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={index === slots.length - 1}
-                          onClick={() => moveOrdered(index, 1)}
-                          className="rounded-md p-1.5 text-neutral-300 hover:bg-neutral-800 disabled:opacity-30"
-                          aria-label="Move down"
-                        >
-                          <ChevronDown size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeFromOrder(item.id)}
-                          className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-800 hover:text-red-300"
-                          aria-label="Clear from list"
-                        >
-                          <X size={16} />
-                        </button>
                       </div>
                     </div>
                   ) : (
@@ -515,41 +519,12 @@ export function PriceOrderHostPanel() {
               </section>
             </div>
 
-            <section className="flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-                  Items ({game.items.length}/{PRICE_ORDER_MAX_ITEMS})
-                </h3>
-                {game.items.length > 0 && (
-                  <button
-                    type="button"
-                    disabled={!canAdd}
-                    onClick={addItem}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
-                  >
-                    <Plus size={14} />
-                    Add item
-                  </button>
-                )}
-              </div>
+            <section className="flex flex-col gap-3 border-t border-neutral-700 pt-6 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
+              <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+                Items ({game.items.length}/{PRICE_ORDER_MAX_ITEMS})
+              </h3>
 
-              {game.items.length === 0 && (
-                <div className="flex flex-col items-start gap-3 py-8">
-                  <p className="text-sm text-neutral-400">
-                    No items yet. Add up to five with a photo and price.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={addItem}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500"
-                  >
-                    <Plus size={14} />
-                    Add item
-                  </button>
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap items-stretch gap-3">
                 {game.items.map((item, index) => (
                   <article
                     key={item.id}
@@ -634,6 +609,30 @@ export function PriceOrderHostPanel() {
                     />
                   </article>
                 ))}
+                {canAdd ? (
+                  <div className="flex min-h-72 w-64 shrink-0 flex-col items-center justify-center gap-4 self-stretch rounded-xl border border-dashed border-neutral-600 bg-neutral-950 px-4 py-8">
+                    <button
+                      type="button"
+                      onClick={addItem}
+                      className="flex flex-col items-center gap-3 text-neutral-300 hover:text-sky-200"
+                    >
+                      <span className="flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-current">
+                        <Plus size={22} />
+                      </span>
+                      <span className="text-sm font-semibold">Add item</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBankOpenRequest((current) => current + 1)
+                      }
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500 bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-500"
+                    >
+                      <FolderOpen size={14} />
+                      Choose from bank
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </section>
           </div>

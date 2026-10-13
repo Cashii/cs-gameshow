@@ -17,6 +17,7 @@ import {
   useState,
   type TextareaHTMLAttributes,
 } from "react";
+import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { useSuite } from "@/lib/suite-provider";
 import { uid } from "@/lib/utils";
 import {
@@ -305,6 +306,7 @@ function GroupPickerDialog({
 
 export function MessageBoardHostPanel() {
   const { state, updateMessageBoard } = useSuite();
+  const spectatorLive = state.spectatorGame === "messageBoard";
   const text = state.messageBoard?.text ?? "";
   const scale = clampMessageBoardScale(state.messageBoard?.scale);
   const groups = state.messageBoard?.groups ?? [];
@@ -524,6 +526,13 @@ export function MessageBoardHostPanel() {
           </button>
         </div>
       </div>
+
+      {!spectatorLive && (
+        <SpectatorScreenNotice>
+          Spectator is not on Message Board. Use the Spectator screen list so
+          the projector shows the message.
+        </SpectatorScreenNotice>
+      )}
 
       <div className="flex shrink-0 items-start gap-4 border-b border-neutral-800 px-8 py-5">
         <label className="min-w-0 flex-1">

@@ -17,6 +17,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
       action?: "draw" | "clear" | "undo" | "return" | "clearCalled";
       colorCounts?: { colorId: string; count: number }[];
+      anyCount?: number;
       tokenIds?: string[];
     };
 
@@ -37,8 +38,13 @@ export async function POST(request: Request) {
       return json(snapshot);
     }
     if (body.action === "draw") {
+      const anyCount =
+        typeof body.anyCount === "number" && Number.isFinite(body.anyCount)
+          ? Math.max(0, Math.floor(body.anyCount))
+          : 0;
       const snapshot = await drawTokens({
         colorCounts: body.colorCounts,
+        anyCount,
         tokenIds: body.tokenIds,
       });
       return json(snapshot);

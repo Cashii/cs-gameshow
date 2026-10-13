@@ -59,6 +59,9 @@ export function gamesForChangelogItem(
   if (text.includes("no longer ask you to name a setup")) {
     return ["derby", "takeIt", "liveDrawer", "priceWheel"];
   }
+  if (text.includes("spectator screen is showing another game")) {
+    return ["feud", "priceWheel", "liveDrawer", "poll", "messageBoard"];
+  }
   if (text.includes("price wheel")) return ["priceWheel"];
   if (text.includes("message board")) return ["messageBoard"];
   if (

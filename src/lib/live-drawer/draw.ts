@@ -6,9 +6,14 @@ export type ColorDrawRequest = {
   count: number;
 };
 
+export function poolTokenCount(poolSummary: PoolSummary): number {
+  return Object.values(poolSummary).reduce((sum, count) => sum + count, 0);
+}
+
 export function validateColorDrawRequests(
   requests: ColorDrawRequest[],
   poolSummary: PoolSummary,
+  anyCount = 0,
 ): string | null {
   let total = 0;
   for (const { colorId, count } of requests) {
@@ -23,7 +28,13 @@ export function validateColorDrawRequests(
       return `Only ${available} ${name} token${available === 1 ? "" : "s"} in the pool`;
     }
   }
-  if (total === 0) return "Set at least one color count";
+  const any = Math.max(0, anyCount);
+  if (total + any === 0) return "Set at least one color count";
+  const left = poolTokenCount(poolSummary) - total;
+  if (any > left) {
+    if (left <= 0) return "No tokens left in the pool";
+    return `Only ${left} token${left === 1 ? "" : "s"} left in the pool`;
+  }
   return null;
 }
 
@@ -59,6 +70,27 @@ export function sampleTokensByColor(
       usedIds.add(shuffled[i]!.id);
     }
   }
+  return drawn;
+}
+
+export function sampleDrawTokens(
+  pool: LiveDrawerToken[],
+  requests: ColorDrawRequest[],
+  anyCount = 0,
+): LiveDrawerToken[] {
+  const drawn = sampleTokensByColor(pool, requests);
+  const any = Math.max(0, anyCount);
+  if (any === 0) return drawn;
+
+  const usedIds = new Set(drawn.map((token) => token.id));
+  const remaining = pool.filter((token) => !usedIds.has(token.id));
+  if (remaining.length < any) {
+    throw new Error(
+      `Only ${remaining.length} token${remaining.length === 1 ? "" : "s"} left in the pool`,
+    );
+  }
+  const shuffled = shuffle(remaining);
+  for (let i = 0; i < any; i++) drawn.push(shuffled[i]!);
   return drawn;
 }
 

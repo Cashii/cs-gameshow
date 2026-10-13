@@ -9,8 +9,8 @@ There is no player phone board.
 1. Select **Price Guesser** in the left nav.
 2. Put **Price Guesser** on the Spectator screen so the projector shows the item.
 3. Upload a photo, optionally name the item, and enter the real price. A new photo starts behind a closed curtain.
-4. Click **Reveal item** to part the curtain on the spectator screen, showing the photo and name together. **Hide behind curtain** covers them again.
-5. After guesses, click **Reveal price**. **Hide price** covers it again.
+4. Beside the item name, switch **Curtain closed** / **Item showing** to part the curtain on the spectator screen. The photo and name appear together.
+5. Beside the price, switch **Price hidden** / **Price showing** after guesses.
 6. **Show Correct** or **Show Not quite** puts a masked result overlay on the spectator screen. Click the same button again to hide it.
 7. **Clear item** removes the photo and price for the next round.
 
@@ -22,4 +22,4 @@ Shows the current photo, optional name, and a price tag. A red velvet curtain co
 
 ## Saved items
 
-The folder icon on the game actions bar opens a gallery of photos and names. That gallery is shared with Price Order. **Save this item** stores the photo, name, and price. Pick a photo to put that item on the desk with the curtain closed and the price hidden. Clearing the live item does not delete a saved photo.
+The folder icon on the game actions bar, and **Choose from item bank** under the photo, open a gallery of photos and names. That gallery is shared with Price Order. **Save this item** stores the photo, name, and price. Pick a photo to put that item on the desk with the curtain closed and the price hidden. Clearing the live item does not delete a saved photo.

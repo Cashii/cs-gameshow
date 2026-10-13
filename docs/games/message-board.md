@@ -11,6 +11,7 @@ Utility screen for announcements. The operator types a message or shows a saved 
 - Click a saved message to put it on the screen. The pencil opens a list so you can choose its group, and the trash deletes it. Those buttons do not put the message on the screen.
 - Save the message that’s on screen, or clear it
 - Set Spectator screen to **Message Board** to put it on the projector
+- A warning shows when the spectator screen is on another game
 
 ## Spectator
 

@@ -2,10 +2,12 @@
 
 ## October 13, 2026
 
+1. **Poll** — Scan to vote QR code sits at the top right and is larger.
+1. **Poll** — Bug fix: several answers on the spectator screen all fit on screen in two columns instead of running off the bottom.
+1. **Layout** — Several layout updates for many games.
 1. **Operator desk** — Game icons in the left list and on the spectator rail use each game’s color. The selected item uses the same background every time.
 1. **Saved lists** — Many games now keep what you save, and you can load it again when you need it.
-1. **Message Board** — Message groups sit on the left, with saved messages beside them. Add a group or a message from the plus icon buttons. Click a saved message to put it on the spectator screen. The pencil changes which group that message belongs to.
-1. **Pictionary** — Hint on sits with Hint letters. Turn it on to choose which letters the audience sees.
+1. **Message Board** — Saved message groups sit on the left, with saved messages beside them. Add a group or a message from the plus icon buttons. Click a saved message to put it on the spectator screen. The pencil changes which group that message belongs to.
 1. **Price Wheel** — New spectator scoreboard. Add as many players as you need, each with a name and a score. Names and scores fill the big screen.
 1. **Live Drawer** — Mark a token as a birthday or VIP. Filter the pool to those marks, then draw that token on purpose. The audience never sees the mark. Show a countdown on the big screen. In draw history, hover a number to return it to the pool if it was drawn by mistake.
 1. **Hostess** — Tap Birthday or VIP before adding a token. A cake or star is saved with that number. Tap the same button again to add a normal token. The audience still does not see the icon.
