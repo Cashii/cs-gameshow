@@ -3,6 +3,14 @@
 :root {
   --background: #0a0a0a;
   --foreground: #ededed;
+  --color-teal-100: #dbeafe;
+  --color-teal-200: #bfdbfe;
+  --color-teal-300: #93c5fd;
+  --color-teal-400: #60a5fa;
+  --color-teal-500: #3b82f6;
+  --color-teal-600: #2563eb;
+  --color-teal-700: #1d4ed8;
+  --color-teal-950: #172554;
 }
 
 @theme inline {
@@ -71,16 +79,21 @@ html.studio-ui {
   --color-neutral-200: #1c2a32;
   --color-neutral-100: #142028;
   --color-neutral-50: #0b1418;
-  --color-sky-400: #22d3ee;
-  --color-sky-500: #06b6d4;
-  --color-sky-600: #0891b2;
-  --color-teal-400: #2dd4bf;
-  --color-teal-500: #14b8a6;
-  --color-teal-600: #0d9488;
-  --color-blue-400: #2dd4bf;
-  --color-blue-500: #14b8a6;
-  --color-blue-600: #0d9488;
-  --color-blue-700: #0f766e;
+  --color-sky-400: #60a5fa;
+  --color-sky-500: #3b82f6;
+  --color-sky-600: #2563eb;
+  --color-teal-100: #dbeafe;
+  --color-teal-200: #bfdbfe;
+  --color-teal-300: #93c5fd;
+  --color-teal-400: #60a5fa;
+  --color-teal-500: #3b82f6;
+  --color-teal-600: #2563eb;
+  --color-teal-700: #1d4ed8;
+  --color-teal-950: #172554;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
   --color-emerald-400: #34d399;
   --color-emerald-500: #10b981;
   --color-emerald-600: #059669;
@@ -96,7 +109,7 @@ html.studio-ui {
   color: var(--studio-ink);
   background-color: #f7f8f6;
   background-image:
-    radial-gradient(ellipse 48% 38% at 0% 0%, rgb(20 184 166 / 0.22) 0%, transparent 70%),
+    radial-gradient(ellipse 48% 38% at 0% 0%, rgb(37 99 235 / 0.16) 0%, transparent 70%),
     radial-gradient(ellipse 42% 36% at 100% 0%, rgb(14 165 233 / 0.2) 0%, transparent 68%),
     radial-gradient(ellipse 40% 34% at 100% 100%, rgb(245 158 11 / 0.2) 0%, transparent 65%),
     radial-gradient(ellipse 36% 30% at 0% 100%, rgb(124 58 237 / 0.16) 0%, transparent 62%);
@@ -165,15 +178,15 @@ html.studio-ui body {
 
 html.studio-ui,
 html.studio-ui * {
-  scrollbar-color: rgb(13 148 136 / 0.35) transparent;
+  scrollbar-color: rgb(37 99 235 / 0.35) transparent;
 }
 
 html.studio-ui *::-webkit-scrollbar-thumb {
-  background: rgb(13 148 136 / 0.32);
+  background: rgb(37 99 235 / 0.32);
 }
 
 html.studio-ui *::-webkit-scrollbar-thumb:hover {
-  background: rgb(13 148 136 / 0.48);
+  background: rgb(37 99 235 / 0.48);
 }
 
 .operator-ui :where(.text-sm) {

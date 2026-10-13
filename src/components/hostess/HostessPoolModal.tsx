@@ -2,7 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { Cake, Star, X } from "lucide-react";
 import type { LiveDrawerToken } from "@/lib/live-drawer/types";
 import {
   LIVE_DRAWER_COLORS,
@@ -107,12 +107,18 @@ export function HostessPoolModal({
                   const color = getLiveDrawerColor(t.colorId);
                   const isSelected = selectedIds.has(t.id);
                   return (
-                    <li key={t.id}>
+                    <li key={t.id} className="relative">
                       <button
                         type="button"
                         onClick={() => toggleSelect(t.id)}
                         aria-pressed={isSelected}
-                        title={`${color?.name ?? t.colorId} ${t.number}`}
+                        title={`${color?.name ?? t.colorId} ${t.number}${
+                          t.mark === "birthday"
+                            ? ", birthday"
+                            : t.mark === "vip"
+                              ? ", VIP"
+                              : ""
+                        }`}
                         className={`inline-flex items-center justify-center rounded-full font-bold tabular-nums leading-none outline-none transition-transform active:scale-95 ${tokenCircleClass(t.number)} ${
                           isSelected
                             ? "ring-4 ring-sky-400 ring-offset-2 ring-offset-neutral-950"
@@ -129,6 +135,15 @@ export function HostessPoolModal({
                       >
                         {t.number}
                       </button>
+                      {t.mark ? (
+                        <span className="pointer-events-none absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-neutral-950 text-amber-300 ring-1 ring-amber-300/70">
+                          {t.mark === "birthday" ? (
+                            <Cake size={12} aria-label="Birthday" />
+                          ) : (
+                            <Star size={12} aria-label="VIP" />
+                          )}
+                        </span>
+                      ) : null}
                     </li>
                   );
                 })}

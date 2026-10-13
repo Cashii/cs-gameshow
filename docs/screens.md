@@ -22,7 +22,7 @@ Read-only. Shows the operator-selected spectator screen when live (a game, stand
 **Who:** Staff handing out tokens  
 **PIN:** Required (operator sets in Settings)
 
-Can only add tokens to the Live Drawer pool (single entry or bulk by color). Sees per-color pool counts and recent additions. Cannot draw or change games.
+Can only add tokens to the Live Drawer pool (single entry or bulk by color). Before adding, tap Birthday or VIP to save a cake or star with those numbers. Sees the pool and recent additions. Cannot draw or change games.
 
 ## Player
 

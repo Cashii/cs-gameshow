@@ -17,9 +17,12 @@ import {
   type TriviaStatus,
 } from "@/lib/trivia/types";
 import { TriviaQuestionBank } from "@/components/trivia/TriviaQuestionBank";
-import { OperatorNotice } from "@/components/operator/OperatorNotice";
+import {
+  OperatorNotice,
+  SpectatorScreenNotice,
+} from "@/components/operator/OperatorNotice";
 import { uid } from "@/lib/utils";
-import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, FolderOpen, Plus, Trash2 } from "lucide-react";
 
 function triviaStatusLabel(
   status: TriviaStatus,
@@ -69,6 +72,7 @@ export function TriviaHostPanel() {
   const [queueDraft, setQueueDraft] = useState<TriviaQueuedQuestion[]>(
     () => trivia.queue ?? [],
   );
+  const [bankOpenRequest, setBankOpenRequest] = useState(0);
 
   const runAction = async (body: Record<string, unknown>) => {
     setLoading(true);
@@ -176,9 +180,16 @@ export function TriviaHostPanel() {
     );
   };
 
-  const saveQueue = (queue: TriviaQueuedQuestion[]) => {
+  const saveQueue = (
+    queue: TriviaQueuedQuestion[],
+    libraryEntry?: TriviaBankQuestion,
+  ) => {
     setQueueDraft(queue);
-    void runAction({ action: "saveQueue", queue });
+    void runAction({
+      action: "saveQueue",
+      queue,
+      ...(libraryEntry ? { libraryEntry } : {}),
+    });
   };
 
   const persistQueueDraft = () => {
@@ -206,81 +217,149 @@ export function TriviaHostPanel() {
   const queue = queueDraft;
   const history = trivia.history ?? [];
 
+  const toBankEntry = (entry: {
+    question: string;
+    options: string[];
+  }): TriviaBankQuestion => {
+    const synced = syncTriviaOptionsFields({ options: entry.options });
+    return {
+      id: uid(),
+      question: entry.question,
+      options: synced.options,
+      optionA: synced.optionA,
+      optionB: synced.optionB,
+    };
+  };
+
+  const saveBankEntry = (entry: {
+    question: string;
+    options: string[];
+  }) => {
+    const saved = toBankEntry(entry);
+    setState((prev) => ({
+      ...prev,
+      trivia: {
+        ...prev.trivia,
+        library: mergeTriviaBank(prev.trivia.library ?? [], [saved]),
+      },
+    }));
+  };
+
+  const addBankEntryToUpcoming = (entry: {
+    question: string;
+    options: string[];
+  }) => {
+    const saved = toBankEntry(entry);
+    saveQueue(
+      [...queue, createTriviaQueuedQuestion({ ...saved, id: uid() })],
+      saved,
+    );
+  };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <TriviaQuestionBank
-        questions={trivia.library ?? []}
-        canSaveCurrent={Boolean(question.trim())}
-        canSaveUpcoming={queue.some((item) => item.question.trim())}
-        onSaveCurrent={() => {
-          const synced = syncTriviaOptionsFields({ options });
-          const entry: TriviaBankQuestion = {
-            id: uid(),
-            question,
-            options: synced.options,
-            optionA: synced.optionA,
-            optionB: synced.optionB,
-          };
-          setState((prev) => ({
-            ...prev,
-            trivia: {
-              ...prev.trivia,
-              library: mergeTriviaBank(prev.trivia.library ?? [], [entry]),
-            },
-          }));
-        }}
-        onSaveUpcoming={() => {
-          const incoming = queue
-            .filter((item) => item.question.trim())
-            .map((item) => {
-              const synced = syncTriviaOptionsFields(item);
-              return {
-                id: uid(),
-                question: item.question,
-                options: synced.options,
-                optionA: synced.optionA,
-                optionB: synced.optionB,
-              };
-            });
-          setState((prev) => ({
-            ...prev,
-            trivia: {
-              ...prev.trivia,
-              library: mergeTriviaBank(prev.trivia.library ?? [], incoming),
-            },
-          }));
-        }}
-        onLoad={(id) => {
-          const entry = (trivia.library ?? []).find((item) => item.id === id);
-          if (!entry) return;
-          const next = createTriviaQueuedQuestion({ ...entry, id: uid() });
-          setState((prev) => ({
-            ...prev,
-            trivia: {
-              ...prev.trivia,
-              queue: [...(prev.trivia.queue ?? []), next],
-            },
-          }));
-        }}
-        onDelete={(id) =>
-          setState((prev) => ({
-            ...prev,
-            trivia: {
-              ...prev.trivia,
-              library: (prev.trivia.library ?? []).filter(
-                (item) => item.id !== id,
-              ),
-            },
-          }))
-        }
-      />
-      <div className="min-h-0 flex-1 overflow-auto px-6 py-6">
+      <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+            Game actions
+          </span>
+          {trivia.status === "idle" && (
+            <button
+              type="button"
+              disabled={loading || !question.trim()}
+              onClick={() =>
+                void runAction({
+                  action: "open",
+                  question,
+                  options,
+                })
+              }
+              className="inline-flex h-10 items-center rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40"
+            >
+              {settingUpNext
+                ? `Open question ${questionNumber}`
+                : "Open voting"}
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => void runAction({ action: "resetSeries" })}
+            className="inline-flex h-10 items-center rounded-md border border-red-800 px-4 text-sm font-semibold text-red-300 hover:bg-red-950 disabled:opacity-40"
+          >
+            Reset series
+          </button>
+          <div className="ml-auto">
+            <TriviaQuestionBank
+              questions={trivia.library ?? []}
+              canSaveCurrent={Boolean(question.trim())}
+              canSaveUpcoming={queue.some((item) => item.question.trim())}
+              onSaveCurrent={() => saveBankEntry({ question, options })}
+              onSaveUpcoming={() => {
+                const incoming = queue
+                  .filter((item) => item.question.trim())
+                  .map((item) => {
+                    const synced = syncTriviaOptionsFields(item);
+                    return {
+                      id: uid(),
+                      question: item.question,
+                      options: synced.options,
+                      optionA: synced.optionA,
+                      optionB: synced.optionB,
+                    };
+                  });
+                setState((prev) => ({
+                  ...prev,
+                  trivia: {
+                    ...prev.trivia,
+                    library: mergeTriviaBank(
+                      prev.trivia.library ?? [],
+                      incoming,
+                    ),
+                  },
+                }));
+              }}
+              onAdd={saveBankEntry}
+              onAddToUpcoming={addBankEntryToUpcoming}
+              openRequest={bankOpenRequest}
+              onLoad={(id) => {
+                const entry = (trivia.library ?? []).find(
+                  (item) => item.id === id,
+                );
+                if (!entry) return;
+                saveQueue([
+                  ...queue,
+                  createTriviaQueuedQuestion({
+                    ...entry,
+                    id: uid(),
+                  }),
+                ]);
+              }}
+              onDelete={(id) =>
+                setState((prev) => ({
+                  ...prev,
+                  trivia: {
+                    ...prev.trivia,
+                    library: (prev.trivia.library ?? []).filter(
+                      (item) => item.id !== id,
+                    ),
+                  },
+                }))
+              }
+            />
+          </div>
+          {message ? (
+            <p className="w-full text-sm text-neutral-400">{message}</p>
+          ) : null}
+        </div>
+      </div>
       {!spectatorLive && (
-        <OperatorNotice className="mb-6">
+        <SpectatorScreenNotice>
           Spectator is not on Elimination Trivia. Use the Spectator screen list
           so the projector shows the question.
-        </OperatorNotice>
+        </SpectatorScreenNotice>
       )}
+      <div className="min-h-0 flex-1 overflow-auto px-6 py-6">
       {!settingUpNext && !questionClosed ? (
         <div className="mb-4">
           <p
@@ -388,25 +467,8 @@ export function TriviaHostPanel() {
             ) : null}
           </div>
 
+          {(trivia.status !== "idle" || trivia.remainingCount > 0) && (
           <div className="flex flex-wrap gap-2">
-            {trivia.status === "idle" && (
-              <button
-                type="button"
-                disabled={loading || !question.trim()}
-                onClick={() =>
-                  void runAction({
-                    action: "open",
-                    question,
-                    options,
-                  })
-                }
-                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40"
-              >
-                {settingUpNext
-                  ? `Open question ${questionNumber}`
-                  : "Open voting"}
-              </button>
-            )}
             {trivia.status === "open" && (
               <button
                 type="button"
@@ -469,38 +531,41 @@ export function TriviaHostPanel() {
                   : `Declare ${trivia.remainingCount} winners`}
               </button>
             )}
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => void runAction({ action: "resetSeries" })}
-              className="rounded-lg border border-red-800 px-4 py-2 text-sm font-semibold text-red-300 hover:bg-red-950 disabled:opacity-40"
-            >
-              Reset series
-            </button>
           </div>
-          {message ? <p className="text-sm text-neutral-400">{message}</p> : null}
+          )}
 
           <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                 Upcoming questions ({queue.length})
               </h3>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() =>
-                  saveQueue([...queue, createTriviaQueuedQuestion()])
-                }
-                className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
-              >
-                <Plus size={14} />
-                Add to queue
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => setBankOpenRequest((current) => current + 1)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500 bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-40"
+                >
+                  <FolderOpen size={14} />
+                  Add saved
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() =>
+                    saveQueue([...queue, createTriviaQueuedQuestion()])
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
+                >
+                  <Plus size={14} />
+                  Add to queue
+                </button>
+              </div>
             </div>
             {queue.length === 0 ? (
               <p className="text-sm text-neutral-500">
-                Stage questions ahead of time. Starting the next question pulls
-                the first queued item.
+                Add a saved question, or stage one here. Starting the next
+                question pulls the first item.
               </p>
             ) : (
               <div className="space-y-3">
@@ -634,63 +699,6 @@ export function TriviaHostPanel() {
               </div>
             )}
           </section>
-
-          <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
-            <h3 className="mb-3 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-              History ({history.length})
-            </h3>
-            {history.length === 0 ? (
-              <p className="text-sm text-neutral-500">
-                Closed questions appear here after you start the next one or
-                declare winners.
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {[...history].reverse().map((entry) => (
-                  <li
-                    key={entry.roundId}
-                    className="rounded-lg border border-neutral-700 bg-neutral-950 p-3 text-sm"
-                  >
-                    <p className="font-semibold text-white">
-                      Q{entry.roundIndex}: {entry.question || "(blank)"}
-                    </p>
-                    <p className="mt-1 text-neutral-400">
-                      Survived{" "}
-                      {entry.survivingChoiceId
-                        ? `${triviaChoiceLetter(entry.survivingChoiceId)} · ${
-                            (entry.options?.length
-                              ? entry.options
-                              : [entry.optionA, entry.optionB])[
-                              triviaChoiceIndex(entry.survivingChoiceId)
-                            ] ?? ""
-                          }`
-                        : "—"}
-                      {" · "}
-                      {(entry.options?.length
-                        ? entry.options
-                        : [entry.optionA, entry.optionB]
-                      )
-                        .map((option, index) => {
-                          const count =
-                            entry.choiceCounts?.[index] ??
-                            (index === 0
-                              ? entry.choiceACount
-                              : index === 1
-                                ? entry.choiceBCount
-                                : 0);
-                          return `${triviaChoiceLetter(
-                            triviaChoiceIdAt(index) ?? "a",
-                          )} ${count}`;
-                        })
-                        .join(" / ")}
-                      {" · "}
-                      {entry.remainingCount} remaining
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
         </div>
 
         <div className="space-y-4">
@@ -782,6 +790,63 @@ export function TriviaHostPanel() {
               </p>
             </div>
           )}
+
+          <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+            <h3 className="mb-3 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+              History ({history.length})
+            </h3>
+            {history.length === 0 ? (
+              <p className="text-sm text-neutral-500">
+                Closed questions appear here after you start the next one or
+                declare winners.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {[...history].reverse().map((entry) => (
+                  <li
+                    key={entry.roundId}
+                    className="rounded-lg border border-neutral-700 bg-neutral-950 p-3 text-sm"
+                  >
+                    <p className="font-semibold text-white">
+                      Q{entry.roundIndex}: {entry.question || "(blank)"}
+                    </p>
+                    <p className="mt-1 text-neutral-400">
+                      Survived{" "}
+                      {entry.survivingChoiceId
+                        ? `${triviaChoiceLetter(entry.survivingChoiceId)} · ${
+                            (entry.options?.length
+                              ? entry.options
+                              : [entry.optionA, entry.optionB])[
+                              triviaChoiceIndex(entry.survivingChoiceId)
+                            ] ?? ""
+                          }`
+                        : "—"}
+                      {" · "}
+                      {(entry.options?.length
+                        ? entry.options
+                        : [entry.optionA, entry.optionB]
+                      )
+                        .map((option, index) => {
+                          const count =
+                            entry.choiceCounts?.[index] ??
+                            (index === 0
+                              ? entry.choiceACount
+                              : index === 1
+                                ? entry.choiceBCount
+                                : 0);
+                          return `${triviaChoiceLetter(
+                            triviaChoiceIdAt(index) ?? "a",
+                          )} ${count}`;
+                        })
+                        .join(" / ")}
+                      {" · "}
+                      {entry.remainingCount} remaining
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
       </div>
     </div>

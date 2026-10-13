@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Cake, Star } from "lucide-react";
 import { SuiteProvider, useSuite } from "@/lib/suite-provider";
 import { PinGate } from "@/components/auth/PinGate";
 import {
@@ -10,6 +11,7 @@ import {
   liveDrawerNeedsLightSurface,
   liveDrawerOutlineClass,
   type LiveDrawerToken,
+  type TokenMark,
 } from "@/lib/live-drawer/types";
 import { parseNumberRange } from "@/lib/live-drawer/draw";
 import { HostessPoolModal } from "@/components/hostess/HostessPoolModal";
@@ -17,19 +19,45 @@ import { HostessNumberPad } from "@/components/hostess/HostessNumberPad";
 
 const LOG_SLOTS = 10;
 
-function createOptimisticToken(number: string, colorId: string): LiveDrawerToken {
+const MARK_CHOICES = [
+  { id: "birthday", label: "Birthday", Icon: Cake },
+  { id: "vip", label: "VIP", Icon: Star },
+] as const satisfies readonly {
+  id: TokenMark;
+  label: string;
+  Icon: typeof Cake;
+}[];
+
+function createOptimisticToken(
+  number: string,
+  colorId: string,
+  mark: TokenMark | null,
+): LiveDrawerToken {
   return {
     id: `opt-${crypto.randomUUID()}`,
     number,
     colorId,
-    mark: null,
+    mark,
   };
+}
+
+function TokenMarkIcon({
+  mark,
+  size = 12,
+}: {
+  mark: TokenMark | null;
+  size?: number;
+}) {
+  if (mark === "birthday") return <Cake size={size} aria-hidden />;
+  if (mark === "vip") return <Star size={size} aria-hidden />;
+  return null;
 }
 
 function HostessContent() {
   const { poolTokens, refreshSnapshot } = useSuite();
   const [number, setNumber] = useState("");
   const [colorId, setColorId] = useState("blue");
+  const [mark, setMark] = useState<TokenMark | null>(null);
   const [message, setMessage] = useState("");
   const [poolOpen, setPoolOpen] = useState(false);
   const [recentLine, setRecentLine] = useState<LiveDrawerToken[]>([]);
@@ -74,7 +102,9 @@ function HostessContent() {
       return;
     }
 
-    const optimistic = numbers.map((n) => createOptimisticToken(n, colorId));
+    const optimistic = numbers.map((n) =>
+      createOptimisticToken(n, colorId, mark),
+    );
     const optimisticIds = new Set(optimistic.map((t) => t.id));
     setRecentLine((prev) => [...optimistic, ...prev].slice(0, LOG_SLOTS));
     setPoolCountBump((b) => b + numbers.length);
@@ -92,24 +122,37 @@ function HostessContent() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            tokens: numbers.map((n) => ({ number: n, colorId })),
+            tokens: numbers.map((n) => ({ number: n, colorId, mark })),
           }),
         });
         const data = (await res.json()) as {
           error?: string;
           added?: number;
           skipped?: number;
+          marked?: number;
         };
         if (!res.ok) throw new Error(data.error ?? "Failed to add");
         const added = data.added ?? 0;
         const skipped = data.skipped ?? 0;
-        if (added === 0 && skipped > 0) {
+        const marked = data.marked ?? 0;
+        if (added === 0 && marked === 0 && skipped > 0) {
           revert();
           setMessage("Already in pool");
           return;
         }
-        if (skipped > 0) {
-          setMessage(`Added ${added}, skipped ${skipped}`);
+        if (added === 0 && marked > 0) {
+          revert();
+          const parts = [marked === 1 ? "Marked" : `Marked ${marked}`];
+          if (skipped > 0) parts.push(`skipped ${skipped}`);
+          setMessage(parts.join(", "));
+          void refreshSnapshot();
+          return;
+        }
+        if (skipped > 0 || marked > 0) {
+          const parts = [`Added ${added}`];
+          if (marked > 0) parts.push(`marked ${marked}`);
+          if (skipped > 0) parts.push(`skipped ${skipped}`);
+          setMessage(parts.join(", "));
         }
         void refreshSnapshot();
       } catch (e) {
@@ -187,6 +230,8 @@ function HostessContent() {
   const messageClass =
     message === "Added" ||
     message.startsWith("Added ") ||
+    message === "Marked" ||
+    message.startsWith("Marked ") ||
     message === "Removed" ||
     message.startsWith("Removed ")
       ? "text-emerald-400"
@@ -220,14 +265,19 @@ function HostessContent() {
             aria-label="Number entry"
           >
             <span
-              className={`truncate font-bold tabular-nums ${
-                number.length > 8
-                  ? "text-3xl tracking-wide"
-                  : "text-5xl tracking-wider"
-              }`}
+              className="flex min-w-0 items-center justify-center gap-2"
               style={{ color: entryColor }}
             >
-              {number || "—"}
+              <TokenMarkIcon mark={mark} size={28} />
+              <span
+                className={`truncate font-bold tabular-nums ${
+                  number.length > 8
+                    ? "text-3xl tracking-wide"
+                    : "text-5xl tracking-wider"
+                }`}
+              >
+                {number || "—"}
+              </span>
             </span>
           </div>
         </div>
@@ -254,6 +304,28 @@ function HostessContent() {
                   aria-label={c.name}
                   aria-pressed={selected}
                 />
+              );
+            })}
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {MARK_CHOICES.map(({ id, label, Icon }) => {
+              const selected = mark === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setMark(selected ? null : id)}
+                  aria-pressed={selected}
+                  className={`flex h-11 items-center justify-center gap-2 rounded-lg text-sm font-bold ${
+                    selected
+                      ? "bg-amber-400 text-neutral-950"
+                      : "border border-neutral-700 text-neutral-300"
+                  }`}
+                >
+                  <Icon size={18} aria-hidden />
+                  {label}
+                </button>
               );
             })}
           </div>
@@ -301,10 +373,17 @@ function HostessContent() {
                 return (
                   <li
                     key={t.id}
-                    className={`flex h-6 min-w-0 flex-1 items-center justify-center rounded-full text-[10px] font-semibold tabular-nums ${liveDrawerOutlineClass(color)}`}
+                    className={`flex h-6 min-w-0 flex-1 items-center justify-center gap-0.5 rounded-full text-[10px] font-semibold tabular-nums ${liveDrawerOutlineClass(color)}`}
                     style={liveDrawerFillStyle(color)}
-                    title={`${color?.name} ${t.number}`}
+                    title={`${color?.name} ${t.number}${
+                      t.mark === "birthday"
+                        ? ", birthday"
+                        : t.mark === "vip"
+                          ? ", VIP"
+                          : ""
+                    }`}
                   >
+                    <TokenMarkIcon mark={t.mark} size={9} />
                     {t.number}
                   </li>
                 );

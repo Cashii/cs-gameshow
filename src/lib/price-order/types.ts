@@ -1,9 +1,5 @@
 import { uid } from "@/lib/utils";
 import { DEFAULT_PHOTO_FIT, type PhotoFit } from "@/lib/price/photo-fit";
-import {
-  normalizePriceCatalog,
-  type PriceCatalogItem,
-} from "@/lib/price/catalog";
 
 export const PRICE_ORDER_MAX_ITEMS = 5;
 
@@ -24,15 +20,10 @@ export type PriceOrderState = {
   order: Array<string | null>;
   /** Spectator result overlay. Host shows it after prices are revealed. */
   resultShown: boolean;
-  library: PriceCatalogItem[];
 };
 
 export function createDefaultPriceOrderState(): PriceOrderState {
-  return { items: [], order: [], resultShown: false, library: [] };
-}
-
-export function normalizePriceOrderLibrary(raw: unknown): PriceCatalogItem[] {
-  return normalizePriceCatalog(raw);
+  return { items: [], order: [], resultShown: false };
 }
 
 export function createEmptyPriceOrderItem(): PriceOrderItem {

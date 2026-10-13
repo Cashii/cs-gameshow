@@ -451,31 +451,43 @@ export async function updatePins(pins: {
 }
 
 export async function addTokens(
-  entries: { number: string; colorId: string }[],
-): Promise<{ added: number; skipped: number; restored: number }> {
+  entries: { number: string; colorId: string; mark?: TokenMark | null }[],
+): Promise<{ added: number; skipped: number; restored: number; marked: number }> {
   const db = await getDb();
   const col = await tokensCol(db);
   let added = 0;
   let skipped = 0;
   let restored = 0;
+  let marked = 0;
   for (const entry of entries) {
     const number = normalizeTokenNumber(entry.number);
     if (!number) continue;
+    const mark = normalizeTokenMark(entry.mark);
     const existing = await col.findOne({
       eventId: EVENT_ID,
       number,
       colorId: entry.colorId,
     });
     if (existing?.status === "drawn") {
-      await col.updateOne(
-        { _id: existing._id },
-        { $set: { status: "pool", drawBatchId: null } },
-      );
+      const update: {
+        status: "pool";
+        drawBatchId: null;
+        mark?: TokenMark;
+      } = { status: "pool", drawBatchId: null };
+      if (mark && normalizeTokenMark(existing.mark) !== mark) {
+        update.mark = mark;
+      }
+      await col.updateOne({ _id: existing._id }, { $set: update });
       restored++;
       continue;
     }
     if (existing) {
-      skipped++;
+      if (mark && normalizeTokenMark(existing.mark) !== mark) {
+        await col.updateOne({ _id: existing._id }, { $set: { mark } });
+        marked++;
+      } else {
+        skipped++;
+      }
       continue;
     }
     try {
@@ -484,7 +496,7 @@ export async function addTokens(
         eventId: EVENT_ID,
         number,
         colorId: entry.colorId,
-        mark: null,
+        mark,
         status: "pool",
         drawBatchId: null,
         createdAt: new Date(),
@@ -503,8 +515,8 @@ export async function addTokens(
       }
     }
   }
-  if (added > 0 || restored > 0) await bumpAndPublish(true);
-  return { added, skipped, restored };
+  if (added > 0 || restored > 0 || marked > 0) await bumpAndPublish(true);
+  return { added, skipped, restored, marked };
 }
 
 export async function setTokenMark(

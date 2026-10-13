@@ -7,6 +7,7 @@ import {
   createTriviaQueuedQuestion,
   emptyTriviaChoiceCounts,
   isTriviaChoiceOpen,
+  mergeTriviaBank,
   normalizeTriviaOptions,
   syncTriviaOptionsFields,
   TRIVIA_CHOICE_IDS,
@@ -553,6 +554,13 @@ export async function triviaSaveQueue(
     optionA?: string;
     optionB?: string;
   }>,
+  libraryEntry?: {
+    id?: string;
+    question?: string;
+    options?: string[];
+    optionA?: string;
+    optionB?: string;
+  },
 ): Promise<EventSnapshot> {
   return updateEventSuite((prev) => {
     const t = prev.trivia ?? createDefaultTriviaState();
@@ -570,11 +578,38 @@ export async function triviaSaveQueue(
           optionB: item.optionB,
         }),
       );
+    const question =
+      typeof libraryEntry?.question === "string"
+        ? libraryEntry.question.trim()
+        : "";
+    const syncedEntry = question
+      ? syncTriviaOptionsFields({
+          options: libraryEntry?.options,
+          optionA: libraryEntry?.optionA,
+          optionB: libraryEntry?.optionB,
+        })
+      : null;
+    const library =
+      question && syncedEntry
+        ? mergeTriviaBank(t.library ?? [], [
+            {
+              id:
+                typeof libraryEntry?.id === "string" && libraryEntry.id.trim()
+                  ? libraryEntry.id
+                  : `bank-${Date.now()}`,
+              question,
+              options: syncedEntry.options,
+              optionA: syncedEntry.optionA,
+              optionB: syncedEntry.optionB,
+            },
+          ])
+        : (t.library ?? []);
     return {
       ...prev,
       trivia: {
         ...t,
         queue: normalized,
+        library,
       },
     };
   });

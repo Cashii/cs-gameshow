@@ -12,13 +12,13 @@ You can stage several upcoming questions in a queue. Starting the next question 
 
 1. Select **Elimination Trivia** in the left nav. Put **Elimination Trivia** on the Spectator screen (it sits after Jeoparody, same order as the left games list).
 2. Optionally **Add to queue** and fill upcoming questions (reorder or delete as needed).
-3. Type the live question and two labels. **Open voting**.
+3. Type the live question and its answer labels. In the bar under the title, **Open voting**.
 4. Watch **answers in**. Operator can see the A/B split; the projector does not until you reveal.
 5. **Lock voting**, then tap **Survive A** or **Survive B**. Remaining count updates. Phones flip to still-in or out.
 6. If remaining hits **0**, **Undo reveal** and pick the other side.
 7. If remaining is still above your cut, **Start question N** (pulls the next queued question when one exists) and repeat from step 3.
 8. When remaining is the size you want, click **Declare remaining as winners**. Those phones get the winner screen. If you play until **1**, declare that one player the same way.
-9. Review past rounds under **History**. **Undo winners** takes you back to the last reveal if you called it too soon. **Reset series** clears votes, the player list, the queue, and history.
+9. Review past rounds under **History**. **Undo winners** takes you back to the last reveal if you called it too soon. **Reset series**, in the bar under the title, clears votes, the player list, the queue, and history.
 
 ## Player (`/player`)
 
@@ -42,4 +42,4 @@ Device IDs stay in Mongo (`triviaVotes`, `triviaPlayers`), not on the public eve
 
 ## Questions
 
-**Save this question** stores the question on screen and its answer choices. **Save upcoming** stores the queue. **Load** adds that question to the end of the upcoming queue. The question on screen, votes, and history stay. **Reset series** does not delete the list.
+The folder icon in the bar under the title opens saved questions. Each row shows the question and every answer. **Add question** stores a new question with its answers. **Save this question** stores the question on screen. **Save upcoming** stores the queue. **Add to queue** puts a saved question at the end of the upcoming queue. The question on screen, votes, and history stay. **Reset series** does not delete the list.

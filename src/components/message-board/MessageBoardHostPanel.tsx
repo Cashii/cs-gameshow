@@ -1,15 +1,22 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { Check, FolderPlus, MessageSquarePlus, Minus, Plus, Trash2, X } from "lucide-react";
+import {
+  Check,
+  FolderPlus,
+  MessageSquarePlus,
+  Minus,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 import {
   useLayoutEffect,
   useRef,
   useState,
-  type KeyboardEvent,
   type TextareaHTMLAttributes,
 } from "react";
-import { Select } from "@/components/ui/Select";
 import { useSuite } from "@/lib/suite-provider";
 import { uid } from "@/lib/utils";
 import {
@@ -75,33 +82,8 @@ function AutoTextarea({
       rows={1}
       value={value}
       onKeyDown={onKeyDown}
-      className={`block w-full resize-none rounded-md border border-neutral-700 bg-neutral-900 text-sm leading-5 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none ${compact ? "h-7 px-2.5 py-0" : "px-2.5 py-1.5"} ${props.className ?? ""}`}
+      className={`block w-full resize-none rounded-md border border-neutral-700 bg-neutral-900 text-sm leading-5 text-white placeholder:text-neutral-600 focus:border-blue-500 focus:outline-none ${compact ? "h-7 px-2.5 py-0" : "px-2.5 py-1.5"} ${props.className ?? ""}`}
     />
-  );
-}
-
-function ShowButton({
-  onScreen,
-  disabled,
-  onClick,
-}: Readonly<{
-  onScreen: boolean;
-  disabled: boolean;
-  onClick: () => void;
-}>) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className={`inline-flex h-7 shrink-0 items-center rounded-md px-2.5 text-xs font-semibold text-white disabled:opacity-40 ${
-        onScreen
-          ? "border border-sky-400 bg-sky-700 hover:bg-sky-600"
-          : "border border-teal-500 bg-teal-600 hover:bg-teal-500"
-      }`}
-    >
-      {onScreen ? "On screen" : "Show"}
-    </button>
   );
 }
 
@@ -193,7 +175,7 @@ function PromptDialog({
               <button
                 type="submit"
                 disabled={disabled}
-                className="h-9 rounded-md border border-teal-500 bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
+                className="h-9 rounded-md border border-blue-500 bg-blue-600 px-3 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-40"
               >
                 {submitLabel}
               </button>
@@ -224,6 +206,103 @@ function RemoveButton({
   );
 }
 
+function ChangeGroupButton({
+  index,
+  onClick,
+}: Readonly<{
+  index: number;
+  onClick: () => void;
+}>) {
+  return (
+    <button
+      type="button"
+      aria-label={`Change group for saved message ${index + 1}`}
+      title="Change group"
+      onClick={onClick}
+      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-800 hover:text-white"
+    >
+      <Pencil size={14} />
+    </button>
+  );
+}
+
+function GroupPickerDialog({
+  open,
+  onOpenChange,
+  message,
+  groups,
+  groupId,
+  onChoose,
+}: Readonly<{
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  message: string;
+  groups: { id: string; name: string }[];
+  groupId: string | null;
+  onChoose: (groupId: string) => void;
+}>) {
+  const current = groupId ?? "ungrouped";
+  const options = [
+    { value: "ungrouped", label: "Ungrouped" },
+    ...groups.map((group) => ({ value: group.id, label: group.name })),
+  ];
+
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-1000 bg-black/70" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 z-1001 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border border-neutral-700 bg-neutral-900 p-6 shadow-2xl">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <Dialog.Title className="m-0 text-lg font-semibold text-neutral-200">
+                Choose group
+              </Dialog.Title>
+              <Dialog.Description className="mt-1 truncate text-sm text-neutral-400">
+                {previewText(message)}
+              </Dialog.Description>
+            </div>
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                className="rounded p-1 text-neutral-400 hover:bg-neutral-800"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </Dialog.Close>
+          </div>
+          <div className="flex max-h-72 flex-col gap-1 overflow-auto">
+            {options.map((option) => {
+              const selected = option.value === current;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => onChoose(option.value)}
+                  className={`flex h-9 items-center justify-between gap-2 rounded-md px-2.5 text-left text-sm font-semibold ${
+                    selected
+                      ? "bg-blue-600 text-white"
+                      : "text-neutral-300 hover:bg-neutral-800 hover:text-white"
+                  }`}
+                >
+                  <span className="truncate">{option.label}</span>
+                  {selected ? <Check size={14} aria-hidden /> : null}
+                </button>
+              );
+            })}
+          </div>
+          {groups.length === 0 ? (
+            <p className="mt-3 text-xs text-neutral-500">
+              Add a group from the Groups list to sort messages.
+            </p>
+          ) : null}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
 export function MessageBoardHostPanel() {
   const { state, updateMessageBoard } = useSuite();
   const text = state.messageBoard?.text ?? "";
@@ -238,13 +317,13 @@ export function MessageBoardHostPanel() {
   const atLimit = presets.length >= MAX_MESSAGE_BOARD_PRESETS;
   const atGroupLimit = groups.length >= MAX_MESSAGE_BOARD_GROUPS;
   const [draft, setDraft] = useState("");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [groupFilter, setGroupFilter] = useState<"all" | "ungrouped" | string>(
     "all",
   );
   const [groupDraft, setGroupDraft] = useState("");
   const [addMessageOpen, setAddMessageOpen] = useState(false);
   const [addGroupOpen, setAddGroupOpen] = useState(false);
+  const [groupPickerId, setGroupPickerId] = useState<string | null>(null);
   const [renamingGroupId, setRenamingGroupId] = useState<string | null>(null);
   const skipRenameRef = useRef(false);
   const [renameDraft, setRenameDraft] = useState("");
@@ -274,7 +353,6 @@ export function MessageBoardHostPanel() {
       ].slice(0, MAX_MESSAGE_BOARD_PRESETS),
       activePresetId: id,
     }));
-    setExpandedId(null);
   };
 
   const addDraft = () => {
@@ -292,7 +370,6 @@ export function MessageBoardHostPanel() {
       ].slice(0, MAX_MESSAGE_BOARD_PRESETS),
     }));
     setDraft("");
-    setExpandedId(null);
     setAddMessageOpen(false);
   };
 
@@ -305,19 +382,8 @@ export function MessageBoardHostPanel() {
     }));
   };
 
-  const updatePresetText = (id: string, value: string) => {
-    const next = value.slice(0, MAX_MESSAGE_BOARD_PRESET_LENGTH);
-    updateMessageBoard((prev) => ({
-      ...prev,
-      presets: prev.presets.map((item) =>
-        item.id === id ? { ...item, text: next } : item,
-      ),
-      text: prev.activePresetId === id ? next : prev.text,
-    }));
-  };
-
   const removePreset = (id: string) => {
-    setExpandedId((current) => (current === id ? null : current));
+    setGroupPickerId((current) => (current === id ? null : current));
     updateMessageBoard((prev) => ({
       ...prev,
       presets: prev.presets.filter((item) => item.id !== id),
@@ -381,10 +447,8 @@ export function MessageBoardHostPanel() {
     if (groupFilter === "ungrouped") return preset.groupId == null;
     return preset.groupId === groupFilter;
   });
-  const groupOptions = [
-    { value: "ungrouped", label: "Ungrouped" },
-    ...groups.map((group) => ({ value: group.id, label: group.name })),
-  ];
+  const groupPickerPreset =
+    presets.find((preset) => preset.id === groupPickerId) ?? null;
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
@@ -408,7 +472,7 @@ export function MessageBoardHostPanel() {
               scale: clampMessageBoardScale(Number.parseFloat(e.target.value)),
             }))
           }
-          className="min-w-32 flex-1 accent-teal-500"
+          className="min-w-32 flex-1 accent-blue-500"
         />
         <div className="inline-flex items-center gap-1">
           <button
@@ -424,7 +488,7 @@ export function MessageBoardHostPanel() {
                 ),
               }))
             }
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-teal-500 bg-teal-600 text-white hover:bg-teal-500 disabled:opacity-40"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40"
           >
             <Minus size={16} />
           </button>
@@ -441,7 +505,7 @@ export function MessageBoardHostPanel() {
                 ),
               }))
             }
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-teal-500 bg-teal-600 text-white hover:bg-teal-500 disabled:opacity-40"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40"
           >
             <Plus size={16} />
           </button>
@@ -489,7 +553,7 @@ export function MessageBoardHostPanel() {
             type="button"
             disabled={!trimmed || alreadySaved || atLimit}
             onClick={savePreset}
-            className="h-8 rounded-md border border-teal-500 bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
+            className="h-8 rounded-md border border-blue-500 bg-blue-600 px-3 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-40"
           >
             {alreadySaved ? "Saved" : "Save"}
           </button>
@@ -536,7 +600,7 @@ export function MessageBoardHostPanel() {
               onClick={() => setGroupFilter("all")}
               className={`rounded-md px-2.5 py-2 text-left text-sm font-semibold ${
                 groupFilter === "all"
-                  ? "bg-teal-600 text-white"
+                  ? "bg-blue-600 text-white"
                   : "text-neutral-300 hover:bg-neutral-800 hover:text-white"
               }`}
             >
@@ -585,7 +649,7 @@ export function MessageBoardHostPanel() {
                       }}
                       className={`h-8 min-w-0 flex-1 truncate rounded-md px-2.5 text-left text-sm font-semibold ${
                         selected
-                          ? "bg-teal-600 text-white"
+                          ? "bg-blue-600 text-white"
                           : "text-neutral-300 hover:bg-neutral-800 hover:text-white"
                       }`}
                     >
@@ -644,98 +708,35 @@ export function MessageBoardHostPanel() {
           {visiblePresets.map((preset) => {
             const index = presets.findIndex((item) => item.id === preset.id);
             const onScreen = activePresetId === preset.id;
-            const expanded = expandedId === preset.id;
             return (
               <li
                 key={preset.id}
                 className={`rounded-lg border px-3 py-2 ${
                   onScreen
-                    ? "border-sky-500 bg-sky-950/40"
+                    ? "border-blue-500 bg-blue-950/40"
                     : "border-neutral-800 bg-neutral-900/70 hover:bg-neutral-900"
                 }`}
               >
-                {expanded ? (
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex min-w-0 flex-1 items-center">
-                      <AutoTextarea
-                        value={preset.text}
-                        maxPx={160}
-                        autoFocus
-                        compact
-                        aria-label={`Saved message ${index + 1}`}
-                        onChange={(e) =>
-                          updatePresetText(preset.id, e.target.value)
-                        }
-                        onBlur={() => {
-                          if (preset.text.trim()) return;
-                          removePreset(preset.id);
-                        }}
-                        onKeyDown={(e: KeyboardEvent<HTMLTextAreaElement>) => {
-                          if (e.key !== "Escape") return;
-                          e.preventDefault();
-                          setExpandedId(null);
-                        }}
-                      />
-                    </div>
-                    <div className="w-36 shrink-0">
-                      <Select
-                        compact
-                        aria-label={`Group for saved message ${index + 1}`}
-                        value={preset.groupId ?? "ungrouped"}
-                        options={groupOptions}
-                        onValueChange={(value) => movePreset(preset.id, value)}
-                      />
-                    </div>
-                    <ShowButton
-                      onScreen={onScreen}
-                      disabled={!preset.text.trim()}
-                      onClick={() => showPreset(preset)}
-                    />
-                    <RemoveButton
-                      index={index}
-                      onClick={() => removePreset(preset.id)}
-                    />
-                    <button
-                      type="button"
-                      aria-label="Done editing"
-                      onClick={() => setExpandedId(null)}
-                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-teal-500 bg-teal-600 text-white hover:bg-teal-500"
-                    >
-                      <Check size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      title={preset.text}
-                      onClick={() => setExpandedId(preset.id)}
-                      className="flex h-7 min-w-0 flex-1 items-center text-left text-sm text-neutral-100 hover:text-white"
-                    >
-                      <span className="truncate">
-                        {previewText(preset.text)}
-                      </span>
-                    </button>
-                    <div className="w-36 shrink-0">
-                      <Select
-                        compact
-                        aria-label={`Group for saved message ${index + 1}`}
-                        value={preset.groupId ?? "ungrouped"}
-                        options={groupOptions}
-                        onValueChange={(value) => movePreset(preset.id, value)}
-                      />
-                    </div>
-                    <ShowButton
-                      onScreen={onScreen}
-                      disabled={!preset.text.trim()}
-                      onClick={() => showPreset(preset)}
-                    />
-                    <RemoveButton
-                      index={index}
-                      onClick={() => removePreset(preset.id)}
-                    />
-                  </div>
-                )}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    title={preset.text}
+                    aria-pressed={onScreen}
+                    disabled={!preset.text.trim()}
+                    onClick={() => showPreset(preset)}
+                    className="flex h-7 min-w-0 flex-1 items-center text-left text-sm text-neutral-100 hover:text-white disabled:opacity-40"
+                  >
+                    <span className="truncate">{previewText(preset.text)}</span>
+                  </button>
+                  <ChangeGroupButton
+                    index={index}
+                    onClick={() => setGroupPickerId(preset.id)}
+                  />
+                  <RemoveButton
+                    index={index}
+                    onClick={() => removePreset(preset.id)}
+                  />
+                </div>
               </li>
             );
           })}
@@ -772,6 +773,20 @@ export function MessageBoardHostPanel() {
         submitLabel="Add group"
         placeholder="Group name"
         disabled={!groupDraft.trim() || atGroupLimit}
+      />
+      <GroupPickerDialog
+        open={groupPickerPreset != null}
+        onOpenChange={(open) => {
+          if (!open) setGroupPickerId(null);
+        }}
+        message={groupPickerPreset?.text ?? ""}
+        groups={groups}
+        groupId={groupPickerPreset?.groupId ?? null}
+        onChoose={(groupId) => {
+          if (!groupPickerPreset) return;
+          movePreset(groupPickerPreset.id, groupId);
+          setGroupPickerId(null);
+        }}
       />
     </div>
   );

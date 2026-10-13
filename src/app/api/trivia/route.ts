@@ -27,6 +27,13 @@ export async function POST(request: Request) {
     optionB?: string;
     survivingChoiceId?: string;
     queue?: unknown;
+    libraryEntry?: {
+      id?: string;
+      question?: string;
+      options?: string[];
+      optionA?: string;
+      optionB?: string;
+    };
   };
 
   if (body.action === "vote") {
@@ -85,7 +92,14 @@ export async function POST(request: Request) {
         return json(await triviaDeclareWinners());
       case "saveQueue":
         if (!Array.isArray(body.queue)) return error("queue required");
-        return json(await triviaSaveQueue(body.queue));
+        return json(
+          await triviaSaveQueue(
+            body.queue,
+            body.libraryEntry && typeof body.libraryEntry === "object"
+              ? body.libraryEntry
+              : undefined,
+          ),
+        );
       case "resetSeries":
         return json(await triviaResetSeries());
       default:

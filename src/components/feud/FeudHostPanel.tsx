@@ -11,23 +11,16 @@ import {
   RotateCcw,
   RefreshCw,
   GripVertical,
+  ChevronDown,
+  Check,
+  X,
 } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import { useSound } from "@/lib/feud/useSound";
 import { clamp, uid } from "@/lib/utils";
-import {
-  feudBankQuestionFromRound,
-  feudRoundsFromLibrary,
-  mergeFeudBank,
-  type FeudAnswer,
-  type FeudBankQuestion,
-  type FeudGameState,
-  type FeudRound,
-} from "@/lib/feud/types";
-import { FeudQuestionBank } from "@/components/feud/FeudQuestionBank";
+import type { FeudAnswer, FeudGameState, FeudRound } from "@/lib/feud/types";
 import { IconButton, NumberInput, TextInput } from "@/components/ui/Primitives";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { Select } from "@/components/ui/Select";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FeudAudienceView } from "./FeudAudienceView";
 
@@ -47,11 +40,17 @@ export function FeudHostPanel() {
   const feud = state.feud;
   const round = currentFeudRound;
   const [dragAnswerId, setDragAnswerId] = useState<string | null>(null);
+  const [questionPickerOpen, setQuestionPickerOpen] = useState(false);
   const [questionDialogOpen, setQuestionDialogOpen] = useState(false);
   const [questionDialogMode, setQuestionDialogMode] = useState<"add" | "edit">(
     "add",
   );
   const [questionDraft, setQuestionDraft] = useState("");
+  const [pickerForm, setPickerForm] = useState<
+    | { mode: "add"; draft: string }
+    | { mode: "edit"; id: string; draft: string }
+    | null
+  >(null);
   const [confirm, setConfirm] = useState<{
     open: boolean;
     title: string;
@@ -188,25 +187,44 @@ export function FeudHostPanel() {
     setQuestionDialogOpen(false);
   };
 
+  const removeRoundById = (id: string) => {
+    setPickerForm((form) =>
+      form?.mode === "edit" && form.id === id ? null : form,
+    );
+    updateFeud((prev) => {
+      if (prev.rounds.length <= 1) return prev;
+      const idx = prev.rounds.findIndex((item) => item.id === id);
+      if (idx < 0) return prev;
+      const rounds = prev.rounds.filter((item) => item.id !== id);
+      let currentRoundIndex = prev.currentRoundIndex;
+      if (idx < currentRoundIndex) currentRoundIndex -= 1;
+      else if (idx === currentRoundIndex) {
+        currentRoundIndex = Math.min(idx, rounds.length - 1);
+      }
+      return { ...prev, rounds, currentRoundIndex };
+    });
+  };
+
   const deleteRound = () => {
+    const id = round.id;
     setQuestionDialogOpen(false);
     setConfirm({
       open: true,
       title: "Delete Round",
       message: "Are you sure you want to delete this round? This cannot be undone.",
       variant: "danger",
-      onConfirm: () => {
-        updateFeud((prev) => {
-          if (prev.rounds.length <= 1) return prev;
-          const idx = prev.currentRoundIndex;
-          const rounds = prev.rounds.filter((_, i) => i !== idx);
-          return {
-            ...prev,
-            rounds,
-            currentRoundIndex: Math.max(0, Math.min(idx - 1, rounds.length - 1)),
-          };
-        });
-      },
+      onConfirm: () => removeRoundById(id),
+    });
+  };
+
+  const requestDeleteRound = (id: string) => {
+    if (feud.rounds.length <= 1) return;
+    setConfirm({
+      open: true,
+      title: "Delete question",
+      message: "Are you sure you want to delete this question? This cannot be undone.",
+      variant: "danger",
+      onConfirm: () => removeRoundById(id),
     });
   };
 
@@ -255,68 +273,43 @@ export function FeudHostPanel() {
     });
   };
 
+  const selectRound = (index: number) => {
+    if (index !== feud.currentRoundIndex) {
+      updateFeud((prev) => ({
+        ...prev,
+        currentRoundIndex: index,
+      }));
+    }
+    setQuestionPickerOpen(false);
+  };
+
+  const savePickerForm = () => {
+    if (!pickerForm) return;
+    const question = pickerForm.draft.trim();
+    if (!question) return;
+    if (pickerForm.mode === "add") {
+      updateFeud((prev) => ({
+        ...prev,
+        rounds: [
+          ...prev.rounds,
+          { id: uid(), question, strikes: 0, answers: [] },
+        ],
+        currentRoundIndex: prev.rounds.length,
+      }));
+    } else {
+      const id = pickerForm.id;
+      updateFeud((prev) => {
+        const copy = structuredClone(prev);
+        const target = copy.rounds.find((item) => item.id === id);
+        if (target) target.question = question;
+        return copy;
+      });
+    }
+    setPickerForm(null);
+  };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <FeudQuestionBank
-        questions={feud.library ?? []}
-        canSaveCurrent={feudBankQuestionFromRound(round, "draft") != null}
-        canSaveAll={feud.rounds.some(
-          (item) => feudBankQuestionFromRound(item, "draft") != null,
-        )}
-        onSaveCurrent={() => {
-          const entry = feudBankQuestionFromRound(round, uid());
-          if (!entry) return;
-          updateFeud((prev) => ({
-            ...prev,
-            library: mergeFeudBank(prev.library ?? [], [entry]),
-          }));
-        }}
-        onSaveAll={() => {
-          const incoming = feud.rounds
-            .map((item) => feudBankQuestionFromRound(item, uid()))
-            .filter((item): item is FeudBankQuestion => item != null);
-          updateFeud((prev) => ({
-            ...prev,
-            library: mergeFeudBank(prev.library ?? [], incoming),
-          }));
-        }}
-        onLoad={(id) => {
-          const entry = (feud.library ?? []).find((item) => item.id === id);
-          if (!entry) return;
-          const nextRound = feudRoundsFromLibrary([entry], uid)[0];
-          if (!nextRound) return;
-          updateFeud((prev) => {
-            if (prev.rounds.length === 0) {
-              return { ...prev, currentRoundIndex: 0, rounds: [nextRound] };
-            }
-            const index = Math.min(
-              prev.currentRoundIndex,
-              prev.rounds.length - 1,
-            );
-            return {
-              ...prev,
-              rounds: prev.rounds.map((item, itemIndex) =>
-                itemIndex === index ? { ...nextRound, id: item.id } : item,
-              ),
-            };
-          });
-        }}
-        onLoadAll={() => {
-          const library = feud.library ?? [];
-          if (library.length === 0) return;
-          updateFeud((prev) => ({
-            ...prev,
-            currentRoundIndex: 0,
-            rounds: feudRoundsFromLibrary(library, uid),
-          }));
-        }}
-        onDelete={(id) =>
-          updateFeud((prev) => ({
-            ...prev,
-            library: (prev.library ?? []).filter((item) => item.id !== id),
-          }))
-        }
-      />
       <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
@@ -822,22 +815,18 @@ export function FeudHostPanel() {
             style={{ display: "flex", alignItems: "center", gap: 8 }}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
-              <Select
+              <button
+                type="button"
                 aria-label="Question"
-                value={feud.currentRoundIndex.toString()}
-                onValueChange={(value) => {
-                  const nextIndex = Number.parseInt(value, 10);
-                  if (nextIndex === feud.currentRoundIndex) return;
-                  updateFeud((prev) => ({
-                    ...prev,
-                    currentRoundIndex: nextIndex,
-                  }));
-                }}
-                options={feud.rounds.map((r, i) => ({
-                  value: i.toString(),
-                  label: `${i + 1}. ${r.question?.slice(0, 40) || "(untitled)"}`,
-                }))}
-              />
+                aria-haspopup="dialog"
+                onClick={() => setQuestionPickerOpen(true)}
+                className="inline-flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-neutral-700 bg-neutral-800 py-0 pr-3 pl-3 text-left text-base font-normal text-white hover:bg-neutral-700"
+              >
+                <span className="min-w-0 flex-1 truncate">
+                  {`${feud.currentRoundIndex + 1}. ${round.question?.trim() || "(untitled)"}`}
+                </span>
+                <ChevronDown size={16} className="shrink-0 text-neutral-400" aria-hidden />
+              </button>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
               <Tooltip content="Add Round">
@@ -891,6 +880,217 @@ export function FeudHostPanel() {
           </div>
         </div>
       </div>
+
+      <Dialog.Root
+        open={questionPickerOpen}
+        onOpenChange={(open) => {
+          setQuestionPickerOpen(open);
+          if (!open) setPickerForm(null);
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[1000] bg-black/70" />
+          <Dialog.Content
+            className="fixed top-1/2 left-1/2 z-[1001] flex max-h-[min(80vh,720px)] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 shadow-2xl"
+            onEscapeKeyDown={(event) => {
+              if (!pickerForm) return;
+              event.preventDefault();
+              setPickerForm(null);
+            }}
+          >
+            <div className="flex items-start justify-between gap-3 px-6 pt-6 pb-4">
+              <div>
+                <Dialog.Title className="text-lg font-semibold text-white">
+                  Questions
+                </Dialog.Title>
+                <Dialog.Description className="mt-1 text-sm text-neutral-400">
+                  Pick a question to show on the board. Add, edit, or delete questions here.
+                </Dialog.Description>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPickerForm({ mode: "add", draft: "" })}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-neutral-700 bg-neutral-800 px-3 text-sm font-medium text-white hover:bg-neutral-700"
+                >
+                  <Plus size={16} />
+                  Add question
+                </button>
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    className="rounded p-1 text-neutral-400 hover:bg-neutral-800"
+                    aria-label="Close"
+                  >
+                    <X size={18} />
+                  </button>
+                </Dialog.Close>
+              </div>
+            </div>
+            {pickerForm?.mode === "add" ? (
+              <form
+                className="mx-6 mb-3 flex items-center gap-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  savePickerForm();
+                }}
+              >
+                <input
+                  value={pickerForm.draft}
+                  onChange={(event) =>
+                    setPickerForm({ mode: "add", draft: event.target.value })
+                  }
+                  placeholder="Type the survey question..."
+                  aria-label="New question"
+                  autoFocus
+                  className="min-w-0 flex-1 rounded-lg border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-500 focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setPickerForm(null)}
+                  className="rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm font-medium text-neutral-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!pickerForm.draft.trim()}
+                  className={`rounded-lg px-3 py-2 text-sm font-medium text-white ${
+                    pickerForm.draft.trim()
+                      ? "bg-blue-600 hover:bg-blue-500"
+                      : "cursor-not-allowed bg-neutral-700 text-neutral-500"
+                  }`}
+                >
+                  Add
+                </button>
+              </form>
+            ) : null}
+            <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-6 pb-6">
+              {feud.rounds.map((item, index) => {
+                const selected = index === feud.currentRoundIndex;
+                const editing =
+                  pickerForm?.mode === "edit" && pickerForm.id === item.id;
+                const summary =
+                  item.answers.length === 0
+                    ? "No answers yet"
+                    : item.answers
+                        .map(
+                          (answer) =>
+                            `${answer.text.trim() || "(blank)"} ${answer.points}`,
+                        )
+                        .join(" · ");
+                const rowClass = selected
+                  ? "border-sky-500 bg-sky-950/40"
+                  : "border-neutral-700 bg-neutral-800/60";
+                return (
+                  <li
+                    key={item.id}
+                    className={`flex items-start gap-1 rounded-lg border pr-1 ${rowClass}`}
+                  >
+                    {editing && pickerForm?.mode === "edit" ? (
+                      <form
+                        className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          savePickerForm();
+                        }}
+                      >
+                        <span className="w-5 shrink-0 text-sm font-semibold text-neutral-400">
+                          {index + 1}
+                        </span>
+                        <input
+                          value={pickerForm.draft}
+                          onChange={(event) =>
+                            setPickerForm({
+                              mode: "edit",
+                              id: item.id,
+                              draft: event.target.value,
+                            })
+                          }
+                          aria-label="Edit question"
+                          autoFocus
+                          className="min-w-0 flex-1 rounded-md border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setPickerForm(null)}
+                          className="rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm font-medium text-neutral-200"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={!pickerForm.draft.trim()}
+                          className={`rounded-lg px-3 py-2 text-sm font-medium text-white ${
+                            pickerForm.draft.trim()
+                              ? "bg-blue-600 hover:bg-blue-500"
+                              : "cursor-not-allowed bg-neutral-700 text-neutral-500"
+                          }`}
+                        >
+                          Save
+                        </button>
+                      </form>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => selectRound(index)}
+                        aria-current={selected ? "true" : undefined}
+                        className="flex min-w-0 flex-1 items-start gap-3 px-3 py-3 text-left"
+                      >
+                        <span className="mt-0.5 w-5 shrink-0 text-sm font-semibold text-neutral-400">
+                          {index + 1}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold text-white">
+                            {item.question.trim() || "(untitled)"}
+                          </span>
+                          <span className="mt-1 block text-xs leading-relaxed text-neutral-400">
+                            {summary}
+                          </span>
+                        </span>
+                        {selected ? (
+                          <Check size={16} className="mt-0.5 shrink-0 text-sky-400" aria-hidden />
+                        ) : null}
+                      </button>
+                    )}
+                    {editing ? null : (
+                      <div className="flex shrink-0 items-center gap-0.5 pt-2">
+                        <button
+                          type="button"
+                          aria-label={`Edit question ${index + 1}`}
+                          onClick={() =>
+                            setPickerForm({
+                              mode: "edit",
+                              id: item.id,
+                              draft: item.question ?? "",
+                            })
+                          }
+                          className="rounded-md p-2 text-neutral-400 hover:bg-neutral-800 hover:text-white"
+                        >
+                          <Pencil size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Delete question ${index + 1}`}
+                          disabled={feud.rounds.length <= 1}
+                          onClick={() => requestDeleteRound(item.id)}
+                          className={`rounded-md p-2 ${
+                            feud.rounds.length <= 1
+                              ? "cursor-not-allowed text-neutral-600"
+                              : "text-neutral-400 hover:bg-neutral-800 hover:text-red-300"
+                          }`}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       <Dialog.Root
         open={questionDialogOpen}

@@ -59,7 +59,7 @@ function ChangelogContent({ markdown }: Readonly<{ markdown: string }>) {
               <ol className="mt-4 list-decimal space-y-3.5 pl-5 text-sm leading-snug text-neutral-400 marker:font-semibold marker:text-neutral-500">
                 {entry.items.map((item, itemIndex) => (
                   <li
-                    key={`${entry.date}-${item.title || itemIndex}`}
+                    key={`${entry.date}-${itemIndex}-${item.title}`}
                     className="pl-1"
                   >
                     <ItemText item={item} />

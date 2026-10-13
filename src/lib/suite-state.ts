@@ -74,20 +74,23 @@ import {
 } from "@/lib/trivia/types";
 import {
   createDefaultPriceGuesserState,
-  normalizePriceGuesserLibrary,
   parsePriceGuesserResult,
   withSyncedPriceGuesserResult,
   type PriceGuesserState,
 } from "@/lib/price-guesser/types";
 import {
   createDefaultPriceOrderState,
-  normalizePriceOrderLibrary,
   PRICE_ORDER_MAX_ITEMS,
   syncPriceOrderSlots,
   withSyncedPriceOrderResult,
   type PriceOrderItem,
   type PriceOrderState,
 } from "@/lib/price-order/types";
+import {
+  mergePriceCatalog,
+  normalizePriceCatalog,
+  type PriceCatalogItem,
+} from "@/lib/price/catalog";
 import { normalizePhotoFit } from "@/lib/price/photo-fit";
 import {
   MIN_QUESTION_TIME_TEAMS,
@@ -147,6 +150,8 @@ export type SuiteState = {
   trivia: TriviaGameState;
   priceGuesser: PriceGuesserState;
   priceOrder: PriceOrderState;
+  /** Photos and names shared by Price Guesser and Price Order. */
+  priceCatalog: PriceCatalogItem[];
   priceWheel: PriceWheelState;
   questionTime: QuestionTimeState;
   pictionary: PictionaryState;
@@ -233,6 +238,7 @@ export function createDefaultSuiteState(): SuiteState {
     trivia: createDefaultTriviaState(),
     priceGuesser: createDefaultPriceGuesserState(),
     priceOrder: createDefaultPriceOrderState(),
+    priceCatalog: [],
     priceWheel: createDefaultPriceWheelState(),
     questionTime: createDefaultQuestionTimeState(),
     pictionary: createDefaultPictionaryState(),
@@ -732,7 +738,6 @@ function normalizePriceGuesserState(
       typeof raw.itemRevealed === "boolean" ? raw.itemRevealed : true,
     photoFit: normalizePhotoFit(raw.photoFit),
     resultOverlay: parsePriceGuesserResult(raw.resultOverlay),
-    library: normalizePriceGuesserLibrary(raw.library),
   });
 }
 
@@ -847,8 +852,23 @@ function normalizePriceOrderState(
     items,
     order,
     resultShown: Boolean(raw.resultShown),
-    library: normalizePriceOrderLibrary(raw.library),
   });
+}
+
+function legacyPriceLibrary(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object" || !("library" in raw)) return undefined;
+  return (raw as { library?: unknown }).library;
+}
+
+/** Prefer the shared catalog. Older saves kept a separate list on each game. */
+function normalizeSharedPriceCatalog(raw: LegacySuiteState): PriceCatalogItem[] {
+  if (Array.isArray(raw.priceCatalog)) {
+    return normalizePriceCatalog(raw.priceCatalog);
+  }
+  return mergePriceCatalog(
+    normalizePriceCatalog(legacyPriceLibrary(raw.priceGuesser)),
+    normalizePriceCatalog(legacyPriceLibrary(raw.priceOrder)),
+  );
 }
 
 const JEOPARODY_PHASES = new Set<JeoparodyPhase>(["board", "clue", "answer"]);
@@ -1013,6 +1033,7 @@ export function normalizeSuiteState(
     trivia: normalizeTriviaState(raw.trivia),
     priceGuesser: normalizePriceGuesserState(raw.priceGuesser),
     priceOrder: normalizePriceOrderState(raw.priceOrder),
+    priceCatalog: normalizeSharedPriceCatalog(raw),
     priceWheel: normalizePriceWheelState(raw.priceWheel),
     questionTime: normalizeQuestionTimeState(raw.questionTime),
     pictionary: normalizePictionaryState(raw.pictionary),

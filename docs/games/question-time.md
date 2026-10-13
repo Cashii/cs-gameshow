@@ -19,4 +19,4 @@ Indigo night-sky board with a glass question card, a row of team scores, and a l
 
 ## Question repository
 
-**Save this question** stores the question on screen. You can edit a saved question in the list. **Load** replaces the title and question and leaves teams, scores, and the clock alone.
+The folder icon in the question box opens saved questions. **Save this question** stores the question on screen. You can edit a saved question in the list. **Load** replaces the title and question and leaves teams, scores, and the clock alone.

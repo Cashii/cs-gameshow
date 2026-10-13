@@ -39,18 +39,20 @@ import { PriceItemLibrary } from "@/components/price/PriceItemLibrary";
 import {
   mergePriceCatalog,
   priceCatalogKey,
+  priceImageStillUsed,
   type PriceCatalogItem,
 } from "@/lib/price/catalog";
 import { uid } from "@/lib/utils";
 import { SquarePhotoEditor } from "@/components/price/SquarePhotoEditor";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { OperatorNotice } from "@/components/operator/OperatorNotice";
+import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { StatusSwitch } from "@/components/operator/StatusSwitch";
 
 export function PriceOrderHostPanel() {
-  const { state, updatePriceOrder } = useSuite();
+  const { state, updatePriceOrder, updatePriceCatalog } = useSuite();
   const game = state.priceOrder ?? createDefaultPriceOrderState();
+  const catalog = state.priceCatalog ?? [];
   const { toastMessage, showToast } = useToast();
   const spectatorLive = state.spectatorGame === "priceOrder";
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -91,7 +93,7 @@ export function PriceOrderHostPanel() {
   const removeItem = (id: string) => {
     const item = game.items.find((entry) => entry.id === id);
     const savedUrls = new Set(
-      (game.library ?? []).map((entry) => entry.imageUrl).filter(Boolean),
+      catalog.map((entry) => entry.imageUrl).filter(Boolean),
     );
     if (item?.imageUrl && !savedUrls.has(item.imageUrl)) {
       void deleteMediaByUrl(item.imageUrl);
@@ -174,9 +176,14 @@ export function PriceOrderHostPanel() {
     setSelectedId(null);
   };
 
+  const liveImageUrls = () => [
+    state.priceGuesser?.imageUrl ?? "",
+    ...(state.priceOrder?.items ?? []).map((item) => item.imageUrl),
+  ];
+
   const reset = () => {
     const savedUrls = new Set(
-      (game.library ?? []).map((entry) => entry.imageUrl).filter(Boolean),
+      catalog.map((entry) => entry.imageUrl).filter(Boolean),
     );
     for (const item of game.items) {
       if (item.imageUrl && !savedUrls.has(item.imageUrl)) {
@@ -184,102 +191,11 @@ export function PriceOrderHostPanel() {
       }
     }
     setSelectedId(null);
-    patch((prev) => ({
-      ...createDefaultPriceOrderState(),
-      library: prev.library ?? [],
-    }));
+    patch(() => createDefaultPriceOrderState());
   };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <PriceItemLibrary
-        items={game.library ?? []}
-        saveLabel="Save all items"
-        saveDisabled={
-          !game.items.some(
-            (item) => item.imageUrl || item.label.trim() || item.price != null,
-          )
-        }
-        loadDisabled={game.items.length >= PRICE_ORDER_MAX_ITEMS}
-        hint="Each saved item keeps its photo, name, and price. Load adds that item to the board, up to five."
-        loadMessage="This adds the saved item to the board. The other items stay, up to five."
-        onSave={async () => {
-          const seen = new Set((game.library ?? []).map(priceCatalogKey));
-          const incoming: PriceCatalogItem[] = [];
-          for (const item of game.items) {
-            if (!item.imageUrl && !item.label.trim() && item.price == null) {
-              continue;
-            }
-            const draft: PriceCatalogItem = {
-              id: "draft",
-              imageUrl: item.imageUrl,
-              label: item.label,
-              price: item.price,
-              photoFit: item.photoFit,
-            };
-            const key = priceCatalogKey(draft);
-            if (seen.has(key)) continue;
-            seen.add(key);
-            incoming.push({
-              ...draft,
-              id: uid(),
-              imageUrl: item.imageUrl ? await copyMediaUrl(item.imageUrl) : "",
-            });
-          }
-          if (incoming.length === 0) return;
-          updatePriceOrder((prev) => ({
-            ...prev,
-            library: mergePriceCatalog(prev.library ?? [], incoming),
-          }));
-        }}
-        onLoad={async (id) => {
-          const entry = (game.library ?? []).find((item) => item.id === id);
-          if (!entry || game.items.length >= PRICE_ORDER_MAX_ITEMS) return;
-          const imageUrl = entry.imageUrl
-            ? await copyMediaUrl(entry.imageUrl)
-            : "";
-          const next: PriceOrderItem = {
-            id: uid(),
-            imageUrl,
-            label: entry.label,
-            price: entry.price,
-            photoFit: entry.photoFit,
-            priceRevealed: false,
-            itemRevealed: false,
-          };
-          updatePriceOrder((prev) => {
-            if (prev.items.length >= PRICE_ORDER_MAX_ITEMS) {
-              if (imageUrl) void deleteMediaByUrl(imageUrl);
-              return prev;
-            }
-            const items = [...prev.items, next];
-            return {
-              ...prev,
-              items,
-              order: syncPriceOrderSlots(
-                prev.order,
-                visiblePriceOrderItems({ ...prev, items }),
-              ),
-              resultShown: false,
-            };
-          });
-        }}
-        onDelete={(id) => {
-          const entry = (game.library ?? []).find((item) => item.id === id);
-          updatePriceOrder((prev) => ({
-            ...prev,
-            library: (prev.library ?? []).filter((item) => item.id !== id),
-          }));
-          const url = entry?.imageUrl;
-          if (!url) return;
-          const liveUrls = new Set(game.items.map((item) => item.imageUrl));
-          if (liveUrls.has(url)) return;
-          const stillSaved = (game.library ?? []).some(
-            (saved) => saved.id !== id && saved.imageUrl === url,
-          );
-          if (!stillSaved) void deleteMediaByUrl(url);
-        }}
-      />
       <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
@@ -350,17 +266,112 @@ export function PriceOrderHostPanel() {
             <RotateCcw size={16} />
             Reset game
           </button>
+          <div className="ml-auto">
+            <PriceItemLibrary
+              items={catalog}
+              saveLabel="Save all items"
+              saveDisabled={
+                !game.items.some(
+                  (item) =>
+                    item.imageUrl || item.label.trim() || item.price != null,
+                )
+              }
+              loadDisabled={game.items.length >= PRICE_ORDER_MAX_ITEMS}
+              pickHint="Pick one to add it to the board, up to five."
+              onSave={async () => {
+                const seen = new Set(catalog.map(priceCatalogKey));
+                const incoming: PriceCatalogItem[] = [];
+                for (const item of game.items) {
+                  if (
+                    !item.imageUrl &&
+                    !item.label.trim() &&
+                    item.price == null
+                  ) {
+                    continue;
+                  }
+                  const draft: PriceCatalogItem = {
+                    id: "draft",
+                    imageUrl: item.imageUrl,
+                    label: item.label,
+                    price: item.price,
+                    photoFit: item.photoFit,
+                  };
+                  const key = priceCatalogKey(draft);
+                  if (seen.has(key)) continue;
+                  seen.add(key);
+                  incoming.push({
+                    ...draft,
+                    id: uid(),
+                    imageUrl: item.imageUrl
+                      ? await copyMediaUrl(item.imageUrl)
+                      : "",
+                  });
+                }
+                if (incoming.length === 0) return;
+                updatePriceCatalog((items) =>
+                  mergePriceCatalog(items, incoming),
+                );
+              }}
+              onLoad={async (id) => {
+                const entry = catalog.find((item) => item.id === id);
+                if (!entry || game.items.length >= PRICE_ORDER_MAX_ITEMS) {
+                  return;
+                }
+                const imageUrl = entry.imageUrl
+                  ? await copyMediaUrl(entry.imageUrl)
+                  : "";
+                const next: PriceOrderItem = {
+                  id: uid(),
+                  imageUrl,
+                  label: entry.label,
+                  price: entry.price,
+                  photoFit: entry.photoFit,
+                  priceRevealed: false,
+                  itemRevealed: false,
+                };
+                updatePriceOrder((prev) => {
+                  if (prev.items.length >= PRICE_ORDER_MAX_ITEMS) {
+                    if (imageUrl) void deleteMediaByUrl(imageUrl);
+                    return prev;
+                  }
+                  const items = [...prev.items, next];
+                  return {
+                    ...prev,
+                    items,
+                    order: syncPriceOrderSlots(
+                      prev.order,
+                      visiblePriceOrderItems({ ...prev, items }),
+                    ),
+                    resultShown: false,
+                  };
+                });
+              }}
+              onDelete={(id) => {
+                const entry = catalog.find((item) => item.id === id);
+                updatePriceCatalog((items) =>
+                  items.filter((item) => item.id !== id),
+                );
+                const url = entry?.imageUrl;
+                if (
+                  !url ||
+                  priceImageStillUsed(url, catalog, id, liveImageUrls())
+                ) {
+                  return;
+                }
+                void deleteMediaByUrl(url);
+              }}
+            />
+          </div>
         </div>
       </div>
+      {!spectatorLive && (
+        <SpectatorScreenNotice>
+          Spectator is not on Price Order. Use the Spectator screen list so the
+          projector shows the items.
+        </SpectatorScreenNotice>
+      )}
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex w-full flex-col gap-6 px-6 py-6">
-          {!spectatorLive && (
-            <OperatorNotice>
-              Spectator is not on Price Order. Use the Spectator screen list so
-              the projector shows the items.
-            </OperatorNotice>
-          )}
-
           <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)]">
             <div className="flex flex-col gap-4 lg:sticky lg:top-4">
               {unplaced.length > 0 && (

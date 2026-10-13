@@ -4,7 +4,7 @@ Colored numbered token pool with multi-draw reveal on the spectator screen.
 
 ## Flow
 
-1. **Hostess** enters tokens as guests receive them (number + color, or bulk range like 1–100 for one color).
+1. **Hostess** enters tokens as guests receive them (number + color, or bulk range like 1–100 for one color). Tap **Birthday** or **VIP** before Add to save a cake or star with those numbers. Tap the same button again to leave the next numbers unmarked.
 2. **Operator** sees pool counts by color, filters the list, and draws:
    - **Random by color counts** — e.g. 5 blue + 5 red from the pool without replacement
    - **Specific tokens** — pick from the filtered list
@@ -26,6 +26,6 @@ The operator can add or remove tokens from the pool (e.g. fix hostess entry erro
 
 ## Birthday and VIP marks
 
-Under each token, click the mark until it shows a cake (birthday), a star (VIP), or a plain circle (no mark). Filter the pool or called list to Birthday or VIP, select that token, and use **Draw selected** when that guest should play. The spectator screen never shows the mark.
+The hostess can set a cake (birthday) or star (VIP) while adding a token. Under each token, the operator can click the mark until it shows a cake, a star, or a plain circle (no mark). Filter the pool or called list to Birthday or VIP, select that token, and use **Draw selected** when that guest should play. The spectator screen never shows the mark.
 
 The number pool, colors, and birthday or VIP marks stay in the pool. There is no separate save list. Called numbers stay called.

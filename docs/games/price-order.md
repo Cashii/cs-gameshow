@@ -24,4 +24,4 @@ There is no player phone board.
 
 ## Saved items
 
-**Save all items** stores each item on the board, with its photo, name, and price. **Load** adds that one item, up to five, and leaves the others in place. Resetting the live game does not delete saved photos.
+The folder icon on the game actions bar opens the same gallery Price Guesser uses. **Save all items** stores each item on the board, with its photo, name, and price. Pick a photo to add that item, up to five. Resetting the live game does not delete saved photos.

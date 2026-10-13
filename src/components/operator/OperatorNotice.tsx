@@ -5,6 +5,16 @@ const TONE = {
   info: "border-sky-600 bg-sky-200 text-sky-950",
 } as const;
 
+export function SpectatorScreenNotice({
+  children,
+}: Readonly<{ children: ReactNode }>) {
+  return (
+    <div className="shrink-0 bg-amber-400/15 px-6 py-2.5 text-sm font-medium text-amber-100">
+      {children}
+    </div>
+  );
+}
+
 export function OperatorNotice({
   children,
   tone = "warning",

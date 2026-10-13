@@ -4,7 +4,11 @@ import {
   clearPool,
   replacePoolWithSaved,
 } from "@/lib/event/repository";
-import type { LiveDrawerSavedToken } from "@/lib/live-drawer/types";
+import {
+  normalizeTokenMark,
+  type LiveDrawerSavedToken,
+  type TokenMark,
+} from "@/lib/live-drawer/types";
 import { error, isErrorResponse, json, requireRole } from "@/lib/api/helpers";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +19,25 @@ export async function POST(request: Request) {
 
   try {
     const body = (await request.json()) as {
-      tokens?: { number: string; colorId: string }[];
+      tokens?: { number: string; colorId: string; mark?: unknown }[];
     };
     if (!body.tokens?.length) return error("tokens array required");
-    const result = await addTokens(body.tokens);
+    const tokens: {
+      number: string;
+      colorId: string;
+      mark: TokenMark | null;
+    }[] = [];
+    for (const token of body.tokens) {
+      if (token.mark != null && normalizeTokenMark(token.mark) == null) {
+        return error("Unknown token mark");
+      }
+      tokens.push({
+        number: token.number,
+        colorId: token.colorId,
+        mark: normalizeTokenMark(token.mark),
+      });
+    }
+    const result = await addTokens(tokens);
     const snapshot = await buildSnapshot();
     return json({ ...result, snapshot });
   } catch (e) {

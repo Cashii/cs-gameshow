@@ -1,18 +1,11 @@
 "use client";
 
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { PollQuestionBank } from "@/components/poll/PollQuestionBank";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { uid } from "@/lib/utils";
-import {
-  clampPollScale,
-  DEFAULT_POLL_SCALE,
-  MAX_POLL_SCALE,
-  mergePollBank,
-  MIN_POLL_SCALE,
-  POLL_SCALE_STEP,
-} from "@/lib/poll/types";
+import { mergePollBank } from "@/lib/poll/types";
 import { useSuite } from "@/lib/suite-provider";
 
 function formatVoteTime(iso: string): string {
@@ -28,7 +21,6 @@ function formatVoteTime(iso: string): string {
 export function PollHostPanel() {
   const { state, refreshSnapshot, updatePoll } = useSuite();
   const poll = state.poll;
-  const scale = clampPollScale(poll.scale);
   const [question, setQuestion] = useState(poll.question || "");
   const [choices, setChoices] = useState(
     poll.choices.length >= 2
@@ -66,13 +58,6 @@ export function PollHostPanel() {
     }
   };
 
-  const setScale = (next: number) => {
-    updatePoll((prev) => ({
-      ...prev,
-      scale: clampPollScale(next),
-    }));
-  };
-
   const choicePayload = () =>
     choices.map((text, i) => ({
       id: String.fromCharCode(97 + i),
@@ -101,75 +86,78 @@ export function PollHostPanel() {
   const voteLog = poll.voteLog ?? [];
   const history = state.pollHistory ?? [];
 
+  const questionBank = (
+    <PollQuestionBank
+      questions={poll.library ?? []}
+      canSave={
+        Boolean(question.trim()) &&
+        choices.filter((choice) => choice.trim()).length >= 2
+      }
+      onSave={() => {
+        const texts = choices
+          .map((choice) => choice.trim())
+          .filter(Boolean)
+          .slice(0, 6);
+        if (!question.trim() || texts.length < 2) return;
+        const liveTexts = poll.choices.map((choice) => choice.text);
+        const sameChoices =
+          liveTexts.length === choices.length &&
+          liveTexts.every((text, index) => text === choices[index]);
+        const correctIndex = sameChoices
+          ? poll.choices.findIndex(
+              (choice) => choice.id === poll.correctChoiceId,
+            )
+          : -1;
+        updatePoll((prev) => ({
+          ...prev,
+          library: mergePollBank(prev.library ?? [], [
+            {
+              id: uid(),
+              question,
+              choices: texts.map((text) => ({ text })),
+              correctChoiceIndex:
+                correctIndex >= 0 && correctIndex < texts.length
+                  ? correctIndex
+                  : null,
+            },
+          ]),
+        }));
+      }}
+      onLoad={(id) => {
+        const entry = (poll.library ?? []).find((item) => item.id === id);
+        if (!entry) return;
+        const nextChoices = entry.choices.map((choice, index) => ({
+          id: String.fromCharCode(97 + index),
+          text: choice.text,
+          votes: 0,
+        }));
+        setQuestion(entry.question);
+        setChoices(nextChoices.map((choice) => choice.text));
+        updatePoll((prev) => ({
+          ...prev,
+          id: uid(),
+          question: entry.question,
+          choices: nextChoices,
+          status: "idle",
+          voteLog: [],
+          correctChoiceId:
+            entry.correctChoiceIndex == null
+              ? null
+              : (nextChoices[entry.correctChoiceIndex]?.id ?? null),
+          correctAnswerRevealed: false,
+        }));
+      }}
+      onDelete={(id) =>
+        updatePoll((prev) => ({
+          ...prev,
+          library: (prev.library ?? []).filter((item) => item.id !== id),
+        }))
+      }
+    />
+  );
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <PollQuestionBank
-        questions={poll.library ?? []}
-        canSave={
-          Boolean(question.trim()) &&
-          choices.filter((choice) => choice.trim()).length >= 2
-        }
-        onSave={() => {
-          const texts = choices
-            .map((choice) => choice.trim())
-            .filter(Boolean)
-            .slice(0, 6);
-          if (!question.trim() || texts.length < 2) return;
-          const liveTexts = poll.choices.map((choice) => choice.text);
-          const sameChoices =
-            liveTexts.length === choices.length &&
-            liveTexts.every((text, index) => text === choices[index]);
-          const correctIndex = sameChoices
-            ? poll.choices.findIndex(
-                (choice) => choice.id === poll.correctChoiceId,
-              )
-            : -1;
-          updatePoll((prev) => ({
-            ...prev,
-            library: mergePollBank(prev.library ?? [], [
-              {
-                id: uid(),
-                question,
-                choices: texts.map((text) => ({ text })),
-                correctChoiceIndex:
-                  correctIndex >= 0 && correctIndex < texts.length
-                    ? correctIndex
-                    : null,
-              },
-            ]),
-          }));
-        }}
-        onLoad={(id) => {
-          const entry = (poll.library ?? []).find((item) => item.id === id);
-          if (!entry) return;
-          const nextChoices = entry.choices.map((choice, index) => ({
-            id: String.fromCharCode(97 + index),
-            text: choice.text,
-            votes: 0,
-          }));
-          setQuestion(entry.question);
-          setChoices(nextChoices.map((choice) => choice.text));
-          updatePoll((prev) => ({
-            ...prev,
-            id: uid(),
-            question: entry.question,
-            choices: nextChoices,
-            status: "idle",
-            voteLog: [],
-            correctChoiceId:
-              entry.correctChoiceIndex == null
-                ? null
-                : (nextChoices[entry.correctChoiceIndex]?.id ?? null),
-            correctAnswerRevealed: false,
-          }));
-        }}
-        onDelete={(id) =>
-          updatePoll((prev) => ({
-            ...prev,
-            library: (prev.library ?? []).filter((item) => item.id !== id),
-          }))
-        }
-      />
       <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
         <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
           <div className="flex flex-wrap items-center gap-3">
@@ -211,6 +199,28 @@ export function PollHostPanel() {
             >
               Clear poll
             </button>
+            {poll.status !== "idle" && poll.correctChoiceId ? (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() =>
+                  void runAction({
+                    action: poll.correctAnswerRevealed
+                      ? "hideCorrectAnswer"
+                      : "revealCorrectAnswer",
+                  })
+                }
+                className="inline-flex h-10 items-center rounded-md border border-amber-500 bg-amber-600 px-4 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-50"
+              >
+                {poll.correctAnswerRevealed
+                  ? "Hide correct answer"
+                  : "Reveal correct answer"}
+              </button>
+            ) : null}
+          </div>
+
+          <div className="ml-auto flex flex-wrap items-center gap-3">
+            {questionBank}
             <button
               type="button"
               role="switch"
@@ -246,61 +256,6 @@ export function PollHostPanel() {
                 ? "Percentages shown"
                 : "Percentages hidden"}
             </span>
-            {poll.status !== "idle" && poll.correctChoiceId ? (
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() =>
-                  void runAction({
-                    action: poll.correctAnswerRevealed
-                      ? "hideCorrectAnswer"
-                      : "revealCorrectAnswer",
-                  })
-                }
-                className="inline-flex h-10 items-center rounded-md border border-amber-500 bg-amber-600 px-4 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-50"
-              >
-                {poll.correctAnswerRevealed
-                  ? "Hide correct answer"
-                  : "Reveal correct answer"}
-              </button>
-            ) : null}
-          </div>
-
-          <div className="ml-auto flex flex-wrap items-center gap-3">
-            <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-              Text size
-            </span>
-            <span className="min-w-12 text-right text-sm font-semibold tabular-nums text-neutral-300">
-              {Math.round(scale * 100)}%
-            </span>
-            <div className="inline-flex items-center gap-1">
-              <button
-                type="button"
-                aria-label="Smaller poll text"
-                disabled={scale <= MIN_POLL_SCALE}
-                onClick={() => setScale(scale - POLL_SCALE_STEP)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
-              >
-                <Minus size={18} />
-              </button>
-              <button
-                type="button"
-                aria-label="Larger poll text"
-                disabled={scale >= MAX_POLL_SCALE}
-                onClick={() => setScale(scale + POLL_SCALE_STEP)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
-              >
-                <Plus size={18} />
-              </button>
-              <button
-                type="button"
-                disabled={scale === DEFAULT_POLL_SCALE}
-                onClick={() => setScale(DEFAULT_POLL_SCALE)}
-                className="ml-1 inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
-              >
-                Reset
-              </button>
-            </div>
           </div>
         </div>
       </div>

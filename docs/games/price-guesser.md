@@ -22,4 +22,4 @@ Shows the current photo, optional name, and a price tag. A red velvet curtain co
 
 ## Saved items
 
-**Save this item** stores the photo, name, and price on the desk. **Load** puts that item back with the curtain closed and the price hidden. Clearing the live item does not delete a saved photo.
+The folder icon on the game actions bar opens a gallery of photos and names. That gallery is shared with Price Order. **Save this item** stores the photo, name, and price. Pick a photo to put that item on the desk with the curtain closed and the price hidden. Clearing the live item does not delete a saved photo.

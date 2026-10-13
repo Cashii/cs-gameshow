@@ -21,7 +21,7 @@ import {
 import { PictionaryWordBank } from "@/components/pictionary/PictionaryWordBank";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { uid } from "@/lib/utils";
-import { OperatorNotice } from "@/components/operator/OperatorNotice";
+import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { StatusSwitch } from "@/components/operator/StatusSwitch";
 
 function durationParts(ms: number) {
@@ -103,38 +103,6 @@ export function PictionaryHostPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <PictionaryWordBank
-        words={game.library ?? []}
-        canSave={Boolean(game.word.trim())}
-        onSave={() =>
-          updatePictionary((prev) => ({
-            ...prev,
-            library: mergePictionaryBank(prev.library ?? [], [
-              { id: uid(), word: prev.word },
-            ]),
-          }))
-        }
-        onLoad={(id) => {
-          const entry = (game.library ?? []).find((item) => item.id === id);
-          if (!entry) return;
-          updatePictionary((prev) => ({
-            ...prev,
-            word: entry.word,
-            hiddenIndexes: [],
-            curtainCovered: true,
-            hintEnabled: false,
-            timerRunning: false,
-            timerEndsAt: null,
-            timerRemainingMs: prev.timerDurationMs,
-          }));
-        }}
-        onDelete={(id) =>
-          updatePictionary((prev) => ({
-            ...prev,
-            library: (prev.library ?? []).filter((item) => item.id !== id),
-          }))
-        }
-      />
       <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
@@ -153,19 +121,6 @@ export function PictionaryHostPanel() {
               }))
             }
           />
-          <StatusSwitch
-            checked={game.hintEnabled}
-            disabled={!game.word.trim()}
-            labelOn="Hint on"
-            labelOff="Hint off"
-            ariaLabel="Hint"
-            onToggle={() =>
-              patch((prev) => ({
-                ...prev,
-                hintEnabled: !prev.hintEnabled,
-              }))
-            }
-          />
           <button
             type="button"
             onClick={() => setConfirmReset(true)}
@@ -177,20 +132,58 @@ export function PictionaryHostPanel() {
         </div>
       </div>
 
+      {!spectatorLive && (
+        <SpectatorScreenNotice>
+          Spectator is not on Pictionary. Use the Spectator screen list so the
+          projector shows the word, curtain, and clock.
+        </SpectatorScreenNotice>
+      )}
+
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex w-full flex-col gap-6 px-6 py-6">
-          {!spectatorLive && (
-            <OperatorNotice>
-              Spectator is not on Pictionary. Use the Spectator screen list so
-              the projector shows the word, curtain, and clock.
-            </OperatorNotice>
-          )}
-
           <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
             <section className="flex flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4">
-              <h2 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-                Word to draw
-              </h2>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+                  Word to draw
+                </h2>
+                <PictionaryWordBank
+                  words={game.library ?? []}
+                  canSave={Boolean(game.word.trim())}
+                  onSave={() =>
+                    updatePictionary((prev) => ({
+                      ...prev,
+                      library: mergePictionaryBank(prev.library ?? [], [
+                        { id: uid(), word: prev.word },
+                      ]),
+                    }))
+                  }
+                  onLoad={(id) => {
+                    const entry = (game.library ?? []).find(
+                      (item) => item.id === id,
+                    );
+                    if (!entry) return;
+                    updatePictionary((prev) => ({
+                      ...prev,
+                      word: entry.word,
+                      hiddenIndexes: [],
+                      curtainCovered: true,
+                      hintEnabled: false,
+                      timerRunning: false,
+                      timerEndsAt: null,
+                      timerRemainingMs: prev.timerDurationMs,
+                    }));
+                  }}
+                  onDelete={(id) =>
+                    updatePictionary((prev) => ({
+                      ...prev,
+                      library: (prev.library ?? []).filter(
+                        (item) => item.id !== id,
+                      ),
+                    }))
+                  }
+                />
+              </div>
               <input
                 type="text"
                 value={game.word}
@@ -203,18 +196,28 @@ export function PictionaryHostPanel() {
 
             <section className="flex flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
+                <div className="flex flex-wrap items-center gap-3">
                   <h2 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
                     Hint letters
                   </h2>
-                  <p className="mt-1 text-xs text-neutral-500">
-                    Green = shown on screen. Blank = covered in the hint.
-                  </p>
+                  <StatusSwitch
+                    checked={game.hintEnabled}
+                    disabled={!game.word.trim()}
+                    labelOn="Hint on"
+                    labelOff="Hint off"
+                    ariaLabel="Hint"
+                    onToggle={() =>
+                      patch((prev) => ({
+                        ...prev,
+                        hintEnabled: !prev.hintEnabled,
+                      }))
+                    }
+                  />
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    disabled={hideable.length === 0}
+                    disabled={!game.hintEnabled || hideable.length === 0}
                     onClick={() =>
                       patch((prev) => ({
                         ...prev,
@@ -227,7 +230,7 @@ export function PictionaryHostPanel() {
                   </button>
                   <button
                     type="button"
-                    disabled={game.hiddenIndexes.length === 0}
+                    disabled={!game.hintEnabled || game.hiddenIndexes.length === 0}
                     onClick={() =>
                       patch((prev) => ({ ...prev, hiddenIndexes: [] }))
                     }
@@ -242,7 +245,11 @@ export function PictionaryHostPanel() {
                   Type a word, then tap letters to cover or show them in the hint.
                 </p>
               ) : (
-                <div className="flex flex-wrap gap-2">
+                <div
+                  className={`flex flex-wrap gap-2 ${
+                    game.hintEnabled ? "" : "pointer-events-none opacity-40"
+                  }`}
+                >
                   {game.word.split("").map((char, index) => {
                     if (char === " ") {
                       return (
@@ -259,6 +266,7 @@ export function PictionaryHostPanel() {
                       <button
                         key={`letter-${index}-${letter}`}
                         type="button"
+                        disabled={!game.hintEnabled}
                         aria-pressed={!hidden}
                         title={
                           hidden
@@ -274,7 +282,7 @@ export function PictionaryHostPanel() {
                             ),
                           }))
                         }
-                        className={`inline-flex h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-lg border-2 px-2 ${
+                        className={`inline-flex h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-lg border-2 px-2 disabled:cursor-not-allowed ${
                           hidden
                             ? "border-dashed border-neutral-600 bg-neutral-950 text-neutral-400"
                             : "border-emerald-400 bg-emerald-500/20 text-emerald-300 shadow-[inset_0_0_0_1px_rgba(52,211,153,0.35)]"

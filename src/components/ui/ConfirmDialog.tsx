@@ -30,8 +30,8 @@ export function ConfirmDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[1000] bg-black/70" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 z-[1001] min-w-[400px] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-neutral-700 bg-neutral-900 p-6 shadow-2xl">
+        <Dialog.Overlay className="fixed inset-0 z-[1100] bg-black/70" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 z-[1101] min-w-[400px] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-neutral-700 bg-neutral-900 p-6 shadow-2xl">
           <div className="mb-4 flex items-start justify-between">
             <Dialog.Title className="m-0 text-lg font-semibold text-neutral-200">
               {title}

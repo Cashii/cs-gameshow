@@ -50,6 +50,18 @@ export function mergePriceCatalog(
   return appendUnique(existing, incoming, priceCatalogKey);
 }
 
+/** True when a photo is still on a live board or another saved item. */
+export function priceImageStillUsed(
+  url: string,
+  catalog: readonly PriceCatalogItem[],
+  exceptId: string,
+  liveUrls: readonly string[],
+): boolean {
+  if (!url) return false;
+  if (liveUrls.some((live) => live === url)) return true;
+  return catalog.some((item) => item.id !== exceptId && item.imageUrl === url);
+}
+
 export function normalizePriceCatalog(raw: unknown): PriceCatalogItem[] {
   if (!Array.isArray(raw)) return [];
   const items: PriceCatalogItem[] = [];

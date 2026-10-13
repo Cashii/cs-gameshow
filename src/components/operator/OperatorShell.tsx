@@ -53,6 +53,7 @@ import { TakeItOrLeaveItHostPanel } from "@/components/take-it-or-leave-it/TakeI
 import { PollHostPanel } from "@/components/poll/PollHostPanel";
 import { MessageBoardHostPanel } from "@/components/message-board/MessageBoardHostPanel";
 import { DerbyHostPanel } from "@/components/derby/DerbyHostPanel";
+import { DerbyHeaderSettings } from "@/components/derby/DerbyHeaderSettings";
 import { JeoparodyHostPanel } from "@/components/jeoparody/JeoparodyHostPanel";
 import { TriviaHostPanel } from "@/components/trivia/TriviaHostPanel";
 import { PriceGuesserHostPanel } from "@/components/price-guesser/PriceGuesserHostPanel";
@@ -61,7 +62,7 @@ import { PriceWheelHostPanel } from "@/components/price-wheel/PriceWheelHostPane
 import { QuestionTimeHostPanel } from "@/components/question-time/QuestionTimeHostPanel";
 import { PictionaryHostPanel } from "@/components/pictionary/PictionaryHostPanel";
 import { PinSettingsPanel } from "@/components/operator/PinSettingsPanel";
-import { NAV_ACTIVE } from "@/components/operator/gameIconTheme";
+import { GAME_ICON_TEXT, NAV_ITEM_ACTIVE } from "@/components/operator/gameIconTheme";
 import { PinGate } from "@/components/auth/PinGate";
 import { useStudioTheme } from "@/components/studio/StudioTheme";
 import { GameshowLogo } from "@/components/studio/GameshowLogo";
@@ -153,25 +154,26 @@ function NavItem({
         collapsed ? "justify-center px-2" : "gap-2.5 px-2.5"
       } ${
         active
-          ? `${NAV_ACTIVE[game]} shadow-sm`
+          ? NAV_ITEM_ACTIVE
           : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
       }`}
     >
       <span className="relative shrink-0">
-        <Icon size={18} strokeWidth={1.5} aria-hidden />
+        <Icon
+          size={18}
+          strokeWidth={1.5}
+          className={game === "idle" ? undefined : GAME_ICON_TEXT[game]}
+          aria-hidden
+        />
         {live && (
           <span
-            className={`absolute -top-0.5 -right-0.5 h-2 w-2 animate-pulse rounded-full ${
-              active ? "bg-emerald-300" : "bg-emerald-400"
-            } ring-2 ${active ? "ring-white/40" : "ring-neutral-900"}`}
+            className="absolute -top-0.5 -right-0.5 h-2 w-2 animate-pulse rounded-full bg-emerald-400 ring-2 ring-neutral-900"
             aria-hidden
           />
         )}
         {beta && collapsed && (
           <span
-            className={`absolute -right-1.5 -bottom-1 rounded-full px-0.5 text-[7px] font-bold tracking-wide uppercase ${
-              active ? "bg-white/25 text-white" : "bg-amber-500 text-neutral-950"
-            }`}
+            className="absolute -right-1.5 -bottom-1 rounded-full bg-amber-500 px-0.5 text-[7px] font-bold tracking-wide text-neutral-950 uppercase"
             aria-hidden
           >
             β
@@ -182,15 +184,9 @@ function NavItem({
         <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
           <span className="truncate">{ACTIVE_GAME_LABELS[game]}</span>
           <span className="flex shrink-0 items-center gap-1">
-            {beta && <BetaTag inverted={active} />}
+            {beta && <BetaTag />}
             {live && (
-              <span
-                className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase ${
-                  active
-                    ? "bg-white/20 text-white"
-                    : "bg-emerald-500/15 text-emerald-400"
-                }`}
-              >
+              <span className="shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-emerald-400 uppercase">
                 Live
               </span>
             )}
@@ -222,15 +218,20 @@ function SpectatorNavItem({
       aria-current={active ? "true" : undefined}
       className={`flex w-full flex-col items-center justify-center gap-1 rounded-md px-1.5 py-2 text-left font-normal transition-colors ${
         active
-          ? `${NAV_ACTIVE[screen]} shadow-sm`
+          ? NAV_ITEM_ACTIVE
           : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
       }`}
     >
-      <Icon size={18} strokeWidth={1.5} className="shrink-0" aria-hidden />
+      <Icon
+        size={18}
+        strokeWidth={1.5}
+        className={`shrink-0 ${screen === "idle" ? "" : GAME_ICON_TEXT[screen]}`}
+        aria-hidden
+      />
       <span className="w-full text-center text-[10px] leading-tight font-medium">
         {label}
       </span>
-      {beta && <BetaTag compact inverted={active} />}
+      {beta && <BetaTag compact />}
     </button>
   );
 }
@@ -429,7 +430,7 @@ function OperatorContent({
                 sidebarCollapsed ? "justify-center px-2" : "gap-2.5 px-2.5"
               } ${
                 settingsOpen
-                  ? "bg-blue-600 text-white shadow-sm"
+                  ? NAV_ITEM_ACTIVE
                   : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
               }`}
             >
@@ -543,12 +544,10 @@ function OperatorContent({
             <h1 className="text-lg font-bold text-white">
               {ACTIVE_GAME_LABELS[state.activeGame]}
             </h1>
-            {state.activeGame === "poll" && (
-              <p className="text-sm text-neutral-500">Player voting controls</p>
-            )}
           </div>
           {state.activeGame === "liveDrawer" && <LiveDrawerHeaderSettings />}
           {state.activeGame === "feud" && <FeudHeaderSettings />}
+          {state.activeGame === "derby" && <DerbyHeaderSettings />}
         </header>
 
         <PinSettingsPanel
@@ -631,8 +630,8 @@ function OperatorContent({
                         </Link>
                       </div>
                       <ul className="mt-2 space-y-2 text-sm text-neutral-400">
-                        {latestUpdate.items.map((item) => (
-                          <li key={`${latestUpdate.date}-${item.title}`}>
+                        {latestUpdate.items.map((item, itemIndex) => (
+                          <li key={`${latestUpdate.date}-${itemIndex}-${item.title}`}>
                             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                               <span className="font-semibold text-neutral-200">
                                 {item.title}

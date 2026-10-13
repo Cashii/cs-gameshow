@@ -56,6 +56,7 @@ import {
   withSyncedPriceOrderResult,
   type PriceOrderState,
 } from "@/lib/price-order/types";
+import type { PriceCatalogItem } from "@/lib/price/catalog";
 import {
   createDefaultQuestionTimeState,
   type QuestionTimeState,
@@ -104,6 +105,9 @@ type SuiteContextValue = {
   ) => void;
   updatePriceOrder: (
     updater: (game: PriceOrderState) => PriceOrderState,
+  ) => void;
+  updatePriceCatalog: (
+    updater: (items: PriceCatalogItem[]) => PriceCatalogItem[],
   ) => void;
   updatePriceWheel: (
     updater: (game: PriceWheelState) => PriceWheelState,
@@ -579,6 +583,16 @@ export function SuiteProvider({
     [applyLocalSuite],
   );
 
+  const updatePriceCatalog = useCallback(
+    (updater: (items: PriceCatalogItem[]) => PriceCatalogItem[]) => {
+      applyLocalSuite((prev) => ({
+        ...prev,
+        priceCatalog: updater(prev.priceCatalog ?? []),
+      }));
+    },
+    [applyLocalSuite],
+  );
+
   const updatePriceWheel = useCallback(
     (updater: (game: PriceWheelState) => PriceWheelState) => {
       applyLocalSuite((prev) => ({
@@ -677,6 +691,7 @@ export function SuiteProvider({
       updateJeoparody,
       updatePriceGuesser,
       updatePriceOrder,
+      updatePriceCatalog,
       updatePriceWheel,
       updateQuestionTime,
       updatePictionary,
@@ -704,6 +719,7 @@ export function SuiteProvider({
       updateJeoparody,
       updatePriceGuesser,
       updatePriceOrder,
+      updatePriceCatalog,
       updatePriceWheel,
       updateQuestionTime,
       updatePictionary,

@@ -23,7 +23,7 @@ import {
 import { QuestionRepository } from "@/components/question-time/QuestionRepository";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { uid } from "@/lib/utils";
-import { OperatorNotice } from "@/components/operator/OperatorNotice";
+import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 
 function durationParts(ms: number) {
   const totalSec = Math.max(0, Math.round(ms / 1000));
@@ -141,47 +141,52 @@ export function QuestionTimeHostPanel() {
     }));
   };
 
-  return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <QuestionRepository
-        entries={game.library ?? []}
-        canSave={Boolean(game.question.trim())}
-        onSave={() =>
-          updateQuestionTime((prev) => ({
-            ...prev,
-            library: mergeQuestionTimeBank(prev.library ?? [], [
-              {
-                id: uid(),
-                title: prev.title,
-                question: prev.question,
-              },
-            ]),
-          }))
-        }
-        onLoad={(id) => {
-          const entry = (game.library ?? []).find((item) => item.id === id);
-          if (!entry) return;
-          updateQuestionTime((prev) => ({
+  const questionRepository = (
+    <QuestionRepository
+      entries={game.library ?? []}
+      canSave={Boolean(game.question.trim())}
+      onSave={() =>
+        updateQuestionTime((prev) => ({
+          ...prev,
+          library: mergeQuestionTimeBank(prev.library ?? [], [
+            {
+              id: uid(),
+              title: prev.title,
+              question: prev.question,
+            },
+          ]),
+        }))
+      }
+      onLoad={(id) => {
+        updateQuestionTime((prev) => {
+          const entry = (prev.library ?? []).find((item) => item.id === id);
+          if (!entry) return prev;
+          return {
             ...prev,
             title: entry.title,
             question: entry.question,
-          }));
-        }}
-        onDelete={(id) =>
-          updateQuestionTime((prev) => ({
-            ...prev,
-            library: (prev.library ?? []).filter((item) => item.id !== id),
-          }))
-        }
-        onUpdate={(id, patch) =>
-          updateQuestionTime((prev) => ({
-            ...prev,
-            library: (prev.library ?? []).map((item) =>
-              item.id === id ? { ...item, ...patch } : item,
-            ),
-          }))
-        }
-      />
+          };
+        });
+      }}
+      onDelete={(id) =>
+        updateQuestionTime((prev) => ({
+          ...prev,
+          library: (prev.library ?? []).filter((item) => item.id !== id),
+        }))
+      }
+      onUpdate={(id, patch) =>
+        updateQuestionTime((prev) => ({
+          ...prev,
+          library: (prev.library ?? []).map((item) =>
+            item.id === id ? { ...item, ...patch } : item,
+          ),
+        }))
+      }
+    />
+  );
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
@@ -205,15 +210,15 @@ export function QuestionTimeHostPanel() {
         </div>
       </div>
 
+      {!spectatorLive && (
+        <SpectatorScreenNotice>
+          Spectator is not on Question Time. Use the Spectator screen list so
+          the projector shows the question, scores, and clock.
+        </SpectatorScreenNotice>
+      )}
+
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex w-full flex-col gap-6 px-6 py-6">
-          {!spectatorLive && (
-            <OperatorNotice>
-              Spectator is not on Question Time. Use the Spectator screen list so
-              the projector shows the question, scores, and clock.
-            </OperatorNotice>
-          )}
-
           <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
             <section className="flex h-full min-w-0 flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4 md:col-span-2">
               <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
@@ -231,9 +236,12 @@ export function QuestionTimeHostPanel() {
             </section>
 
             <section className="flex h-full min-w-0 flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4">
-              <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-                Question
-              </h3>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+                  Question
+                </h3>
+                {questionRepository}
+              </div>
               <textarea
                 value={game.question}
                 onChange={(event) =>

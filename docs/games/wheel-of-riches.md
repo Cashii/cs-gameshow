@@ -16,4 +16,4 @@ Shows the letter grid with revealed letters highlighted. If a topic is set, a ba
 
 ## Phrases and topics
 
-Set up every topic and phrase in **Phrases and topics**, above the letter controls. Load any row onto the board, including ones you already played. Clearing the current phrase does not delete the list.
+On **Current phrase**, click the folder icon to open every saved topic and phrase. Load any one onto the board, including ones you already played. Add, edit, or delete phrases from that window. Clearing the current phrase does not delete the list.

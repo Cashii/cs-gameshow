@@ -27,6 +27,19 @@ export function gamesForChangelogItem(
 ): Array<Exclude<ActiveGame, "idle">> {
   const text = `${item.title} ${item.detail}`.toLowerCase();
 
+  if (text.includes("saved lists")) {
+    return [
+      "feud",
+      "wheel",
+      "trivia",
+      "priceGuesser",
+      "priceOrder",
+      "questionTime",
+      "pictionary",
+      "jeoparody",
+      "poll",
+    ];
+  }
   if (text.includes("saved setups")) {
     return [
       "feud",
@@ -43,8 +56,19 @@ export function gamesForChangelogItem(
       "liveDrawer",
     ];
   }
+  if (text.includes("no longer ask you to name a setup")) {
+    return ["derby", "takeIt", "liveDrawer", "priceWheel"];
+  }
   if (text.includes("price wheel")) return ["priceWheel"];
   if (text.includes("message board")) return ["messageBoard"];
+  if (
+    text.includes("price guesser") &&
+    text.includes("price order") &&
+    !text.includes("uploaded photos") &&
+    !text.includes("question lists")
+  ) {
+    return ["priceGuesser", "priceOrder"];
+  }
   if (text.includes("price order") && !text.includes("uploaded photos")) {
     return ["priceOrder"];
   }
@@ -57,6 +81,7 @@ export function gamesForChangelogItem(
   if (text.includes("poll")) return ["poll"];
   if (text.includes("derby")) return ["derby"];
   if (text.includes("pictionary")) return ["pictionary"];
+  if (text.includes("jeoparody")) return ["jeoparody"];
   if (text.includes("price guesser") && !text.includes("uploaded photos")) {
     return ["priceGuesser"];
   }
@@ -64,13 +89,12 @@ export function gamesForChangelogItem(
 
   if (text.includes("uploaded photos")) return ["priceGuesser", "priceOrder"];
 
-  if (
-    text.includes("strikes") ||
-    text.includes("friendly feud") ||
-    text.includes("wheel of riches") ||
-    text.includes("wheel")
-  ) {
+  if (text.includes("strikes")) {
     return ["feud", "wheel"];
+  }
+  if (text.includes("friendly feud")) return ["feud"];
+  if (text.includes("wheel of riches") || text.includes("wheel")) {
+    return ["wheel"];
   }
 
   if (

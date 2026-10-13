@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, Minus, Plus, Trash2 } from "lucide-react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { Check, FolderOpen, Minus, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { OperatorNotice } from "@/components/operator/OperatorNotice";
+import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
+import { Tooltip } from "@/components/ui/Tooltip";
 import {
   createWheelBankPuzzle,
   loadWheelBankPuzzle,
@@ -13,6 +15,10 @@ import {
 } from "@/lib/wheel/types";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+type PhraseForm =
+  | { mode: "add"; topic: string; phrase: string }
+  | { mode: "edit"; id: string; topic: string; phrase: string };
 
 function formatSpacedPhrase(
   phrase: string,
@@ -163,10 +169,9 @@ export function WheelHostPanel() {
   const [editing, setEditing] = useState(!wheel.phrase);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [pendingLoadId, setPendingLoadId] = useState<string | null>(null);
-  const [bankDraft, setBankDraft] = useState<WheelBankPuzzle[]>(
-    () => wheel.bank ?? [],
-  );
   const [notice, setNotice] = useState("");
+  const [bankOpen, setBankOpen] = useState(false);
+  const [phraseForm, setPhraseForm] = useState<PhraseForm | null>(null);
 
   useEffect(() => {
     if (wheel.phrase) return;
@@ -175,12 +180,8 @@ export function WheelHostPanel() {
     setEditing(true);
   }, [wheel.phrase]);
 
-  useEffect(() => {
-    setBankDraft(wheel.bank ?? []);
-  }, [wheel.bank]);
-
   const locked = Boolean(wheel.phrase) && !editing;
-  const bank = bankDraft;
+  const bank = wheel.bank ?? [];
   const boardHasProgress =
     Boolean(wheel.phrase.trim()) &&
     (wheel.revealedLetters.length > 0 ||
@@ -188,7 +189,6 @@ export function WheelHostPanel() {
       (wheel.wrongCount ?? 0) > 0);
 
   const saveBank = (next: WheelBankPuzzle[]) => {
-    setBankDraft(next);
     updateWheel((prev) => ({
       ...prev,
       bank: next,
@@ -197,46 +197,6 @@ export function WheelHostPanel() {
           ? prev.activeBankId
           : null,
     }));
-  };
-
-  const persistBankDraft = () => {
-    updateWheel((prev) => {
-      const next = bankDraft;
-      const activeStillThere =
-        prev.activeBankId &&
-        next.some((item) => item.id === prev.activeBankId);
-      // If the active bank item's text changed, keep the board in sync.
-      let phrase = prev.phrase;
-      let topic = prev.topic;
-      let revealedLetters = prev.revealedLetters;
-      let revealedAll = prev.revealedAll;
-      let wrongCount = prev.wrongCount;
-      if (activeStillThere && prev.activeBankId) {
-        const active = next.find((item) => item.id === prev.activeBankId);
-        if (active) {
-          const nextPhrase = active.phrase.trim();
-          const nextTopic = active.topic.trim();
-          const phraseChanged = nextPhrase !== prev.phrase;
-          phrase = nextPhrase;
-          topic = nextTopic;
-          if (phraseChanged) {
-            revealedLetters = [];
-            revealedAll = false;
-            wrongCount = 0;
-          }
-        }
-      }
-      return {
-        ...prev,
-        bank: next,
-        phrase,
-        topic,
-        revealedLetters,
-        revealedAll,
-        wrongCount,
-        activeBankId: activeStillThere ? prev.activeBankId : null,
-      };
-    });
   };
 
   const handleSetPhrase = () => {
@@ -267,8 +227,7 @@ export function WheelHostPanel() {
   const applyLoadBank = (bankId: string) => {
     let loaded = false;
     updateWheel((prev) => {
-      const withDraft = { ...prev, bank: bankDraft };
-      const next = loadWheelBankPuzzle(withDraft, bankId);
+      const next = loadWheelBankPuzzle(prev, bankId);
       if (!next) return prev;
       loaded = true;
       return next;
@@ -278,6 +237,7 @@ export function WheelHostPanel() {
       return;
     }
     setEditing(false);
+    setBankOpen(false);
     setNotice("Phrase loaded from the bank.");
   };
 
@@ -294,33 +254,42 @@ export function WheelHostPanel() {
     applyLoadBank(bankId);
   };
 
-  const handleSaveCurrentToBank = () => {
-    const phrase = wheel.phrase.trim();
+  const savePhraseForm = () => {
+    if (!phraseForm) return;
+    const phrase = phraseForm.phrase.trim();
     if (!phrase) return;
-    const topic = wheel.topic.trim();
-    if (
-      wheel.activeBankId &&
-      bank.some((item) => item.id === wheel.activeBankId)
-    ) {
-      saveBank(
-        bank.map((item) =>
-          item.id === wheel.activeBankId
-            ? { ...item, phrase, topic }
-            : item,
-        ),
-      );
-      setNotice("Updated the bank entry for this phrase.");
+    const topic = phraseForm.topic.trim();
+    if (phraseForm.mode === "add") {
+      saveBank([...bank, createWheelBankPuzzle({ phrase, topic })]);
+      setPhraseForm(null);
       return;
     }
-    const entry = createWheelBankPuzzle({ phrase, topic });
-    const next = [...bank, entry];
-    setBankDraft(next);
-    updateWheel((prev) => ({
-      ...prev,
-      bank: next,
-      activeBankId: entry.id,
-    }));
-    setNotice("Current phrase saved to the bank.");
+    const id = phraseForm.id;
+    updateWheel((prev) => {
+      const next = (prev.bank ?? []).map((item) =>
+        item.id === id ? { ...item, phrase, topic } : item,
+      );
+      const isLive = prev.activeBankId === id;
+      const phraseChanged = isLive && phrase !== prev.phrase;
+      return {
+        ...prev,
+        bank: next,
+        topic: isLive ? topic : prev.topic,
+        phrase: isLive ? phrase : prev.phrase,
+        revealedLetters: phraseChanged ? [] : prev.revealedLetters,
+        revealedAll: phraseChanged ? false : prev.revealedAll,
+        wrongCount: phraseChanged ? 0 : prev.wrongCount,
+      };
+    });
+    setPhraseForm(null);
+  };
+
+  const handlePickBank = (bankId: string) => {
+    if (bankId === wheel.activeBankId) {
+      setBankOpen(false);
+      return;
+    }
+    handleLoadBank(bankId);
   };
 
   const handleRevealLetter = (letter: string) => {
@@ -368,6 +337,9 @@ export function WheelHostPanel() {
             >
               Reset Game
             </button>
+          </div>
+
+          <div className="ml-auto flex flex-wrap items-center gap-3">
             <div className="inline-flex h-10 items-center gap-2">
               <span className="text-sm font-semibold text-neutral-200">
                 Letter legend
@@ -394,9 +366,6 @@ export function WheelHostPanel() {
                 />
               </button>
             </div>
-          </div>
-
-          <div className="ml-auto flex flex-wrap items-center gap-3">
             <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
               Board zoom
             </span>
@@ -430,48 +399,42 @@ export function WheelHostPanel() {
               >
                 <Plus size={18} />
               </button>
-              <button
-                type="button"
-                onClick={() => updateWheel((prev) => ({ ...prev, zoom: 1 }))}
-                className="ml-1 inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-500"
-              >
-                Reset
-              </button>
             </div>
           </div>
         </div>
       </div>
 
+      {!spectatorLive && (
+        <SpectatorScreenNotice>
+          Spectator is not on Wheel of Riches. Use the Spectator screen list so
+          the projector shows the board.
+        </SpectatorScreenNotice>
+      )}
+
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="w-full p-6">
           <div className="space-y-6">
-            {!spectatorLive && (
-              <OperatorNotice>
-                Spectator is not on Wheel of Riches. Use the Spectator screen
-                list so the projector shows the board.
-              </OperatorNotice>
-            )}
-
             {notice ? (
               <p className="text-sm text-sky-300">{notice}</p>
             ) : null}
 
             <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-xl font-bold text-white">Current phrase</h2>
-                <div className="flex flex-wrap gap-2">
-                  {locked && wheel.phrase.trim() ? (
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-white">Current phrase</h2>
+                  <Tooltip content="Phrases and topics">
                     <button
                       type="button"
-                      onClick={handleSaveCurrentToBank}
-                      className="inline-flex h-10 items-center rounded-md border border-sky-500 bg-sky-600 px-4 text-sm font-semibold text-white hover:bg-sky-500"
+                      aria-label="Phrases and topics"
+                      aria-haspopup="dialog"
+                      onClick={() => setBankOpen(true)}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
                     >
-                      {wheel.activeBankId &&
-                      bank.some((item) => item.id === wheel.activeBankId)
-                        ? "Update in bank"
-                        : "Save to bank"}
+                      <FolderOpen size={18} />
                     </button>
-                  ) : null}
+                  </Tooltip>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   {locked && (
                     <button
                       type="button"
@@ -553,142 +516,6 @@ export function WheelHostPanel() {
               )}
             </div>
 
-            <section className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h2 className="text-xl font-bold text-white">
-                    Phrases and topics ({bank.length})
-                  </h2>
-                  <p className="mt-1 text-sm text-neutral-500">
-                    Set up every topic and phrase here, then load any one onto
-                    the board — including ones you already played.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    saveBank([...bank, createWheelBankPuzzle()])
-                  }
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500"
-                >
-                  <Plus size={14} />
-                  Add to bank
-                </button>
-              </div>
-              {bank.length === 0 ? (
-                <p className="text-sm text-neutral-500">
-                  No phrases yet. Add entries here, or use Save to bank from
-                  the current phrase.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {bank.map((item, index) => {
-                    const isActive = wheel.activeBankId === item.id;
-                    return (
-                      <article
-                        key={item.id}
-                        className={`flex flex-wrap items-center gap-2 rounded-lg border px-2 py-2 ${
-                          isActive
-                            ? "border-sky-500 bg-sky-950/40"
-                            : "border-neutral-700 bg-neutral-950"
-                        }`}
-                      >
-                        <span className="w-16 shrink-0 text-xs font-semibold text-neutral-500">
-                          {isActive ? "Live" : `#${index + 1}`}
-                        </span>
-                        <input
-                          value={item.topic}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setBankDraft((prev) =>
-                              prev.map((entry) =>
-                                entry.id === item.id
-                                  ? { ...entry, topic: value }
-                                  : entry,
-                              ),
-                            );
-                          }}
-                          onBlur={persistBankDraft}
-                          placeholder="Topic"
-                          aria-label={`Topic for bank item ${index + 1}`}
-                          className="min-w-28 flex-1 basis-36 rounded-md border border-neutral-700 bg-neutral-900 px-2.5 py-1.5 text-sm text-white"
-                        />
-                        <input
-                          value={item.phrase}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setBankDraft((prev) =>
-                              prev.map((entry) =>
-                                entry.id === item.id
-                                  ? { ...entry, phrase: value }
-                                  : entry,
-                              ),
-                            );
-                          }}
-                          onBlur={persistBankDraft}
-                          placeholder="Phrase"
-                          aria-label={`Phrase for bank item ${index + 1}`}
-                          className="min-w-40 flex-[2] basis-52 rounded-md border border-neutral-700 bg-neutral-900 px-2.5 py-1.5 text-sm text-white"
-                        />
-                        <div className="ml-auto flex shrink-0 items-center gap-1">
-                          <button
-                            type="button"
-                            disabled={!item.phrase.trim()}
-                            onClick={() => handleLoadBank(item.id)}
-                            className="inline-flex h-8 items-center rounded-md border border-sky-500 bg-sky-600 px-3 text-xs font-semibold text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500"
-                          >
-                            {isActive ? "Reload" : "Load"}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={index === 0}
-                            onClick={() => {
-                              const next = [...bank];
-                              const tmp = next[index - 1]!;
-                              next[index - 1] = next[index]!;
-                              next[index] = tmp;
-                              saveBank(next);
-                            }}
-                            className="rounded-md p-1 text-neutral-400 hover:bg-neutral-800 disabled:opacity-30"
-                            aria-label="Move up"
-                          >
-                            <ChevronUp size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            disabled={index === bank.length - 1}
-                            onClick={() => {
-                              const next = [...bank];
-                              const tmp = next[index + 1]!;
-                              next[index + 1] = next[index]!;
-                              next[index] = tmp;
-                              saveBank(next);
-                            }}
-                            className="rounded-md p-1 text-neutral-400 hover:bg-neutral-800 disabled:opacity-30"
-                            aria-label="Move down"
-                          >
-                            <ChevronDown size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              saveBank(
-                                bank.filter((entry) => entry.id !== item.id),
-                              )
-                            }
-                            className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-red-300"
-                            aria-label="Remove from bank"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
-
             <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
               <h2 className="mb-4 text-xl font-bold text-white">Letter Controls</h2>
               <div className="flex flex-wrap gap-3">
@@ -712,6 +539,252 @@ export function WheelHostPanel() {
           </div>
         </div>
       </div>
+
+      <Dialog.Root
+        open={bankOpen}
+        onOpenChange={(open) => {
+          setBankOpen(open);
+          if (!open) setPhraseForm(null);
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[1000] bg-black/70" />
+          <Dialog.Content
+            className="fixed top-1/2 left-1/2 z-[1001] flex max-h-[min(80vh,720px)] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 shadow-2xl"
+            onEscapeKeyDown={(event) => {
+              if (!phraseForm) return;
+              event.preventDefault();
+              setPhraseForm(null);
+            }}
+          >
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                className="absolute top-4 right-4 rounded p-1 text-neutral-400 hover:bg-neutral-800"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </Dialog.Close>
+            <div className="flex flex-wrap items-start justify-between gap-3 px-6 pt-6 pr-14 pb-4">
+              <div>
+                <Dialog.Title className="text-lg font-semibold text-white">
+                  Phrases and topics
+                </Dialog.Title>
+                <Dialog.Description className="mt-1 text-sm text-neutral-400">
+                  Pick a phrase to put it on the board. Each one shows its topic.
+                  Add, edit, or delete phrases here.
+                </Dialog.Description>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setPhraseForm({ mode: "add", topic: "", phrase: "" })
+                }
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-neutral-700 bg-neutral-800 px-3 text-sm font-medium text-white hover:bg-neutral-700"
+              >
+                <Plus size={16} />
+                Add phrase
+              </button>
+            </div>
+            {phraseForm?.mode === "add" ? (
+              <form
+                className="mx-6 mb-3 flex flex-wrap items-center gap-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  savePhraseForm();
+                }}
+              >
+                <input
+                  value={phraseForm.topic}
+                  onChange={(event) =>
+                    setPhraseForm({
+                      mode: "add",
+                      topic: event.target.value,
+                      phrase: phraseForm.phrase,
+                    })
+                  }
+                  placeholder="Topic"
+                  aria-label="New topic"
+                  className="min-w-28 flex-1 rounded-lg border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-500 focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                />
+                <input
+                  value={phraseForm.phrase}
+                  onChange={(event) =>
+                    setPhraseForm({
+                      mode: "add",
+                      topic: phraseForm.topic,
+                      phrase: event.target.value,
+                    })
+                  }
+                  placeholder="Phrase"
+                  aria-label="New phrase"
+                  autoFocus
+                  className="min-w-40 flex-2 rounded-lg border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-500 focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setPhraseForm(null)}
+                  className="rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm font-medium text-neutral-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!phraseForm.phrase.trim()}
+                  className={`rounded-lg px-3 py-2 text-sm font-medium text-white ${
+                    phraseForm.phrase.trim()
+                      ? "bg-blue-600 hover:bg-blue-500"
+                      : "cursor-not-allowed bg-neutral-700 text-neutral-500"
+                  }`}
+                >
+                  Add
+                </button>
+              </form>
+            ) : null}
+            {bank.length === 0 ? (
+              <p className="px-6 pb-6 text-sm text-neutral-500">
+                No saved phrases yet. Add one here.
+              </p>
+            ) : (
+              <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-6 pb-6">
+                {bank.map((item, index) => {
+                  const selected = wheel.activeBankId === item.id;
+                  const editing =
+                    phraseForm?.mode === "edit" && phraseForm.id === item.id;
+                  const rowClass = selected
+                    ? "border-sky-500 bg-sky-950/40"
+                    : "border-neutral-700 bg-neutral-800/60";
+                  return (
+                    <li
+                      key={item.id}
+                      className={`flex items-start gap-1 rounded-lg border pr-1 ${rowClass}`}
+                    >
+                      {editing && phraseForm?.mode === "edit" ? (
+                        <form
+                          className="flex min-w-0 flex-1 flex-wrap items-center gap-2 px-3 py-2"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            savePhraseForm();
+                          }}
+                        >
+                          <span className="w-5 shrink-0 text-sm font-semibold text-neutral-400">
+                            {index + 1}
+                          </span>
+                          <input
+                            value={phraseForm.topic}
+                            onChange={(event) =>
+                              setPhraseForm({
+                                mode: "edit",
+                                id: item.id,
+                                topic: event.target.value,
+                                phrase: phraseForm.phrase,
+                              })
+                            }
+                            placeholder="Topic"
+                            aria-label={`Topic for phrase ${index + 1}`}
+                            className="min-w-28 flex-1 rounded-md border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                          />
+                          <input
+                            value={phraseForm.phrase}
+                            onChange={(event) =>
+                              setPhraseForm({
+                                mode: "edit",
+                                id: item.id,
+                                topic: phraseForm.topic,
+                                phrase: event.target.value,
+                              })
+                            }
+                            placeholder="Phrase"
+                            aria-label={`Phrase ${index + 1}`}
+                            autoFocus
+                            className="min-w-40 flex-2 rounded-md border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setPhraseForm(null)}
+                            className="rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm font-medium text-neutral-200"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={!phraseForm.phrase.trim()}
+                            className={`rounded-lg px-3 py-2 text-sm font-medium text-white ${
+                              phraseForm.phrase.trim()
+                                ? "bg-blue-600 hover:bg-blue-500"
+                                : "cursor-not-allowed bg-neutral-700 text-neutral-500"
+                            }`}
+                          >
+                            Save
+                          </button>
+                        </form>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handlePickBank(item.id)}
+                          aria-current={selected ? "true" : undefined}
+                          className="flex min-w-0 flex-1 items-start gap-3 px-3 py-3 text-left"
+                        >
+                          <span className="mt-0.5 w-5 shrink-0 text-sm font-semibold text-neutral-400">
+                            {index + 1}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-semibold text-white">
+                              {item.phrase.trim() || "(no phrase)"}
+                            </span>
+                            <span className="mt-1 block text-xs leading-relaxed text-neutral-400">
+                              {item.topic.trim() || "No topic"}
+                            </span>
+                          </span>
+                          {selected ? (
+                            <Check
+                              size={16}
+                              className="mt-0.5 shrink-0 text-sky-400"
+                              aria-hidden
+                            />
+                          ) : null}
+                        </button>
+                      )}
+                      {editing ? null : (
+                        <div className="flex shrink-0 items-center gap-0.5 pt-2">
+                          <button
+                            type="button"
+                            aria-label={`Edit phrase ${index + 1}`}
+                            onClick={() =>
+                              setPhraseForm({
+                                mode: "edit",
+                                id: item.id,
+                                topic: item.topic,
+                                phrase: item.phrase,
+                              })
+                            }
+                            className="rounded-md p-2 text-neutral-400 hover:bg-neutral-800 hover:text-white"
+                          >
+                            <Pencil size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Delete phrase ${index + 1}`}
+                            onClick={() =>
+                              saveBank(
+                                bank.filter((entry) => entry.id !== item.id),
+                              )
+                            }
+                            className="rounded-md p-2 text-neutral-400 hover:bg-neutral-800 hover:text-red-300"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       <ConfirmDialog
         open={resetConfirmOpen}
