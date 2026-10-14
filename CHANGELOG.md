@@ -3,6 +3,7 @@
 ## October 14, 2026
 
 1. **Layout** — Various layout updates to several game pages.
+1. **Derby Race** — Racers on the spectator screen run all the way to the finish even when that window isn’t the one you’re clicked into.
 
 ## October 13, 2026
 

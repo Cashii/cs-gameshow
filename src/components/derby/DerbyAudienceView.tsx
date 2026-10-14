@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   clampDerbyRacerScale,
   createDefaultDerbyState,
@@ -12,7 +12,7 @@ import {
   type DerbyGameState,
   type DerbyRacerId,
 } from "@/lib/derby/types";
-import { createRaceSampler, raceProgress } from "@/lib/derby/race";
+import { createRaceSampler } from "@/lib/derby/race";
 import { DerbyHorse } from "@/components/derby/DerbyHorse";
 import { DerbyToy } from "@/components/derby/DerbyToy";
 import { DerbyDiscoBall } from "@/components/derby/DerbyWonderbarBrand";
@@ -26,10 +26,17 @@ function prefersReducedMotion(): boolean {
   );
 }
 
-const IDLE_FRAME = {
-  positions: { red: 0, blue: 0, green: 0, yellow: 0 },
-  speeds: { red: 0, blue: 0, green: 0, yellow: 0 },
-};
+const TRACK_STEPS = 60;
+
+function rootFontPx(): number {
+  return parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+}
+
+function laneTravelPx(horse: HTMLElement): number {
+  const lane = horse.parentElement;
+  if (!lane) return 0;
+  return Math.max(0, lane.clientWidth - horse.offsetWidth - 4 * rootFontPx());
+}
 
 export function DerbyAudienceView({
   game: gameProp,
@@ -42,70 +49,167 @@ export function DerbyAudienceView({
     Partial<Record<DerbyRacerId, HTMLDivElement | null>>
   >({});
   const [showWinner, setShowWinner] = useState(false);
+  const [layoutEpoch, setLayoutEpoch] = useState(0);
 
   const sampler = useMemo(() => {
     if (!game.winnerId) return null;
     return createRaceSampler(game.winnerId, game.seed);
   }, [game.winnerId, game.seed, game.sequence]);
 
-  useEffect(() => {
-    const apply = (t: number, hopping: boolean) => {
-      const frame = sampler ? sampler(t) : IDLE_FRAME;
+  useLayoutEffect(() => {
+    let alive = true;
+    const anims: Animation[] = [];
+
+    const eachHorse = (fn: (el: HTMLDivElement, id: DerbyRacerId) => void) => {
       for (const id of DERBY_RACER_IDS) {
         const el = horseRefs.current[id];
-        if (!el) continue;
-        el.style.setProperty("--derby-progress", String(frame.positions[id]));
-        if (theme === "wonderbar") {
-          el.style.setProperty("--derby-wiggle", "0");
-          el.style.setProperty("--derby-hop", "0");
-        } else {
-          const hops = 22;
-          const hop = hopping
-            ? Math.max(0, Math.sin(frame.positions[id] * hops * Math.PI))
-            : 0;
-          el.style.setProperty("--derby-hop", hop.toFixed(3));
-          el.style.setProperty("--derby-wiggle", "0");
-        }
+        if (el) fn(el, id);
       }
+    };
+
+    const placeAt = (t: number) => {
+      const frame = sampler ? sampler(Math.min(1, Math.max(0, t))) : null;
+      eachHorse((el, id) => {
+        const travel = laneTravelPx(el);
+        const progress = frame ? frame.positions[id] : 0;
+        el.style.transform = `translate3d(${(progress * travel).toFixed(2)}px, 0, 0)`;
+      });
+    };
+
+    const clearShift = () => {
+      eachHorse((el) => {
+        el.style.transform = "";
+      });
+    };
+
+    const cancelAnims = () => {
+      for (const anim of anims) {
+        anim.onfinish = null;
+        anim.cancel();
+      }
+      anims.length = 0;
     };
 
     const reduced = prefersReducedMotion();
-    const jumpToFinish =
-      reduced && (game.phase === "racing" || game.phase === "finished");
+    const duration = game.durationMs > 0 ? game.durationMs : 20_000;
+    const startedAt = game.startedAt;
+    const elapsed =
+      startedAt == null ? 0 : Math.max(0, Date.now() - startedAt);
 
-    if (game.phase === "idle" || !game.winnerId) {
-      apply(0, false);
+    if (game.phase === "idle" || !game.winnerId || !sampler) {
+      clearShift();
       setShowWinner(false);
-      return;
+      return () => {
+        alive = false;
+        cancelAnims();
+      };
     }
 
-    if (game.phase === "finished" || jumpToFinish) {
-      apply(1, false);
+    if (reduced || game.phase === "finished" || elapsed >= duration) {
+      placeAt(1);
       setShowWinner(true);
-      return;
+      return () => {
+        alive = false;
+      };
+    }
+
+    if (game.phase !== "racing" || startedAt == null) {
+      return () => {
+        alive = false;
+      };
     }
 
     setShowWinner(false);
-    let raf = 0;
-    const loop = () => {
-      const t = raceProgress(game.startedAt, game.durationMs, Date.now());
-      apply(t, t < 1 && !reduced);
-      if (t >= 1) {
-        setShowWinner(true);
-        return;
+
+    const sampleHorse = horseRefs.current[DERBY_RACER_IDS[0]];
+    const travelNow = sampleHorse ? laneTravelPx(sampleHorse) : 0;
+    const lane = sampleHorse?.parentElement ?? null;
+    const ro =
+      lane && typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => {
+            const el = horseRefs.current[DERBY_RACER_IDS[0]];
+            if (!el) return;
+            const next = laneTravelPx(el);
+            if (next > 2 && Math.abs(next - travelNow) > 2) {
+              setLayoutEpoch((n) => n + 1);
+            }
+          })
+        : null;
+    if (lane && ro) ro.observe(lane);
+
+    if (travelNow <= 0) {
+      return () => {
+        alive = false;
+        ro?.disconnect();
+      };
+    }
+
+    const timelineNow = document.timeline.currentTime;
+    const startTime =
+      typeof timelineNow === "number" ? timelineNow - elapsed : null;
+
+    eachHorse((el, id) => {
+      const travel = laneTravelPx(el);
+      const frames: Keyframe[] = [];
+      for (let i = 0; i <= TRACK_STEPS; i += 1) {
+        const t = i / TRACK_STEPS;
+        const x = sampler(t).positions[id] * travel;
+        frames.push({
+          transform: `translate3d(${x.toFixed(2)}px, 0, 0)`,
+          offset: t,
+        });
       }
-      raf = requestAnimationFrame(loop);
+      const anim = el.animate(frames, {
+        duration,
+        easing: "linear",
+        fill: "both",
+      });
+      try {
+        if (startTime != null) anim.startTime = startTime;
+        else anim.currentTime = Math.min(elapsed, duration);
+      } catch {
+        anim.currentTime = Math.min(elapsed, duration);
+      }
+      anim.onfinish = () => {
+        if (alive) setShowWinner(true);
+      };
+      anims.push(anim);
+    });
+
+    const timer = window.setInterval(() => {
+      if (!alive) return;
+      const elapsedNow = Math.max(0, Date.now() - startedAt);
+      for (const anim of anims) {
+        if (anim.playState === "finished") continue;
+        const current =
+          typeof anim.currentTime === "number" ? anim.currentTime : 0;
+        if (
+          document.visibilityState === "visible" &&
+          anim.playState === "paused"
+        ) {
+          anim.play();
+        }
+        if (elapsedNow - current > 400) {
+          anim.currentTime = Math.min(elapsedNow, duration);
+        }
+      }
+    }, 200);
+
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+      ro?.disconnect();
+      cancelAnims();
     };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
   }, [
     game.phase,
     game.startedAt,
     game.durationMs,
     game.winnerId,
     game.sequence,
+    game.racerScale,
     sampler,
-    theme,
+    layoutEpoch,
   ]);
 
   const winner =
@@ -160,11 +264,13 @@ export function DerbyAudienceView({
                 }}
                 className={`derby-horse derby-racer-${racer.id}${winner?.id === racer.id ? " is-winner" : ""}`}
               >
-                {theme === "wonderbar" ? (
-                  <DerbyToy racer={racer} isWinner={winner?.id === racer.id} />
-                ) : (
-                  <DerbyHorse racer={racer} />
-                )}
+                <div className="derby-horse-body">
+                  {theme === "wonderbar" ? (
+                    <DerbyToy racer={racer} isWinner={winner?.id === racer.id} />
+                  ) : (
+                    <DerbyHorse racer={racer} />
+                  )}
+                </div>
               </div>
             </div>
           ))}

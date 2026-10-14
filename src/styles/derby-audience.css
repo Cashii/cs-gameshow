@@ -181,22 +181,36 @@
 }
 
 .derby-horse {
-  --derby-progress: 0;
-  --derby-hop: 0;
   position: absolute;
-  left: calc(
-    2.5rem + var(--derby-progress) * (100% - var(--derby-horse-w) - 2.5rem - 1.5rem)
-  );
+  left: 2.5rem;
   bottom: 0.05rem;
   width: var(--derby-horse-w);
   height: calc(7.6rem * var(--derby-racer-scale));
   z-index: 5;
+}
+
+.derby-horse-body {
+  --derby-hop: 0;
+  width: 100%;
+  height: 100%;
   transform-origin: 50% 92%;
   transform:
     translateY(calc(var(--derby-hop) * -0.85rem * var(--derby-racer-scale)))
     rotate(calc((var(--derby-hop) - 0.35) * -5deg));
-  will-change: left, transform;
   filter: drop-shadow(4px 6px 0 rgba(28, 25, 23, 0.28));
+}
+
+.derby-audience.theme-horses.is-racing .derby-horse-body {
+  animation: derby-gallop-bob 0.34s ease-in-out infinite alternate;
+}
+
+@keyframes derby-gallop-bob {
+  from {
+    transform: translateY(0) rotate(-2deg);
+  }
+  to {
+    transform: translateY(calc(-0.7rem * var(--derby-racer-scale))) rotate(3deg);
+  }
 }
 
 .derby-horse-svg {
@@ -462,6 +476,9 @@
   height: calc(7.2rem * var(--derby-racer-scale));
   bottom: 0.2rem;
   overflow: visible;
+}
+
+.derby-audience.theme-wonderbar .derby-horse-body {
   transform-origin: 50% 78%;
   transform: rotate(-6deg);
   filter: drop-shadow(0 0 10px rgba(244, 114, 182, 0.45));
@@ -509,6 +526,9 @@
 
 .derby-audience.theme-wonderbar .derby-horse.is-winner {
   z-index: 7;
+}
+
+.derby-audience.theme-wonderbar .derby-horse.is-winner .derby-horse-body {
   transform-origin: 18% 82%;
   transform: rotate(-55deg);
   filter:
@@ -910,8 +930,10 @@
     animation: none;
   }
 
-  .derby-horse {
+  .derby-horse-body,
+  .derby-audience.theme-horses.is-racing .derby-horse-body {
     transform: none;
+    animation: none;
   }
 
   .derby-audience.is-racing .derby-leg-back,
@@ -940,11 +962,11 @@
     display: none;
   }
 
-  .derby-audience.theme-wonderbar .derby-horse {
+  .derby-audience.theme-wonderbar .derby-horse-body {
     transform: rotate(-6deg);
   }
 
-  .derby-audience.theme-wonderbar .derby-horse.is-winner {
+  .derby-audience.theme-wonderbar .derby-horse.is-winner .derby-horse-body {
     transform: rotate(-55deg);
   }
 }
