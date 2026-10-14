@@ -13,6 +13,7 @@ import {
   type DerbyRacerId,
 } from "@/lib/derby/types";
 import { createRaceSampler } from "@/lib/derby/race";
+import { subscribeDerbyClock } from "@/lib/derby/clock";
 import { DerbyHorse } from "@/components/derby/DerbyHorse";
 import { DerbyToy } from "@/components/derby/DerbyToy";
 import { DerbyDiscoBall } from "@/components/derby/DerbyWonderbarBrand";
@@ -25,8 +26,6 @@ function prefersReducedMotion(): boolean {
     window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
 }
-
-const TRACK_STEPS = 60;
 
 function rootFontPx(): number {
   return parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
@@ -48,8 +47,10 @@ export function DerbyAudienceView({
   const horseRefs = useRef<
     Partial<Record<DerbyRacerId, HTMLDivElement | null>>
   >({});
-  const [showWinner, setShowWinner] = useState(false);
-  const [layoutEpoch, setLayoutEpoch] = useState(0);
+  const [motionT, setMotionT] = useState(0);
+  const [travels, setTravels] = useState<Partial<Record<DerbyRacerId, number>>>(
+    {},
+  );
 
   const sampler = useMemo(() => {
     if (!game.winnerId) return null;
@@ -57,57 +58,62 @@ export function DerbyAudienceView({
   }, [game.winnerId, game.seed, game.sequence]);
 
   useLayoutEffect(() => {
-    let alive = true;
-    const anims: Animation[] = [];
-
-    const eachHorse = (fn: (el: HTMLDivElement, id: DerbyRacerId) => void) => {
+    const measure = () => {
+      const next: Partial<Record<DerbyRacerId, number>> = {};
       for (const id of DERBY_RACER_IDS) {
         const el = horseRefs.current[id];
-        if (el) fn(el, id);
+        if (!el) continue;
+        next[id] = laneTravelPx(el);
       }
-    };
-
-    const placeAt = (t: number) => {
-      const frame = sampler ? sampler(Math.min(1, Math.max(0, t))) : null;
-      eachHorse((el, id) => {
-        const travel = laneTravelPx(el);
-        const progress = frame ? frame.positions[id] : 0;
-        el.style.transform = `translate3d(${(progress * travel).toFixed(2)}px, 0, 0)`;
+      setTravels((prev) => {
+        const ids = new Set([...Object.keys(prev), ...Object.keys(next)]);
+        for (const id of ids) {
+          const key = id as DerbyRacerId;
+          if (Math.abs((prev[key] ?? -1) - (next[key] ?? -1)) > 0.5) return next;
+        }
+        return prev;
       });
     };
 
-    const clearShift = () => {
-      eachHorse((el) => {
-        el.style.transform = "";
-      });
-    };
+    measure();
+    const lane = horseRefs.current[DERBY_RACER_IDS[0]]?.parentElement ?? null;
+    const ro =
+      lane && typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(measure)
+        : null;
+    if (lane && ro) ro.observe(lane);
+    return () => ro?.disconnect();
+  }, [game.phase, game.racerScale, theme]);
 
-    const cancelAnims = () => {
-      for (const anim of anims) {
-        anim.onfinish = null;
-        anim.cancel();
-      }
-      anims.length = 0;
-    };
+  useLayoutEffect(() => {
+    let alive = true;
+    let raf = 0;
+    let interval = 0;
+    let worker: Worker | null = null;
+    let workerUrl: string | null = null;
+    let lastApplied = 0;
 
-    const reduced = prefersReducedMotion();
     const duration = game.durationMs > 0 ? game.durationMs : 20_000;
     const startedAt = game.startedAt;
-    const elapsed =
-      startedAt == null ? 0 : Math.max(0, Date.now() - startedAt);
+
+    const applyClock = () => {
+      if (!alive || startedAt == null) return;
+      const now = Date.now();
+      const t = Math.min(1, Math.max(0, (now - startedAt) / duration));
+      if (now - lastApplied < 16 && t < 1) return;
+      lastApplied = now;
+      setMotionT((prev) => (Math.abs(prev - t) < 0.0001 ? prev : t));
+    };
 
     if (game.phase === "idle" || !game.winnerId || !sampler) {
-      clearShift();
-      setShowWinner(false);
+      setMotionT(0);
       return () => {
         alive = false;
-        cancelAnims();
       };
     }
 
-    if (reduced || game.phase === "finished" || elapsed >= duration) {
-      placeAt(1);
-      setShowWinner(true);
+    if (prefersReducedMotion() || game.phase === "finished") {
+      setMotionT(1);
       return () => {
         alive = false;
       };
@@ -119,87 +125,40 @@ export function DerbyAudienceView({
       };
     }
 
-    setShowWinner(false);
+    applyClock();
 
-    const sampleHorse = horseRefs.current[DERBY_RACER_IDS[0]];
-    const travelNow = sampleHorse ? laneTravelPx(sampleHorse) : 0;
-    const lane = sampleHorse?.parentElement ?? null;
-    const ro =
-      lane && typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(() => {
-            const el = horseRefs.current[DERBY_RACER_IDS[0]];
-            if (!el) return;
-            const next = laneTravelPx(el);
-            if (next > 2 && Math.abs(next - travelNow) > 2) {
-              setLayoutEpoch((n) => n + 1);
-            }
-          })
-        : null;
-    if (lane && ro) ro.observe(lane);
+    const frame = () => {
+      applyClock();
+      if (!alive || Date.now() - startedAt >= duration) return;
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    interval = window.setInterval(applyClock, 32);
 
-    if (travelNow <= 0) {
-      return () => {
-        alive = false;
-        ro?.disconnect();
-      };
-    }
-
-    const timelineNow = document.timeline.currentTime;
-    const startTime =
-      typeof timelineNow === "number" ? timelineNow - elapsed : null;
-
-    eachHorse((el, id) => {
-      const travel = laneTravelPx(el);
-      const frames: Keyframe[] = [];
-      for (let i = 0; i <= TRACK_STEPS; i += 1) {
-        const t = i / TRACK_STEPS;
-        const x = sampler(t).positions[id] * travel;
-        frames.push({
-          transform: `translate3d(${x.toFixed(2)}px, 0, 0)`,
-          offset: t,
-        });
-      }
-      const anim = el.animate(frames, {
-        duration,
-        easing: "linear",
-        fill: "both",
-      });
-      try {
-        if (startTime != null) anim.startTime = startTime;
-        else anim.currentTime = Math.min(elapsed, duration);
-      } catch {
-        anim.currentTime = Math.min(elapsed, duration);
-      }
-      anim.onfinish = () => {
-        if (alive) setShowWinner(true);
-      };
-      anims.push(anim);
+    const unsubscribe = subscribeDerbyClock((tick) => {
+      if (!alive || tick.startedAt !== startedAt) return;
+      applyClock();
     });
 
-    const timer = window.setInterval(() => {
-      if (!alive) return;
-      const elapsedNow = Math.max(0, Date.now() - startedAt);
-      for (const anim of anims) {
-        if (anim.playState === "finished") continue;
-        const current =
-          typeof anim.currentTime === "number" ? anim.currentTime : 0;
-        if (
-          document.visibilityState === "visible" &&
-          anim.playState === "paused"
-        ) {
-          anim.play();
-        }
-        if (elapsedNow - current > 400) {
-          anim.currentTime = Math.min(elapsedNow, duration);
-        }
-      }
-    }, 200);
+    try {
+      workerUrl = URL.createObjectURL(
+        new Blob(["setInterval(function(){postMessage(0)},32)"], {
+          type: "text/javascript",
+        }),
+      );
+      worker = new Worker(workerUrl);
+      worker.onmessage = () => applyClock();
+    } catch {
+      worker = null;
+    }
 
     return () => {
       alive = false;
-      window.clearInterval(timer);
-      ro?.disconnect();
-      cancelAnims();
+      cancelAnimationFrame(raf);
+      window.clearInterval(interval);
+      unsubscribe();
+      worker?.terminate();
+      if (workerUrl) URL.revokeObjectURL(workerUrl);
     };
   }, [
     game.phase,
@@ -207,10 +166,15 @@ export function DerbyAudienceView({
     game.durationMs,
     game.winnerId,
     game.sequence,
-    game.racerScale,
     sampler,
-    layoutEpoch,
   ]);
+
+  const showWinner =
+    game.phase !== "idle" &&
+    game.winnerId != null &&
+    (game.phase === "finished" || motionT >= 1);
+  const frame =
+    sampler && game.phase !== "idle" ? sampler(showWinner ? 1 : motionT) : null;
 
   const winner =
     showWinner && game.winnerId
@@ -263,6 +227,13 @@ export function DerbyAudienceView({
                   horseRefs.current[racer.id] = el;
                 }}
                 className={`derby-horse derby-racer-${racer.id}${winner?.id === racer.id ? " is-winner" : ""}`}
+                style={
+                  frame
+                    ? {
+                        transform: `translate3d(${((frame.positions[racer.id] ?? 0) * (travels[racer.id] ?? 0)).toFixed(2)}px, 0, 0)`,
+                      }
+                    : undefined
+                }
               >
                 <div className="derby-horse-body">
                   {theme === "wonderbar" ? (

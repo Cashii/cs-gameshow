@@ -3,7 +3,7 @@
 ## October 14, 2026
 
 1. **Layout** — Various layout updates to several game pages.
-1. **Derby Race** — Racers on the spectator screen run all the way to the finish even when that window isn’t the one you’re clicked into.
+1. **Derby Race** — Horses and toys on the spectator screen keep moving for the whole race and finish on the line, even when that window is behind the operator controls.
 
 ## October 13, 2026
 

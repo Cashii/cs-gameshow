@@ -20,6 +20,7 @@ import {
 } from "@/lib/derby/types";
 import { DerbyHorse } from "@/components/derby/DerbyHorse";
 import { DerbyToy } from "@/components/derby/DerbyToy";
+import { publishDerbyClock } from "@/lib/derby/clock";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 
 function newRaceId(): string {
@@ -51,19 +52,38 @@ export function DerbyHostPanel() {
   useEffect(() => {
     if (game.phase !== "racing" || game.startedAt == null) return;
 
-    const tick = () => {
+    const startedAt = game.startedAt;
+    const durationMs = game.durationMs;
+    let ended = false;
+    let raf = 0;
+
+    const tick = (updateClock: boolean) => {
+      if (ended) return;
       const t = Date.now();
-      setNow(t);
-      if (t - (game.startedAt ?? 0) >= game.durationMs) {
+      publishDerbyClock(startedAt, durationMs);
+      if (updateClock) setNow(t);
+      if (t - startedAt >= durationMs) {
+        ended = true;
+        setNow(t);
         updateDerby((prev) =>
           prev.phase === "racing" ? { ...prev, phase: "finished" } : prev,
         );
       }
     };
 
-    tick();
-    const id = window.setInterval(tick, 100);
-    return () => window.clearInterval(id);
+    const frame = () => {
+      tick(false);
+      if (!ended) raf = requestAnimationFrame(frame);
+    };
+
+    tick(true);
+    raf = requestAnimationFrame(frame);
+    const id = window.setInterval(() => tick(true), 100);
+    return () => {
+      ended = true;
+      cancelAnimationFrame(raf);
+      window.clearInterval(id);
+    };
   }, [game.phase, game.startedAt, game.durationMs, game.sequence, updateDerby]);
 
   const pickWinner = (id: DerbyRacerId) => {
