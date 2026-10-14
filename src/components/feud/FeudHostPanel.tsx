@@ -900,7 +900,7 @@ export function FeudHostPanel() {
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[1000] bg-black/70" />
           <Dialog.Content
-            className="fixed top-1/2 left-1/2 z-[1001] flex max-h-[min(80vh,720px)] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 shadow-2xl"
+            className="fixed top-1/2 left-1/2 z-[1001] flex max-h-[min(85vh,800px)] w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 shadow-2xl"
             onEscapeKeyDown={(event) => {
               if (!pickerForm) return;
               event.preventDefault();

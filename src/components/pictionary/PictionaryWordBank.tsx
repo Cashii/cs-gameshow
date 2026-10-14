@@ -67,7 +67,7 @@ export function PictionaryWordBank({
                 onClick={onSave}
                 className={bankSaveClass}
               >
-                Save this word
+                Save current word
               </button>
             </div>
             {words.length === 0 ? (

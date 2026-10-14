@@ -912,8 +912,8 @@ export function LiveDrawerHostPanel() {
               </div>
             </div>
 
-            <section className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-3 shadow-lg">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <section className="flex max-h-96 flex-col overflow-hidden rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-3 shadow-lg">
+              <div className="flex shrink-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <h2 className="text-xl font-bold text-white">Draw history</h2>
                 <p className="text-sm text-neutral-400">
                   Newest first. Hover a number to return it.
@@ -922,7 +922,7 @@ export function LiveDrawerHostPanel() {
               {drawHistory.length === 0 ? (
                 <p className="mt-2 text-neutral-400">No draws yet</p>
               ) : (
-                <ol className="mt-2 divide-y divide-neutral-700/80">
+                <ol className="mt-2 min-h-0 divide-y divide-neutral-700/80 overflow-y-auto">
                   {drawHistory.map((batch, index) => (
                     <li
                       key={batch.id}

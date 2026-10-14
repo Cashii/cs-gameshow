@@ -1,5 +1,9 @@
 # Updates
 
+## October 14, 2026
+
+1. **Layout** — Various layout updates to several game pages.
+
 ## October 13, 2026
 
 1. **Poll** — Scan to vote QR code sits at the top right and is larger.

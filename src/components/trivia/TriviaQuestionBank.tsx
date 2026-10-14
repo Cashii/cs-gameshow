@@ -151,7 +151,7 @@ export function TriviaQuestionBank({
                 onClick={onSaveCurrent}
                 className={bankSaveClass}
               >
-                Save this question
+                Save current question
               </button>
               <button
                 type="button"
