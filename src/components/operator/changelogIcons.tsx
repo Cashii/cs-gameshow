@@ -65,7 +65,7 @@ export function gamesForChangelogItem(
   if (text.includes("price wheel")) return ["priceWheel"];
   if (text.includes("message board")) return ["messageBoard"];
   if (
-    text.includes("price guesser") &&
+    (text.includes("price guesser") || text.includes("price is tight")) &&
     text.includes("price order") &&
     !text.includes("uploaded photos") &&
     !text.includes("question lists")
@@ -75,7 +75,13 @@ export function gamesForChangelogItem(
   if (text.includes("price order") && !text.includes("uploaded photos")) {
     return ["priceOrder"];
   }
-  if (text.includes("question time")) return ["questionTime"];
+  if (
+    text.includes("question time") ||
+    text.includes("newly weds") ||
+    text.includes("newlyweds")
+  ) {
+    return ["questionTime"];
+  }
   if (text.includes("take it")) return ["takeIt"];
 
   if (text.includes("elimination trivia") || text.includes(" trivia")) {
@@ -83,9 +89,13 @@ export function gamesForChangelogItem(
   }
   if (text.includes("poll")) return ["poll"];
   if (text.includes("derby")) return ["derby"];
-  if (text.includes("pictionary")) return ["pictionary"];
+  if (text.includes("pictionary") || text.includes("dicktionary"))
+    return ["pictionary"];
   if (text.includes("jeoparody")) return ["jeoparody"];
-  if (text.includes("price guesser") && !text.includes("uploaded photos")) {
+  if (
+    (text.includes("price guesser") || text.includes("price is tight")) &&
+    !text.includes("uploaded photos")
+  ) {
     return ["priceGuesser"];
   }
   if (text.includes("live drawer")) return ["liveDrawer"];
@@ -96,7 +106,11 @@ export function gamesForChangelogItem(
     return ["feud", "wheel"];
   }
   if (text.includes("friendly feud")) return ["feud"];
-  if (text.includes("wheel of riches") || text.includes("wheel")) {
+  if (
+    text.includes("word up") ||
+    text.includes("wheel of riches") ||
+    text.includes("wheel")
+  ) {
     return ["wheel"];
   }
 
@@ -155,7 +169,7 @@ export function labelForChangelogGame(
     case "feud":
       return "Friendly Feud";
     case "wheel":
-      return "Wheel of Riches";
+      return "Word Up";
     case "liveDrawer":
       return "Live Drawer";
     case "takeIt":
@@ -167,19 +181,19 @@ export function labelForChangelogGame(
     case "trivia":
       return "Elimination Trivia";
     case "priceGuesser":
-      return "Price Guesser";
+      return "Price is Tight";
     case "priceOrder":
       return "Price Order";
     case "priceWheel":
       return "Price Wheel";
     case "questionTime":
-      return "Question Time";
+      return "Newly Weds";
     case "poll":
-      return "Poll";
+      return "O69 Club Poll";
     case "messageBoard":
       return "Message Board";
     case "pictionary":
-      return "Pictionary";
+      return "Dicktionary";
     default:
       return "Game";
   }

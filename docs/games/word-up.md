@@ -1,11 +1,11 @@
-# Wheel of Riches
+# Word Up
 
 Letter board phrase reveal (Wheel of Fortune style).
 
 ## Operator controls
 
-1. Select **Wheel of Riches** in the left nav.
-2. Put **Wheel of Riches** on the Spectator screen so the projector shows the board.
+1. Select **Word Up** in the left nav.
+2. Put **Word Up** on the Spectator screen so the projector shows the board.
 3. Set the phrase and an optional topic banner.
 4. Reveal individual letters from the alphabet, or by clicking a letter in the current phrase.
 5. Toggle letter legend on spectator.

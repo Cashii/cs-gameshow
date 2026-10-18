@@ -406,7 +406,7 @@ export function WheelHostPanel() {
 
       {!spectatorLive && (
         <SpectatorScreenNotice>
-          Spectator is not on Wheel of Riches. Use the Spectator screen list so
+          Spectator is not on Word Up. Use the Spectator screen list so
           the projector shows the board.
         </SpectatorScreenNotice>
       )}

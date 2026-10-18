@@ -134,7 +134,7 @@ export function PictionaryHostPanel() {
 
       {!spectatorLive && (
         <SpectatorScreenNotice>
-          Spectator is not on Pictionary. Use the Spectator screen list so the
+          Spectator is not on Dicktionary. Use the Spectator screen list so the
           projector shows the word, curtain, and clock.
         </SpectatorScreenNotice>
       )}
@@ -425,7 +425,7 @@ export function PictionaryHostPanel() {
       <ConfirmDialog
         open={confirmReset}
         onOpenChange={setConfirmReset}
-        title="Reset Pictionary?"
+        title="Reset Dicktionary?"
         message="This clears the word, hint covers, and clock. The timer length stays."
         confirmLabel="Reset"
         variant="danger"

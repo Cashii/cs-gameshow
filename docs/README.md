@@ -16,17 +16,17 @@ Legacy routes `/admin` and `/audience` redirect to `/operator` and `/spectator`.
 ## Games
 
 - [Friendly Feud](games/friendly-feud.md)
-- [Wheel of Riches](games/wheel-of-riches.md)
+- [Word Up](games/word-up.md)
 - [Live Drawer](games/live-drawer.md)
 - [Take It or Leave It](games/take-it-or-leave-it.md)
 - [Derby](games/derby.md)
 - [Jeoparody](games/jeoparody.md)
 - [Elimination Trivia](games/boolean-trivia.md)
 - [Message Board](games/message-board.md)
-- [Price Guesser](games/price-guesser.md)
+- [Price is Tight](games/price-is-tight.md)
 - [Price Order](games/price-order.md)
 - [Price Wheel](games/price-wheel.md)
-- [Question Time](games/question-time.md)
+- [Newly Weds](games/newly-weds.md)
 
 ## Setup
 

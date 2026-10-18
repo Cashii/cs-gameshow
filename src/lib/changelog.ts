@@ -3,6 +3,30 @@ export type ChangelogItem = {
   detail: string;
 };
 
+export type ChangelogInlinePart = {
+  text: string;
+  bold: boolean;
+};
+
+/** Split changelog text on `**bold**` markers for UI rendering. */
+export function parseChangelogInline(text: string): ChangelogInlinePart[] {
+  const parts: ChangelogInlinePart[] = [];
+  const re = /\*\*(.+?)\*\*/g;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(text)) != null) {
+    if (match.index > last) {
+      parts.push({ text: text.slice(last, match.index), bold: false });
+    }
+    parts.push({ text: match[1], bold: true });
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) {
+    parts.push({ text: text.slice(last), bold: false });
+  }
+  return parts.length > 0 ? parts : [{ text, bold: false }];
+}
+
 export type ChangelogSection = {
   date: string;
   items: ChangelogItem[];

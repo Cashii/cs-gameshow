@@ -24,4 +24,4 @@ There is no player phone board.
 
 ## Saved items
 
-The folder icon on the game actions bar, and **Choose from bank** on the dashed tile, open the same gallery Price Guesser uses. **Save all items** stores each item on the board, with its photo, name, and price. Pick a photo to add that item, up to five. Resetting the live game does not delete saved photos.
+The folder icon on the game actions bar, and **Choose from bank** on the dashed tile, open the same gallery Price is Tight uses. **Save all items** stores each item on the board, with its photo, name, and price. Pick a photo to add that item, up to five. Resetting the live game does not delete saved photos.

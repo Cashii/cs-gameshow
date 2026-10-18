@@ -22,7 +22,7 @@ You can stage several upcoming questions in a queue. Starting the next question 
 
 ## Player (`/player`)
 
-Uses the same device ID as Poll (UUID in `localStorage`, 4-character code on screen). No PIN.
+Uses the same device ID as O69 Club Poll (UUID in `localStorage`, 4-character code on screen). No PIN.
 
 - Eligible + voting open: two large buttons, then “answer locked”.
 - After reveal, still in: remaining count.
@@ -30,7 +30,7 @@ Uses the same device ID as Poll (UUID in `localStorage`, 4-character code on scr
 - Missed Q1 after the field is set: “not in this round”.
 - Last remaining (if you play that far): winner.
 
-Player phones show Elimination Trivia only while the Spectator screen is set to Elimination Trivia. Switch Spectator to Poll (or anything else) and phones follow that instead, even if a trivia series is still leftover in the suite.
+Player phones show Elimination Trivia only while the Spectator screen is set to Elimination Trivia. Switch Spectator to O69 Club Poll (or anything else) and phones follow that instead, even if a trivia series is still leftover in the suite.
 
 ## Spectator
 

@@ -28,7 +28,7 @@ export type QuestionTimeState = {
   library: QuestionTimeBankEntry[];
 };
 
-export const DEFAULT_QUESTION_TIME_TITLE = "Question Time";
+export const DEFAULT_QUESTION_TIME_TITLE = "Newly Weds";
 export const MIN_QUESTION_TIME_TEAMS = 2;
 export const MAX_QUESTION_TIME_TEAMS = 8;
 

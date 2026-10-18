@@ -34,6 +34,19 @@ export const DERBY_THEME_OPTIONS: { value: DerbyTheme; label: string }[] = [
 ];
 
 export const DERBY_DURATION_MS = 20_000;
+export const MIN_DERBY_DURATION_MS = 5_000;
+export const MAX_DERBY_DURATION_MS = 10 * 60_000;
+
+export function clampDerbyDurationMs(ms: unknown): number {
+  if (typeof ms !== "number" || !Number.isFinite(ms)) {
+    return DERBY_DURATION_MS;
+  }
+  return Math.min(
+    MAX_DERBY_DURATION_MS,
+    Math.max(MIN_DERBY_DURATION_MS, Math.round(ms)),
+  );
+}
+
 export const DEFAULT_DERBY_RACER_SCALE = 1;
 export const MIN_DERBY_RACER_SCALE = 0.6;
 export const MAX_DERBY_RACER_SCALE = 2.5;

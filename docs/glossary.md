@@ -12,11 +12,11 @@
 
 ## Price games
 
-**Price Guesser** — One product photo on the spectator screen with a covered price tag. The player guesses out loud; the operator reveals.
+**Price is Tight** — One product photo on the spectator screen with a covered price tag. The player guesses out loud; the operator reveals.
 
 **Price Order** — Up to five product photos. The player sorts cheapest to most expensive; the operator inserts and rearranges that list, then reveals prices.
 
-**Question Time** — Question, two team scores, and a giant countdown on the spectator screen. Couples play in the room; there is no player phone board.
+**Newly Weds** — Question, two team scores, and a giant countdown on the spectator screen. Couples play in the room; there is no player phone board.
 
 
 ## Live Drawer
@@ -31,7 +31,7 @@
 
 ## Polls
 
-**Poll** — A question with 2–6 choices that the operator opens for player voting. Works during any game.
+**O69 Club Poll** — A question with 2–6 choices that the operator opens for player voting. Listed under Games (below Newly Weds).
 
 **Vote** — A player's single choice on an open poll.
 

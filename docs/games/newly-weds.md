@@ -1,4 +1,4 @@
-# Question Time
+# Newly Weds
 
 Newlywed-style question round. Couples play in the room; the screens only assist. The operator puts a question on the projector, tracks team scores (two or more), and runs a giant countdown.
 
@@ -6,8 +6,8 @@ There is no player phone board.
 
 ## Operator
 
-1. Select **Question Time** in the left nav (under Price Order).
-2. Put **Question Time** on the Spectator screen.
+1. Select **Newly Weds** in the left nav (under Price Order).
+2. Put **Newly Weds** on the Spectator screen.
 3. Type the question. It appears live on the projector.
 4. Name the teams (add up to eight, remove down to two) and tap **+1** / **+5** / **+10** (or type a score) as they earn points.
 5. Pick a timer length (presets or minutes/seconds), then **Start**. **Pause**, **Resume**, and **Reset clock** control the same countdown the audience sees.

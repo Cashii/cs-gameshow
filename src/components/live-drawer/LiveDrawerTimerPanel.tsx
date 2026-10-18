@@ -73,40 +73,21 @@ export function LiveDrawerTimerPanel() {
     updateLiveDrawer((prev) => setLiveDrawerDuration(prev, ms));
   };
 
+  const controlButtonClass =
+    "inline-flex h-11 min-w-11 items-center justify-center rounded-md px-4 text-base font-semibold";
+
   return (
-    <section className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-3 shadow-lg">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="text-xl font-bold text-white">Countdown</h2>
+    <section className="flex flex-col gap-3 px-3 py-4">
+      <div className="flex items-center gap-2">
+        <h2 className="text-base font-bold text-white">Countdown</h2>
         <span className="min-w-14 text-2xl font-bold tabular-nums text-white">
           {formatLiveDrawerClock(remainingMs)}
         </span>
-        <button
-          type="button"
-          disabled={!canStart && !game.timerRunning}
-          onClick={() =>
-            updateLiveDrawer((prev) =>
-              prev.timerRunning
-                ? pauseLiveDrawerTimer(prev)
-                : startLiveDrawerTimer(prev),
-            )
-          }
-          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-teal-500 bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
-        >
-          {game.timerRunning ? <Pause size={14} /> : <Play size={14} />}
-          {timerActionLabel}
-        </button>
-        <button
-          type="button"
-          onClick={() => updateLiveDrawer(resetLiveDrawerTimer)}
-          className="inline-flex h-8 items-center rounded-md border border-neutral-600 bg-neutral-800 px-3 text-sm font-semibold text-white hover:bg-neutral-700"
-        >
-          Reset
-        </button>
         <div className="ml-auto">
           <StatusSwitch
             checked={game.timerEnabled}
-            labelOn="Showing Countdown"
-            labelOff="Countdown Hidden"
+            labelOn="Show"
+            labelOff="Hide"
             ariaLabel="Show countdown on the big screen"
             onToggle={() =>
               updateLiveDrawer((prev) =>
@@ -116,28 +97,22 @@ export function LiveDrawerTimerPanel() {
           />
         </div>
       </div>
-
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        {LIVE_DRAWER_DURATION_PRESETS_MS.map((ms) => {
-          const selected = game.timerDurationMs === ms;
-          return (
-            <button
-              key={ms}
-              type="button"
-              onClick={() =>
-                updateLiveDrawer((prev) => setLiveDrawerDuration(prev, ms))
-              }
-              className={`inline-flex h-7 items-center rounded-md px-2 text-xs font-semibold ${
-                selected
-                  ? "bg-sky-500 text-white"
-                  : "border border-neutral-700 bg-neutral-950 text-neutral-200 hover:border-neutral-500"
-              }`}
-            >
-              {formatLiveDrawerPreset(ms)}
-            </button>
-          );
-        })}
-        <label className="ml-1 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+      <div className="grid grid-cols-3 gap-2">
+        {LIVE_DRAWER_DURATION_PRESETS_MS.map((ms) => (
+          <button
+            key={ms}
+            type="button"
+            onClick={() =>
+              updateLiveDrawer((prev) => setLiveDrawerDuration(prev, ms))
+            }
+            className={`${controlButtonClass} w-full border border-neutral-600 bg-neutral-800 text-neutral-200 hover:bg-neutral-700`}
+          >
+            {formatLiveDrawerPreset(ms)}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <label className="flex h-11 w-full items-center gap-1.5 rounded-md border border-neutral-600 bg-neutral-800 px-3 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
           Min
           <input
             type="number"
@@ -150,10 +125,10 @@ export function LiveDrawerTimerPanel() {
                 Math.max(0, Number.parseInt(event.target.value || "0", 10) || 0),
               )
             }
-            className="h-7 w-14 rounded-md border border-neutral-700 bg-neutral-950 px-2 text-sm text-white focus:border-sky-500 focus:outline-none"
+            className="h-full min-w-0 flex-1 bg-transparent text-center text-base font-semibold text-white tabular-nums focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
         </label>
-        <label className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+        <label className="flex h-11 w-full items-center gap-1.5 rounded-md border border-neutral-600 bg-neutral-800 px-3 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
           Sec
           <input
             type="number"
@@ -172,15 +147,39 @@ export function LiveDrawerTimerPanel() {
                 ),
               )
             }
-            className="h-7 w-14 rounded-md border border-neutral-700 bg-neutral-950 px-2 text-sm text-white focus:border-sky-500 focus:outline-none"
+            className="h-full min-w-0 flex-1 bg-transparent text-center text-base font-semibold text-white tabular-nums focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
         </label>
         <button
           type="button"
           onClick={applyCustomDuration}
-          className="inline-flex h-7 items-center rounded-md border border-teal-500 bg-teal-600 px-2.5 text-xs font-semibold text-white hover:bg-teal-500"
+          className={`${controlButtonClass} w-full border border-teal-500 bg-teal-600 text-white hover:bg-teal-500`}
         >
           Set
+        </button>
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <button
+          type="button"
+          disabled={!canStart && !game.timerRunning}
+          onClick={() =>
+            updateLiveDrawer((prev) =>
+              prev.timerRunning
+                ? pauseLiveDrawerTimer(prev)
+                : startLiveDrawerTimer(prev),
+            )
+          }
+          className={`${controlButtonClass} gap-1.5 border border-teal-500 bg-teal-600 text-white hover:bg-teal-500 disabled:opacity-40`}
+        >
+          {game.timerRunning ? <Pause size={18} /> : <Play size={18} />}
+          {timerActionLabel}
+        </button>
+        <button
+          type="button"
+          onClick={() => updateLiveDrawer(resetLiveDrawerTimer)}
+          className={`${controlButtonClass} border border-neutral-600 bg-neutral-800 text-white hover:bg-neutral-700`}
+        >
+          Reset
         </button>
       </div>
     </section>

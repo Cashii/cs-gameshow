@@ -10,7 +10,9 @@ import {
   clampLiveDrawerDurationMs,
   clampLiveDrawerNumberScale,
   DEFAULT_LIVE_DRAWER_NUMBER_SCALE,
+  normalizeLiveDrawerQueueGroups,
   normalizeTokenMark,
+  normalizeTokenNote,
   type LiveDrawerDraw,
   type LiveDrawerGameState,
   type LiveDrawerToken,
@@ -42,6 +44,7 @@ import {
   type MessageBoardState,
 } from "@/lib/message-board/types";
 import {
+  clampDerbyDurationMs,
   clampDerbyRacerScale,
   emptyDerbyVoteTallies,
   createDefaultDerbyState,
@@ -150,7 +153,7 @@ export type SuiteState = {
   trivia: TriviaGameState;
   priceGuesser: PriceGuesserState;
   priceOrder: PriceOrderState;
-  /** Photos and names shared by Price Guesser and Price Order. */
+  /** Photos and names shared by Price is Tight and Price Order. */
   priceCatalog: PriceCatalogItem[];
   priceWheel: PriceWheelState;
   questionTime: QuestionTimeState;
@@ -361,6 +364,7 @@ function normalizeLiveDrawerState(
         number: String(number),
         colorId: colorId ?? "blue",
         mark: null,
+        note: null,
       },
     ];
   }
@@ -379,6 +383,11 @@ function normalizeLiveDrawerState(
       ? Math.max(0, Math.round(rest.timerRemainingMs))
       : timerDurationMs;
 
+  const queueGroups = normalizeLiveDrawerQueueGroups(
+    (rest as { queueGroups?: unknown; queueTokenIds?: unknown }).queueGroups ??
+      (rest as { queueTokenIds?: unknown }).queueTokenIds,
+  );
+
   return {
     ...defaults,
     ...rest,
@@ -386,8 +395,10 @@ function normalizeLiveDrawerState(
       ? revealedTokens.map((token) => ({
           ...token,
           mark: normalizeTokenMark(token?.mark),
+          note: normalizeTokenNote(token?.note),
         }))
       : [],
+    queueGroups,
     numberScale:
       typeof rest.numberScale === "number"
         ? clampLiveDrawerNumberScale(rest.numberScale)
@@ -670,10 +681,11 @@ function normalizeDerbyState(
     winnerId,
     raceId: typeof raw.raceId === "string" ? raw.raceId : null,
     startedAt,
-    durationMs:
+    durationMs: clampDerbyDurationMs(
       typeof raw.durationMs === "number" && raw.durationMs > 0
         ? raw.durationMs
         : defaults.durationMs,
+    ),
     seed: typeof raw.seed === "number" && Number.isFinite(raw.seed)
       ? raw.seed
       : defaults.seed,
@@ -1081,19 +1093,19 @@ export function saveSuiteState(state: SuiteState): void {
 export const ACTIVE_GAME_LABELS: Record<ActiveGame, string> = {
   idle: "Home",
   feud: "Friendly Feud",
-  wheel: "Wheel of Riches",
+  wheel: "Word Up",
   liveDrawer: "Live Drawer",
   takeIt: "Take It or Leave It",
-  poll: "Poll",
+  poll: "O69 Club Poll",
   messageBoard: "Message Board",
   derby: "Derby Race",
   jeoparody: "Jeoparody",
   trivia: "Elimination Trivia",
-  priceGuesser: "Price Guesser",
+  priceGuesser: "Price is Tight",
   priceOrder: "Price Order",
   priceWheel: "Price Wheel",
-  questionTime: "Question Time",
-  pictionary: "Pictionary",
+  questionTime: "Newly Weds",
+  pictionary: "Dicktionary",
 };
 
 export const SPECTATOR_SCREEN_LABELS: Record<SpectatorScreen, string> =
@@ -1109,11 +1121,11 @@ export const SPECTATOR_SCREENS: SpectatorScreen[] = [
   "priceOrder",
   "priceWheel",
   "questionTime",
+  "poll",
   "pictionary",
   "takeIt",
   "jeoparody",
   "liveDrawer",
-  "poll",
   "messageBoard",
 ];
 

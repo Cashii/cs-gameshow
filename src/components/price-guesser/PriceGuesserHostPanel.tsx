@@ -183,7 +183,7 @@ export function PriceGuesserHostPanel() {
 
       {!spectatorLive && (
         <SpectatorScreenNotice>
-          Spectator is not on Price Guesser. Use the Spectator screen list so
+          Spectator is not on Price is Tight. Use the Spectator screen list so
           the projector shows the item.
         </SpectatorScreenNotice>
       )}

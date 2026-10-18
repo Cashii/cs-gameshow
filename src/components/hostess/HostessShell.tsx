@@ -6,6 +6,7 @@ import { SuiteProvider, useSuite } from "@/lib/suite-provider";
 import { PinGate } from "@/components/auth/PinGate";
 import {
   LIVE_DRAWER_COLORS,
+  MAX_TOKEN_NOTE_LENGTH,
   getLiveDrawerColor,
   liveDrawerFillStyle,
   liveDrawerNeedsLightSurface,
@@ -32,12 +33,14 @@ function createOptimisticToken(
   number: string,
   colorId: string,
   mark: TokenMark | null,
+  note: string | null,
 ): LiveDrawerToken {
   return {
     id: `opt-${crypto.randomUUID()}`,
     number,
     colorId,
     mark,
+    note,
   };
 }
 
@@ -58,6 +61,7 @@ function HostessContent() {
   const [number, setNumber] = useState("");
   const [colorId, setColorId] = useState("blue");
   const [mark, setMark] = useState<TokenMark | null>(null);
+  const [note, setNote] = useState("");
   const [message, setMessage] = useState("");
   const [poolOpen, setPoolOpen] = useState(false);
   const [recentLine, setRecentLine] = useState<LiveDrawerToken[]>([]);
@@ -102,13 +106,16 @@ function HostessContent() {
       return;
     }
 
+    const noteValue =
+      note.trim().slice(0, MAX_TOKEN_NOTE_LENGTH) || null;
     const optimistic = numbers.map((n) =>
-      createOptimisticToken(n, colorId, mark),
+      createOptimisticToken(n, colorId, mark, noteValue),
     );
     const optimisticIds = new Set(optimistic.map((t) => t.id));
     setRecentLine((prev) => [...optimistic, ...prev].slice(0, LOG_SLOTS));
     setPoolCountBump((b) => b + numbers.length);
     setNumber("");
+    setNote("");
     setMessage(numbers.length === 1 ? "Added" : `Added ${numbers.length}`);
 
     void (async () => {
@@ -122,7 +129,12 @@ function HostessContent() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            tokens: numbers.map((n) => ({ number: n, colorId, mark })),
+            tokens: numbers.map((n) => ({
+              number: n,
+              colorId,
+              mark,
+              note: noteValue,
+            })),
           }),
         });
         const data = (await res.json()) as {
@@ -287,7 +299,7 @@ function HostessContent() {
         </div>
 
         <div className="hostess-chrome flex shrink-0 flex-col gap-2 pt-2">
-          <div className="grid grid-cols-4 justify-items-center gap-3 py-1">
+          <div className="grid grid-cols-5 justify-items-center gap-2 py-1">
             {LIVE_DRAWER_COLORS.map((c) => {
               const selected = colorId === c.id;
               return (
@@ -295,7 +307,7 @@ function HostessContent() {
                   key={c.id}
                   type="button"
                   onClick={() => setColorId(c.id)}
-                  className={`size-12 rounded-full shadow-md transition-transform active:scale-95 ${
+                  className={`size-11 rounded-full shadow-md transition-transform active:scale-95 ${
                     selected
                       ? "ring-2 ring-white ring-offset-2 ring-offset-neutral-950"
                       : liveDrawerOutlineClass(c)
@@ -329,6 +341,16 @@ function HostessContent() {
               );
             })}
           </div>
+
+          <input
+            value={note}
+            onChange={(e) =>
+              setNote(e.target.value.slice(0, MAX_TOKEN_NOTE_LENGTH))
+            }
+            placeholder="Note (optional)"
+            maxLength={MAX_TOKEN_NOTE_LENGTH}
+            className="h-11 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-sm text-white placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none"
+          />
 
           <button
             type="button"
@@ -381,7 +403,7 @@ function HostessContent() {
                         : t.mark === "vip"
                           ? ", VIP"
                           : ""
-                    }`}
+                    }${t.note ? ` — ${t.note}` : ""}`}
                   >
                     <TokenMarkIcon mark={t.mark} size={9} />
                     {t.number}
@@ -398,6 +420,21 @@ function HostessContent() {
         onOpenChange={setPoolOpen}
         tokens={visibleTokens}
         onRemove={handleRemove}
+        onUpdateNote={(tokenId, nextNote) => {
+          void (async () => {
+            try {
+              const res = await fetch(`/api/tokens/${tokenId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ note: nextNote }),
+              });
+              if (!res.ok) throw new Error("Could not update note");
+              void refreshSnapshot();
+            } catch (e) {
+              setMessage(e instanceof Error ? e.message : "Failed");
+            }
+          })();
+        }}
       />
     </>
   );

@@ -212,7 +212,7 @@ export function QuestionTimeHostPanel() {
 
       {!spectatorLive && (
         <SpectatorScreenNotice>
-          Spectator is not on Question Time. Use the Spectator screen list so
+          Spectator is not on Newly Weds. Use the Spectator screen list so
           the projector shows the question, scores, and clock.
         </SpectatorScreenNotice>
       )}
@@ -230,7 +230,7 @@ export function QuestionTimeHostPanel() {
                 onChange={(event) =>
                   patch((prev) => ({ ...prev, title: event.target.value }))
                 }
-                placeholder="Question Time"
+                placeholder="Newly Weds"
                 className="h-10 w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
               />
             </section>
@@ -488,7 +488,7 @@ export function QuestionTimeHostPanel() {
       <ConfirmDialog
         open={confirmReset}
         onOpenChange={setConfirmReset}
-        title="Reset Question Time?"
+        title="Reset Newly Weds?"
         message="This clears the question, scores, and clock. Title, team names, and the timer length stay."
         confirmLabel="Reset"
         variant="danger"

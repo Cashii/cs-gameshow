@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PinGate } from "@/components/auth/PinGate";
 import { ChangelogItemIcons } from "@/components/operator/changelogIcons";
+import { ChangelogRichText } from "@/components/operator/ChangelogRichText";
 import { TooltipProvider } from "@/components/ui/Tooltip";
 import {
   parseChangelogMarkdown,
@@ -21,7 +22,10 @@ function ItemText({ item }: Readonly<{ item: ChangelogItem }>) {
       ) : null}
 
       {item.detail ? (
-        <span className="leading-5 text-neutral-400">{item.detail}</span>
+        <ChangelogRichText
+          text={item.detail}
+          className="leading-5 text-neutral-400"
+        />
       ) : null}
     </div>
   );

@@ -1,5 +1,25 @@
 # Updates
 
+## October 17, 2026
+
+1. **Live Drawer** — Clear draw history without deleting called numbers.
+1. **Live Drawer** — Build a **Queued Tokens** list: select numbers, press **Queue tokens**, then **Draw** the group you want. Tap a queued number twice to remove it (first tap turns it red). Use **Add** on a group to add more numbers.
+1. **Live Drawer** — **Add tokens** in Token Summary opens a form for new numbers. Optional notes can be added there, or edited and cleared later in a note form.
+1. **Live Drawer** — Filter the pool with **None** (no birthday/VIP mark). **Draw selected** and **Queue tokens** sit in Token Summary. New **Pink** token color.
+1. **Live Drawer** — Countdown, **Draw history**, and **Notes** sit in a right column you can collapse or expand. Countdown presets are **30s**, **45s**, **1m**, or custom.
+1. **Live Drawer** — On the **Called** tab, select numbers and **Return selected** to put them back in the pool.
+1. **Live Drawer** — All / None / Birthday / VIP filters in Token Summary show a clear outline when not selected.
+1. **Live Drawer** — Token Summary no longer has a delete × under each number. Select tokens, then use **Delete selected**.
+1. **Hostess** — Optional note when adding a token. View and edit notes in the pool list. Pink is available with the other colors.
+1. **Operator desk** — Beta games (Jeoparody, Dicktionary, Take It or Leave It) stay hidden until you choose **Show beta games** in Settings.
+1. **Dicktionary** — Pictionary is now called Dicktionary in the menus and on screen.
+1. **Derby Race** — Set race length (in seconds) in the Derby header. Default is still 20 seconds. The next race uses that length.
+1. **Word Up** — Wheel of Riches is now called Word Up in the menus and on screen.
+1. **Newly Weds** — Question Time is now called Newly Weds in the menus and on screen.
+1. **Price is Tight** — Price Guesser is now called Price is Tight in the menus and on screen.
+1. **O69 Club Poll** — Poll is now called O69 Club Poll and sits in Games under Newly Weds (moved out of Tools).
+1. **Operator desk** — Bold labels in Updates (like button names) show as bold text instead of raw ** markers.
+
 ## October 14, 2026
 
 1. **Layout** — Various layout updates to several game pages.

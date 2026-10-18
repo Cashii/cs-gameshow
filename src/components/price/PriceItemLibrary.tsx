@@ -73,7 +73,7 @@ export function PriceItemLibrary({
                   Saved items
                 </Dialog.Title>
                 <Dialog.Description className="mt-1 text-sm text-neutral-400">
-                  Photos and names saved here work in Price Guesser and Price
+                  Photos and names saved here work in Price is Tight and Price
                   Order. {pickHint}
                 </Dialog.Description>
               </div>

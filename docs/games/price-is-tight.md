@@ -1,4 +1,4 @@
-# Price Guesser
+# Price is Tight
 
 Live guessing game. The operator puts a product photo on the projector with a hidden price tag. The player guesses out loud; the operator reveals the real price.
 
@@ -6,8 +6,8 @@ There is no player phone board.
 
 ## Operator
 
-1. Select **Price Guesser** in the left nav.
-2. Put **Price Guesser** on the Spectator screen so the projector shows the item.
+1. Select **Price is Tight** in the left nav.
+2. Put **Price is Tight** on the Spectator screen so the projector shows the item.
 3. Upload a photo, optionally name the item, and enter the real price. A new photo starts behind a closed curtain.
 4. Beside the item name, switch **Curtain closed** / **Item showing** to part the curtain on the spectator screen. The photo and name appear together.
 5. Beside the price, switch **Price hidden** / **Price showing** after guesses.

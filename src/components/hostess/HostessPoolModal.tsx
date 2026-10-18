@@ -6,6 +6,7 @@ import { Cake, Star, X } from "lucide-react";
 import type { LiveDrawerToken } from "@/lib/live-drawer/types";
 import {
   LIVE_DRAWER_COLORS,
+  MAX_TOKEN_NOTE_LENGTH,
   getLiveDrawerColor,
   liveDrawerFillStyle,
   liveDrawerOutlineClass,
@@ -16,6 +17,7 @@ type HostessPoolModalProps = {
   onOpenChange: (open: boolean) => void;
   tokens: LiveDrawerToken[];
   onRemove: (tokenIds: string[]) => void;
+  onUpdateNote?: (tokenId: string, note: string | null) => void;
 };
 
 function sortTokens(tokens: LiveDrawerToken[]): LiveDrawerToken[] {
@@ -43,11 +45,16 @@ export function HostessPoolModal({
   onOpenChange,
   tokens,
   onRemove,
+  onUpdateNote,
 }: Readonly<HostessPoolModalProps>) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
   const sorted = useMemo(() => sortTokens(tokens), [tokens]);
   const selectedCount = selectedIds.size;
+  const selectedToken =
+    selectedCount === 1
+      ? tokens.find((token) => selectedIds.has(token.id)) ?? null
+      : null;
 
   useEffect(() => {
     const valid = new Set(tokens.map((t) => t.id));
@@ -118,7 +125,7 @@ export function HostessPoolModal({
                             : t.mark === "vip"
                               ? ", VIP"
                               : ""
-                        }`}
+                        }${t.note ? ` — ${t.note}` : ""}`}
                         className={`inline-flex items-center justify-center rounded-full font-bold tabular-nums leading-none outline-none transition-transform active:scale-95 ${tokenCircleClass(t.number)} ${
                           isSelected
                             ? "ring-4 ring-sky-400 ring-offset-2 ring-offset-neutral-950"
@@ -144,6 +151,11 @@ export function HostessPoolModal({
                           )}
                         </span>
                       ) : null}
+                      {t.note ? (
+                        <span className="pointer-events-none absolute -bottom-1 left-1/2 max-w-14 -translate-x-1/2 truncate rounded bg-neutral-950 px-1 text-[9px] text-sky-300">
+                          {t.note}
+                        </span>
+                      ) : null}
                     </li>
                   );
                 })}
@@ -153,21 +165,42 @@ export function HostessPoolModal({
 
           {selectedCount > 0 && (
             <div className="fixed inset-x-0 bottom-0 z-1002 bg-neutral-950/95 p-4">
-              <div className="mx-auto flex max-w-lg gap-3">
-                <button
-                  type="button"
-                  onClick={() => setSelectedIds(new Set())}
-                  className="flex-1 rounded-lg border border-neutral-700 py-3 font-semibold text-neutral-200"
-                >
-                  Clear ({selectedCount})
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRemove}
-                  className="flex-1 rounded-lg bg-red-600 py-3 font-semibold text-white"
-                >
-                  Remove {selectedCount}
-                </button>
+              <div className="mx-auto flex max-w-lg flex-col gap-2">
+                {selectedToken && onUpdateNote ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = window.prompt(
+                        `Note for ${selectedToken.number}`,
+                        selectedToken.note ?? "",
+                      );
+                      if (next == null) return;
+                      onUpdateNote(
+                        selectedToken.id,
+                        next.trim().slice(0, MAX_TOKEN_NOTE_LENGTH) || null,
+                      );
+                    }}
+                    className="w-full rounded-lg border border-sky-500/40 py-3 font-semibold text-sky-300"
+                  >
+                    {selectedToken.note ? "Edit note" : "Add note"}
+                  </button>
+                ) : null}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedIds(new Set())}
+                    className="flex-1 rounded-lg border border-neutral-700 py-3 font-semibold text-neutral-200"
+                  >
+                    Clear ({selectedCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemove}
+                    className="flex-1 rounded-lg bg-red-600 py-3 font-semibold text-white"
+                  >
+                    Remove {selectedCount}
+                  </button>
+                </div>
               </div>
             </div>
           )}

@@ -16,7 +16,7 @@ See **[docs/README.md](docs/README.md)** for full documentation.
 ## Games
 
 - **Friendly Feud** — survey board with reveals, strikes, and scoring
-- **Wheel of Riches** — letter board phrase reveal
+- **Word Up** — letter board phrase reveal
 - **Live Drawer** — colored token pool with multi-number draws
 - **Take It or Leave It** — 9 cases, banker offers, take it or leave it
 

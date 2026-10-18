@@ -12,17 +12,27 @@ export function normalizeTokenMark(value: unknown): TokenMark | null {
   return value === "birthday" || value === "vip" ? value : null;
 }
 
+export const MAX_TOKEN_NOTE_LENGTH = 120;
+
+export function normalizeTokenNote(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim().slice(0, MAX_TOKEN_NOTE_LENGTH);
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 export type LiveDrawerToken = {
   id: string;
   number: string;
   colorId: string;
   mark: TokenMark | null;
+  note: string | null;
 };
 
 export type LiveDrawerSavedToken = {
   number: string;
   colorId: string;
   mark: TokenMark | null;
+  note: string | null;
 };
 
 /** One draw, newest first in history. */
@@ -41,19 +51,85 @@ export type LiveDrawerTimerState = {
   timerEndsAt: number | null;
 };
 
+/** One call group in Up next — all tokens are drawn together. */
+export type LiveDrawerQueueGroup = {
+  id: string;
+  tokenIds: string[];
+};
+
 export type LiveDrawerGameState = LiveDrawerTimerState & {
   revealedTokens: LiveDrawerToken[];
+  /** Ordered call groups prepared to draw next. */
+  queueGroups: LiveDrawerQueueGroup[];
   sequence: number;
   /** Scale relative to the default audience text size (1 = current default). */
   numberScale: number;
 };
+
+export function normalizeLiveDrawerQueueGroups(raw: unknown): LiveDrawerQueueGroup[] {
+  if (Array.isArray(raw) && raw.length > 0) {
+    if (typeof raw[0] === "string") {
+      return (raw as string[])
+        .filter((id) => typeof id === "string" && id.length > 0)
+        .map((tokenId, index) => ({
+          id: `legacy-${index}-${tokenId}`,
+          tokenIds: [tokenId],
+        }));
+    }
+    const groups: LiveDrawerQueueGroup[] = [];
+    for (const entry of raw) {
+      if (!entry || typeof entry !== "object") continue;
+      const record = entry as { id?: unknown; tokenIds?: unknown };
+      const tokenIds = Array.isArray(record.tokenIds)
+        ? record.tokenIds.filter(
+            (id): id is string => typeof id === "string" && id.length > 0,
+          )
+        : [];
+      if (tokenIds.length === 0) continue;
+      groups.push({
+        id:
+          typeof record.id === "string" && record.id.length > 0
+            ? record.id
+            : `group-${groups.length}-${tokenIds[0]}`,
+        tokenIds,
+      });
+    }
+    return groups;
+  }
+  return [];
+}
+
+export function pruneQueueGroups(
+  groups: LiveDrawerQueueGroup[],
+  poolIds: Set<string>,
+): LiveDrawerQueueGroup[] {
+  return groups
+    .map((group) => ({
+      ...group,
+      tokenIds: group.tokenIds.filter((id) => poolIds.has(id)),
+    }))
+    .filter((group) => group.tokenIds.length > 0);
+}
+
+export function removeTokenIdsFromQueueGroups(
+  groups: LiveDrawerQueueGroup[],
+  removeIds: ReadonlySet<string> | readonly string[],
+): LiveDrawerQueueGroup[] {
+  const remove = removeIds instanceof Set ? removeIds : new Set(removeIds);
+  return groups
+    .map((group) => ({
+      ...group,
+      tokenIds: group.tokenIds.filter((id) => !remove.has(id)),
+    }))
+    .filter((group) => group.tokenIds.length > 0);
+}
 
 export const DEFAULT_LIVE_DRAWER_NUMBER_SCALE = 1;
 export const MIN_LIVE_DRAWER_NUMBER_SCALE = 0.5;
 export const MAX_LIVE_DRAWER_NUMBER_SCALE = 1.75;
 
 export const LIVE_DRAWER_DURATION_PRESETS_MS = [
-  10_000, 15_000, 20_000, 30_000, 45_000, 60_000, 90_000, 120_000,
+  30_000, 45_000, 60_000,
 ] as const;
 
 export const DEFAULT_LIVE_DRAWER_DURATION_MS = 30_000;
@@ -70,6 +146,7 @@ export const LIVE_DRAWER_COLORS: LiveDrawerColor[] = [
   { id: "yellow", name: "Yellow", hex: "#ffd000", ink: INK_DARK },
   { id: "orange", name: "Orange", hex: "#ea580c", ink: INK_LIGHT },
   { id: "purple", name: "Purple", hex: "#9333ea", ink: INK_LIGHT },
+  { id: "pink", name: "Pink", hex: "#ec4899", ink: INK_LIGHT },
   { id: "black", name: "Black", hex: "#111111", ink: INK_LIGHT },
   { id: "white", name: "White", hex: "#f8fafc", ink: INK_DARK },
 ];
@@ -77,6 +154,7 @@ export const LIVE_DRAWER_COLORS: LiveDrawerColor[] = [
 export function createDefaultLiveDrawerState(): LiveDrawerGameState {
   return {
     revealedTokens: [],
+    queueGroups: [],
     sequence: 0,
     numberScale: DEFAULT_LIVE_DRAWER_NUMBER_SCALE,
     timerEnabled: false,

@@ -6,6 +6,7 @@ import {
 } from "@/lib/event/repository";
 import {
   normalizeTokenMark,
+  normalizeTokenNote,
   type LiveDrawerSavedToken,
   type TokenMark,
 } from "@/lib/live-drawer/types";
@@ -19,13 +20,19 @@ export async function POST(request: Request) {
 
   try {
     const body = (await request.json()) as {
-      tokens?: { number: string; colorId: string; mark?: unknown }[];
+      tokens?: {
+        number: string;
+        colorId: string;
+        mark?: unknown;
+        note?: unknown;
+      }[];
     };
     if (!body.tokens?.length) return error("tokens array required");
     const tokens: {
       number: string;
       colorId: string;
       mark: TokenMark | null;
+      note: string | null;
     }[] = [];
     for (const token of body.tokens) {
       if (token.mark != null && normalizeTokenMark(token.mark) == null) {
@@ -35,6 +42,7 @@ export async function POST(request: Request) {
         number: token.number,
         colorId: token.colorId,
         mark: normalizeTokenMark(token.mark),
+        note: normalizeTokenNote(token.note),
       });
     }
     const result = await addTokens(tokens);

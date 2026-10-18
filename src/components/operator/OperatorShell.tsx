@@ -6,6 +6,8 @@ import {
   CircleDollarSign,
   Coins,
   Download,
+  Eye,
+  EyeOff,
   Flag,
   Home,
   KeyRound,
@@ -67,7 +69,12 @@ import { PinGate } from "@/components/auth/PinGate";
 import { useStudioTheme } from "@/components/studio/StudioTheme";
 import { GameshowLogo } from "@/components/studio/GameshowLogo";
 import { ChangelogItemIcons } from "@/components/operator/changelogIcons";
+import { ChangelogRichText } from "@/components/operator/ChangelogRichText";
 import { parseChangelogMarkdown } from "@/lib/changelog";
+import {
+  readShowBetaGames,
+  writeShowBetaGames,
+} from "@/lib/operator-prefs";
 
 const NAV_TOP: ActiveGame[] = ["idle"];
 const NAV_GAMES: ActiveGame[] = [
@@ -79,12 +86,17 @@ const NAV_GAMES: ActiveGame[] = [
   "priceOrder",
   "priceWheel",
   "questionTime",
+  "poll",
   "pictionary",
   "takeIt",
   "jeoparody",
 ];
-const NAV_TOOLS: ActiveGame[] = ["liveDrawer", "poll", "messageBoard"];
-const BETA_GAMES: ReadonlySet<ActiveGame> = new Set(["jeoparody"]);
+const NAV_TOOLS: ActiveGame[] = ["liveDrawer", "messageBoard"];
+const BETA_GAMES: ReadonlySet<ActiveGame> = new Set([
+  "jeoparody",
+  "pictionary",
+  "takeIt",
+]);
 
 const GAME_ICONS: Record<ActiveGame, LucideIcon> = {
   idle: Home,
@@ -248,12 +260,35 @@ function OperatorContent({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showPinSettings, setShowPinSettings] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showBetaGames, setShowBetaGames] = useState(false);
   const loadInputRef = useRef<HTMLInputElement>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
   const spectatorGame = state.spectatorGame ?? state.activeGame;
   const pollLive = state.poll.status === "open";
   const triviaLive = state.trivia.status === "open";
   const latestUpdate = parseChangelogMarkdown(changelogMarkdown).sections[0];
+  const visibleGames = showBetaGames
+    ? NAV_GAMES
+    : NAV_GAMES.filter((game) => !BETA_GAMES.has(game));
+  const visibleSpectatorScreens = showBetaGames
+    ? SPECTATOR_SCREENS
+    : SPECTATOR_SCREENS.filter((screen) => !BETA_GAMES.has(screen));
+
+  useEffect(() => {
+    setShowBetaGames(readShowBetaGames());
+  }, []);
+
+  useEffect(() => {
+    if (showBetaGames) return;
+    if (BETA_GAMES.has(state.activeGame)) setActiveGame("idle");
+    if (BETA_GAMES.has(spectatorGame)) setSpectatorGame("idle");
+  }, [
+    showBetaGames,
+    state.activeGame,
+    spectatorGame,
+    setActiveGame,
+    setSpectatorGame,
+  ]);
 
   useEffect(() => {
     if (!settingsOpen) return;
@@ -265,6 +300,15 @@ function OperatorContent({
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [settingsOpen]);
+
+  const setBetaGamesVisible = (show: boolean) => {
+    writeShowBetaGames(show);
+    setShowBetaGames(show);
+    if (!show) {
+      if (BETA_GAMES.has(state.activeGame)) setActiveGame("idle");
+      if (BETA_GAMES.has(spectatorGame)) setSpectatorGame("idle");
+    }
+  };
 
   const openSpectator = () => {
     window.open(
@@ -377,7 +421,7 @@ function OperatorContent({
           ))}
           {(
             [
-              ["Games", NAV_GAMES],
+              ["Games", visibleGames],
               ["Tools", NAV_TOOLS],
             ] as const
           ).map(([label, items]) => (
@@ -484,6 +528,21 @@ function OperatorContent({
                     <Moon size={16} className="shrink-0" />
                   )}
                   {theme === "dark" ? "Light mode" : "Dark mode"}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setBetaGamesVisible(!showBetaGames);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-neutral-100 hover:bg-neutral-800"
+                >
+                  {showBetaGames ? (
+                    <EyeOff size={16} className="shrink-0" />
+                  ) : (
+                    <Eye size={16} className="shrink-0" />
+                  )}
+                  {showBetaGames ? "Hide beta games" : "Show beta games"}
                 </button>
                 <button
                   type="button"
@@ -639,7 +698,9 @@ function OperatorContent({
                               <ChangelogItemIcons item={item} />
                             </div>
                             {item.detail ? (
-                              <p className="mt-0.5 leading-5">{item.detail}</p>
+                              <p className="mt-0.5 leading-5">
+                                <ChangelogRichText text={item.detail} />
+                              </p>
                             ) : null}
                           </li>
                         ))}
@@ -682,7 +743,7 @@ function OperatorContent({
           </h2>
         </div>
         <nav className="flex flex-1 flex-col gap-0.5 overflow-auto p-2">
-          {SPECTATOR_SCREENS.map((screen) => (
+          {visibleSpectatorScreens.map((screen) => (
             <SpectatorNavItem
               key={screen}
               screen={screen}

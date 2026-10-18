@@ -5,6 +5,7 @@ import { publishSnapshot } from "@/lib/event/pubsub"; // live event fan-out
 import { sampleDrawTokens, normalizeTokenNumber } from "@/lib/live-drawer/draw";
 import {
   normalizeTokenMark,
+  normalizeTokenNote,
   type LiveDrawerDraw,
   type LiveDrawerSavedToken,
   type LiveDrawerToken,
@@ -41,6 +42,7 @@ export type TokenDoc = {
   number: string;
   colorId: string;
   mark?: TokenMark | null;
+  note?: string | null;
   status: "pool" | "drawn";
   drawBatchId: string | null;
   createdAt: Date;
@@ -348,6 +350,7 @@ function tokenDocToClient(doc: TokenDoc): LiveDrawerToken {
     number: doc.number,
     colorId: doc.colorId,
     mark: normalizeTokenMark(doc.mark),
+    note: normalizeTokenNote(doc.note),
   };
 }
 
@@ -451,7 +454,12 @@ export async function updatePins(pins: {
 }
 
 export async function addTokens(
-  entries: { number: string; colorId: string; mark?: TokenMark | null }[],
+  entries: {
+    number: string;
+    colorId: string;
+    mark?: TokenMark | null;
+    note?: string | null;
+  }[],
 ): Promise<{ added: number; skipped: number; restored: number; marked: number }> {
   const db = await getDb();
   const col = await tokensCol(db);
@@ -463,6 +471,7 @@ export async function addTokens(
     const number = normalizeTokenNumber(entry.number);
     if (!number) continue;
     const mark = normalizeTokenMark(entry.mark);
+    const note = normalizeTokenNote(entry.note);
     const existing = await col.findOne({
       eventId: EVENT_ID,
       number,
@@ -473,17 +482,28 @@ export async function addTokens(
         status: "pool";
         drawBatchId: null;
         mark?: TokenMark;
+        note?: string | null;
       } = { status: "pool", drawBatchId: null };
       if (mark && normalizeTokenMark(existing.mark) !== mark) {
         update.mark = mark;
+      }
+      if (note !== null && normalizeTokenNote(existing.note) !== note) {
+        update.note = note;
       }
       await col.updateOne({ _id: existing._id }, { $set: update });
       restored++;
       continue;
     }
     if (existing) {
+      const patch: { mark?: TokenMark | null; note?: string | null } = {};
       if (mark && normalizeTokenMark(existing.mark) !== mark) {
-        await col.updateOne({ _id: existing._id }, { $set: { mark } });
+        patch.mark = mark;
+      }
+      if (note !== null && normalizeTokenNote(existing.note) !== note) {
+        patch.note = note;
+      }
+      if (Object.keys(patch).length > 0) {
+        await col.updateOne({ _id: existing._id }, { $set: patch });
         marked++;
       } else {
         skipped++;
@@ -497,6 +517,7 @@ export async function addTokens(
         number,
         colorId: entry.colorId,
         mark,
+        note,
         status: "pool",
         drawBatchId: null,
         createdAt: new Date(),
@@ -519,16 +540,20 @@ export async function addTokens(
   return { added, skipped, restored, marked };
 }
 
-export async function setTokenMark(
+export async function updateTokenFields(
   tokenId: string,
-  mark: TokenMark | null,
+  fields: { mark?: TokenMark | null; note?: string | null },
 ): Promise<EventSnapshot> {
   if (!isHexObjectId(tokenId)) throw new Error("Unknown token");
+  const $set: { mark?: TokenMark | null; note?: string | null } = {};
+  if ("mark" in fields) $set.mark = normalizeTokenMark(fields.mark);
+  if ("note" in fields) $set.note = normalizeTokenNote(fields.note);
+  if (Object.keys($set).length === 0) throw new Error("Nothing to update");
   const db = await getDb();
   const result = await tokensCol(db).then((c) =>
     c.updateOne(
       { _id: new ObjectId(tokenId), eventId: EVENT_ID },
-      { $set: { mark } },
+      { $set },
     ),
   );
   if (result.matchedCount === 0) throw new Error("Unknown token");
@@ -537,10 +562,23 @@ export async function setTokenMark(
     liveDrawer: {
       ...prev.liveDrawer,
       revealedTokens: prev.liveDrawer.revealedTokens.map((token) =>
-        token.id === tokenId ? { ...token, mark } : token,
+        token.id === tokenId
+          ? {
+              ...token,
+              ...("mark" in $set ? { mark: $set.mark ?? null } : {}),
+              ...("note" in $set ? { note: $set.note ?? null } : {}),
+            }
+          : token,
       ),
     },
   }));
+}
+
+export async function setTokenMark(
+  tokenId: string,
+  mark: TokenMark | null,
+): Promise<EventSnapshot> {
+  return updateTokenFields(tokenId, { mark });
 }
 
 export async function replacePoolWithSaved(
@@ -556,6 +594,7 @@ export async function replacePoolWithSaved(
       number,
       colorId: entry.colorId,
       mark: normalizeTokenMark(entry.mark),
+      note: normalizeTokenNote(entry.note),
     });
   }
 
@@ -577,8 +616,11 @@ export async function replacePoolWithSaved(
     if (doc.status !== "pool") continue;
     const next = wanted.get(`${doc.number}:${doc.colorId}`);
     if (!next) continue;
-    if (normalizeTokenMark(doc.mark) !== next.mark) {
-      await col.updateOne({ _id: doc._id }, { $set: { mark: next.mark } });
+    const patch: { mark?: TokenMark | null; note?: string | null } = {};
+    if (normalizeTokenMark(doc.mark) !== next.mark) patch.mark = next.mark;
+    if (normalizeTokenNote(doc.note) !== next.note) patch.note = next.note;
+    if (Object.keys(patch).length > 0) {
+      await col.updateOne({ _id: doc._id }, { $set: patch });
     }
   }
 
@@ -590,6 +632,7 @@ export async function replacePoolWithSaved(
       number: entry.number,
       colorId: entry.colorId,
       mark: entry.mark,
+      note: entry.note,
       status: "pool",
       drawBatchId: null,
       createdAt: new Date(),
@@ -658,6 +701,13 @@ export async function clearCalled(): Promise<EventSnapshot> {
         : prev.liveDrawer.sequence,
     },
   }));
+}
+
+/** Clears draw history rows without changing called token status. */
+export async function clearDrawHistory(): Promise<EventSnapshot> {
+  const db = await getDb();
+  await drawBatchesCol(db).then((c) => c.deleteMany({ eventId: EVENT_ID }));
+  return bumpAndPublish(true);
 }
 
 function isHexObjectId(value: string): boolean {

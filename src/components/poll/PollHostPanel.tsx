@@ -278,7 +278,7 @@ export function PollHostPanel() {
 
       {!spectatorLive && (
         <SpectatorScreenNotice>
-          Spectator is not on Poll. Use the Spectator screen list so the
+          Spectator is not on O69 Club Poll. Use the Spectator screen list so the
           projector shows the poll.
         </SpectatorScreenNotice>
       )}

@@ -99,7 +99,7 @@ export function DerbyHostPanel() {
       phase: "racing",
       raceId: prev.raceId || newRaceId(),
       startedAt: Date.now(),
-      durationMs: DERBY_DURATION_MS,
+      durationMs: prev.durationMs > 0 ? prev.durationMs : DERBY_DURATION_MS,
       seed: Math.floor(Math.random() * 0x7fffffff),
       sequence: prev.sequence + 1,
     }));

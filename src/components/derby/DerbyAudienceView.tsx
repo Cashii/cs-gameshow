@@ -4,6 +4,7 @@ import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "
 import {
   clampDerbyRacerScale,
   createDefaultDerbyState,
+  DERBY_DURATION_MS,
   DERBY_RACER_IDS,
   getDerbyRacer,
   getDerbyRacers,
@@ -93,7 +94,7 @@ export function DerbyAudienceView({
     let workerUrl: string | null = null;
     let lastApplied = 0;
 
-    const duration = game.durationMs > 0 ? game.durationMs : 20_000;
+    const duration = game.durationMs > 0 ? game.durationMs : DERBY_DURATION_MS;
     const startedAt = game.startedAt;
 
     const applyClock = () => {
