@@ -184,6 +184,7 @@ export function PriceOrderHostPanel() {
 
   const liveImageUrls = () => [
     state.priceGuesser?.imageUrl ?? "",
+    ...(state.priceGuesser?.queue ?? []).map((item) => item.imageUrl),
     ...(state.priceOrder?.items ?? []).map((item) => item.imageUrl),
   ];
 

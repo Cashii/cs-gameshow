@@ -2,6 +2,9 @@
 
 ## October 19, 2026
 
+1. **Price is Tight** — Queue upcoming items from the item bank (**Queue**) or the current desk (**Queue current**). Reorder or remove them in **Upcoming items**, then press **Next item** to load the first one onto the desk with the curtain closed.
+1. **Price is Tight** — Upcoming items sit in a top-to-bottom list. Use the large up/down arrows to reorder (touch-friendly). The top item is marked **Plays next**.
+1. **Elimination Trivia** — Upcoming questions use the same large up/down arrows to reorder. The top question is marked **Plays next**.
 1. **Price Wheel** — Big screen scoreboard uses the same show-stage look as Price is Tight and Price Order (gold frames, cream names, gold scores).
 1. **Price Wheel** — Add points with **+5** / **+10** / **+25** / **+50** / **+100**, or type a custom amount and **Add** / **Subtract**. The score field still lets you set the total directly.
 

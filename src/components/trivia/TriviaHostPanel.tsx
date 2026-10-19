@@ -24,7 +24,8 @@ import {
   SpectatorScreenNotice,
 } from "@/components/operator/OperatorNotice";
 import { uid } from "@/lib/utils";
-import { ChevronDown, ChevronUp, FolderOpen, Plus, Trash2 } from "lucide-react";
+import { FolderOpen, Plus, Trash2 } from "lucide-react";
+import { QueueMoveControls } from "@/components/ui/QueueMoveControls";
 
 function triviaStatusLabel(
   status: TriviaStatus,
@@ -629,130 +630,133 @@ export function TriviaHostPanel() {
               </p>
             ) : (
               <div className="space-y-3">
+                <p className="text-sm text-neutral-500">
+                  Use the arrows to reorder. Top question plays next.
+                </p>
                 {queue.map((item, index) => (
                   <article
                     key={item.id}
-                    className="rounded-lg border border-neutral-700 bg-neutral-800 p-3"
+                    className="flex items-start gap-3 rounded-xl border border-neutral-700 bg-neutral-800 p-3"
                   >
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <span className="text-xs font-semibold text-neutral-500">
-                        Queued #{index + 1}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          disabled={loading || index === 0}
-                          onClick={() => {
-                            const next = [...queue];
-                            const tmp = next[index - 1];
-                            next[index - 1] = next[index];
-                            next[index] = tmp;
-                            saveQueue(next);
-                          }}
-                          className="rounded-md p-1 text-neutral-400 hover:bg-neutral-800 disabled:opacity-30"
-                          aria-label="Move up"
-                        >
-                          <ChevronUp size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={loading || index === queue.length - 1}
-                          onClick={() => {
-                            const next = [...queue];
-                            const tmp = next[index + 1];
-                            next[index + 1] = next[index];
-                            next[index] = tmp;
-                            saveQueue(next);
-                          }}
-                          className="rounded-md p-1 text-neutral-400 hover:bg-neutral-800 disabled:opacity-30"
-                          aria-label="Move down"
-                        >
-                          <ChevronDown size={16} />
-                        </button>
+                    <QueueMoveControls
+                      canMoveUp={index > 0}
+                      canMoveDown={index < queue.length - 1}
+                      disabled={loading}
+                      label="question"
+                      onMoveUp={() => {
+                        const next = [...queue];
+                        const tmp = next[index - 1];
+                        next[index - 1] = next[index];
+                        next[index] = tmp;
+                        saveQueue(next);
+                      }}
+                      onMoveDown={() => {
+                        const next = [...queue];
+                        const tmp = next[index + 1];
+                        next[index + 1] = next[index];
+                        next[index] = tmp;
+                        saveQueue(next);
+                      }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-bold text-neutral-400">
+                            {index + 1}
+                          </span>
+                          <span className="text-xs font-semibold text-neutral-500">
+                            Queued #{index + 1}
+                          </span>
+                          {index === 0 ? (
+                            <span className="text-xs font-semibold text-sky-400">
+                              Plays next
+                            </span>
+                          ) : null}
+                        </div>
                         <button
                           type="button"
                           disabled={loading}
                           onClick={() =>
                             saveQueue(queue.filter((entry) => entry.id !== item.id))
                           }
-                          className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-red-300 disabled:opacity-40"
+                          className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-neutral-600 bg-neutral-900 text-neutral-300 hover:border-red-500 hover:text-red-300 disabled:opacity-40"
                           aria-label="Remove from queue"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={22} />
                         </button>
                       </div>
-                    </div>
-                    <input
-                      value={item.question}
-                      onChange={(e) => {
-                        setQueueDraft((prev) =>
-                          prev.map((entry) =>
-                            entry.id === item.id
-                              ? { ...entry, question: e.target.value }
-                              : entry,
-                          ),
-                        );
-                      }}
-                      onBlur={persistQueueDraft}
-                      placeholder="Queued question"
-                      className="mb-2 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
-                    />
-                    <div className="space-y-2">
-                      {(item.options?.length
-                        ? item.options
-                        : [item.optionA, item.optionB]
-                      ).map((option, optionIndex) => (
-                        <div key={`${item.id}-${optionIndex}`} className="flex gap-2">
-                          <input
-                            value={option}
-                            onChange={(e) => {
-                              updateQueuedOptions(item.id, (current) =>
-                                current.map((entry, i) =>
-                                  i === optionIndex ? e.target.value : entry,
-                                ),
-                              );
-                            }}
-                            onBlur={persistQueueDraft}
-                            placeholder={`Answer ${triviaChoiceLetter(
-                              triviaChoiceIdAt(optionIndex) ?? "a",
-                            )}`}
-                            className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
-                          />
-                          {(item.options?.length ?? 2) > MIN_TRIVIA_OPTIONS ? (
-                            <button
-                              type="button"
-                              disabled={loading}
-                              onClick={() => {
+                      <input
+                        value={item.question}
+                        onChange={(e) => {
+                          setQueueDraft((prev) =>
+                            prev.map((entry) =>
+                              entry.id === item.id
+                                ? { ...entry, question: e.target.value }
+                                : entry,
+                            ),
+                          );
+                        }}
+                        onBlur={persistQueueDraft}
+                        placeholder="Queued question"
+                        className="mb-2 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
+                      />
+                      <div className="space-y-2">
+                        {(item.options?.length
+                          ? item.options
+                          : [item.optionA, item.optionB]
+                        ).map((option, optionIndex) => (
+                          <div key={`${item.id}-${optionIndex}`} className="flex gap-2">
+                            <input
+                              value={option}
+                              onChange={(e) => {
                                 updateQueuedOptions(item.id, (current) =>
-                                  current.filter((_, i) => i !== optionIndex),
+                                  current.map((entry, i) =>
+                                    i === optionIndex ? e.target.value : entry,
+                                  ),
                                 );
-                                persistQueueDraft();
                               }}
-                              className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-red-300 disabled:opacity-40"
-                              aria-label="Remove queued answer"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          ) : null}
-                        </div>
-                      ))}
-                      {(item.options?.length ?? 2) < MAX_TRIVIA_OPTIONS ? (
-                        <button
-                          type="button"
-                          disabled={loading}
-                          onClick={() => {
-                            updateQueuedOptions(item.id, (current) => [
-                              ...current,
-                              `Answer ${current.length + 1}`,
-                            ]);
-                            persistQueueDraft();
-                          }}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-teal-400 hover:text-teal-300 disabled:opacity-40"
-                        >
-                          <Plus size={12} />
-                          Add answer
-                        </button>
-                      ) : null}
+                              onBlur={persistQueueDraft}
+                              placeholder={`Answer ${triviaChoiceLetter(
+                                triviaChoiceIdAt(optionIndex) ?? "a",
+                              )}`}
+                              className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
+                            />
+                            {(item.options?.length ?? 2) > MIN_TRIVIA_OPTIONS ? (
+                              <button
+                                type="button"
+                                disabled={loading}
+                                onClick={() => {
+                                  updateQueuedOptions(item.id, (current) =>
+                                    current.filter((_, i) => i !== optionIndex),
+                                  );
+                                  persistQueueDraft();
+                                }}
+                                className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-red-300 disabled:opacity-40"
+                                aria-label="Remove queued answer"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            ) : null}
+                          </div>
+                        ))}
+                        {(item.options?.length ?? 2) < MAX_TRIVIA_OPTIONS ? (
+                          <button
+                            type="button"
+                            disabled={loading}
+                            onClick={() => {
+                              updateQueuedOptions(item.id, (current) => [
+                                ...current,
+                                `Answer ${current.length + 1}`,
+                              ]);
+                              persistQueueDraft();
+                            }}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-teal-400 hover:text-teal-300 disabled:opacity-40"
+                          >
+                            <Plus size={12} />
+                            Add answer
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                   </article>
                 ))}

@@ -19,6 +19,7 @@ export function PriceItemLibrary({
   onSave,
   onLoad,
   onDelete,
+  onQueue,
   openRequest = 0,
   closeOnLoad = false,
 }: {
@@ -30,6 +31,8 @@ export function PriceItemLibrary({
   onSave: () => void | Promise<void>;
   onLoad: (id: string) => void | Promise<void>;
   onDelete: (id: string) => void | Promise<void>;
+  /** When set, each saved item also gets Add to upcoming. */
+  onQueue?: (id: string) => void | Promise<void>;
   openRequest?: number;
   closeOnLoad?: boolean;
 }) {
@@ -144,14 +147,29 @@ export function PriceItemLibrary({
                           {formatPrice(item.price)}
                         </span>
                       </button>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => setPendingDeleteId(item.id)}
-                        className="absolute top-3 right-3 rounded-md bg-neutral-950/80 px-2 py-1 text-xs font-semibold text-neutral-200 hover:text-red-300 disabled:opacity-40"
-                      >
-                        Delete
-                      </button>
+                      <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
+                        {onQueue ? (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void run(() => onQueue(item.id));
+                            }}
+                            className="rounded-md bg-teal-700/90 px-2 py-1 text-xs font-semibold text-white hover:bg-teal-600 disabled:opacity-40"
+                          >
+                            Queue
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => setPendingDeleteId(item.id)}
+                          className="rounded-md bg-neutral-950/80 px-2 py-1 text-xs font-semibold text-neutral-200 hover:text-red-300 disabled:opacity-40"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </li>
                   );
                 })}

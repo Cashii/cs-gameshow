@@ -1,13 +1,17 @@
 "use client";
 
-import { FolderOpen, RotateCcw } from "lucide-react";
+import { FolderOpen, RotateCcw, SkipForward, Trash2 } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import {
+  advancePriceGuesserFromQueue,
   createDefaultPriceGuesserState,
+  createPriceGuesserQueuedItem,
+  priceGuesserImageUrls,
+  type PriceGuesserQueuedItem,
   type PriceGuesserResult,
   type PriceGuesserState,
 } from "@/lib/price-guesser/types";
-import { parsePriceInput, priceInputValue } from "@/lib/price/format";
+import { formatPrice, parsePriceInput, priceInputValue } from "@/lib/price/format";
 import { copyMediaUrl, deleteMediaByUrl } from "@/lib/media/upload";
 import { PriceItemLibrary } from "@/components/price/PriceItemLibrary";
 import {
@@ -18,9 +22,10 @@ import {
 } from "@/lib/price/catalog";
 import { uid } from "@/lib/utils";
 import { SquarePhotoEditor } from "@/components/price/SquarePhotoEditor";
-import { DEFAULT_PHOTO_FIT } from "@/lib/price/photo-fit";
+import { DEFAULT_PHOTO_FIT, photoFitStyle } from "@/lib/price/photo-fit";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { QueueMoveControls } from "@/components/ui/QueueMoveControls";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { StatusSwitch } from "@/components/operator/StatusSwitch";
 import { useEffect, useState } from "react";
@@ -29,6 +34,7 @@ export function PriceGuesserHostPanel() {
   const { state, updatePriceGuesser, updatePriceCatalog } = useSuite();
   const game = state.priceGuesser ?? createDefaultPriceGuesserState();
   const catalog = state.priceCatalog ?? [];
+  const queue = game.queue ?? [];
   const { toastMessage, showToast } = useToast();
   const spectatorLive = state.spectatorGame === "priceGuesser";
   const [confirmReset, setConfirmReset] = useState(false);
@@ -43,24 +49,125 @@ export function PriceGuesserHostPanel() {
     updatePriceGuesser(updater);
   };
 
-  const reset = () => {
-    const savedUrls = new Set(
-      catalog.map((entry) => entry.imageUrl).filter(Boolean),
-    );
-    if (game.imageUrl && !savedUrls.has(game.imageUrl)) {
-      void deleteMediaByUrl(game.imageUrl);
-    }
-    patch(() => createDefaultPriceGuesserState());
-  };
+  const savedUrls = () =>
+    new Set(catalog.map((entry) => entry.imageUrl).filter(Boolean));
+
+  const orderImageUrls = () =>
+    (state.priceOrder?.items ?? []).map((item) => item.imageUrl);
 
   const liveImageUrls = () => [
-    state.priceGuesser?.imageUrl ?? "",
-    ...(state.priceOrder?.items ?? []).map((item) => item.imageUrl),
+    ...priceGuesserImageUrls(state.priceGuesser),
+    ...orderImageUrls(),
   ];
+
+  const clearDesk = () => {
+    const url = game.imageUrl;
+    patch((prev) => ({
+      ...createDefaultPriceGuesserState(),
+      queue: prev.queue ?? [],
+    }));
+    if (
+      url &&
+      !priceImageStillUsed(url, catalog, "", [
+        ...queue.map((item) => item.imageUrl),
+        ...orderImageUrls(),
+      ])
+    ) {
+      void deleteMediaByUrl(url);
+    }
+  };
+
+  const setQueue = (
+    nextQueue: PriceGuesserState["queue"],
+    removedUrls: string[] = [],
+  ) => {
+    const deskUrl = game.imageUrl;
+    patch((prev) => ({ ...prev, queue: nextQueue }));
+    for (const url of removedUrls) {
+      if (
+        !url ||
+        priceImageStillUsed(url, catalog, "", [
+          deskUrl,
+          ...nextQueue.map((item) => item.imageUrl),
+          ...orderImageUrls(),
+        ])
+      ) {
+        continue;
+      }
+      void deleteMediaByUrl(url);
+    }
+  };
+
+  const moveQueueItem = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= queue.length) return;
+    const next = [...queue];
+    const tmp = next[index];
+    next[index] = next[target];
+    next[target] = tmp;
+    setQueue(next);
+  };
+
+  const queueFromCatalog = async (id: string) => {
+    const entry = catalog.find((item) => item.id === id);
+    if (!entry) return;
+    const imageUrl = entry.imageUrl ? await copyMediaUrl(entry.imageUrl) : "";
+    patch((prev) => ({
+      ...prev,
+      queue: [
+        ...(prev.queue ?? []),
+        createPriceGuesserQueuedItem({
+          imageUrl,
+          label: entry.label,
+          price: entry.price,
+          photoFit: entry.photoFit,
+        }),
+      ],
+    }));
+    showToast("Added to upcoming");
+  };
+
+  const queueCurrentDesk = async () => {
+    if (!game.imageUrl && !game.label.trim() && game.price == null) return;
+    const imageUrl = game.imageUrl ? await copyMediaUrl(game.imageUrl) : "";
+    patch((prev) => ({
+      ...prev,
+      queue: [
+        ...(prev.queue ?? []),
+        createPriceGuesserQueuedItem({
+          imageUrl,
+          label: prev.label,
+          price: prev.price,
+          photoFit: prev.photoFit,
+        }),
+      ],
+    }));
+    showToast("Current item added to upcoming");
+  };
+
+  const loadNextFromQueue = () => {
+    const previousUrl = game.imageUrl;
+    const advanced = advancePriceGuesserFromQueue(game);
+    if (!advanced) return;
+    patch(() => advanced);
+    if (
+      previousUrl &&
+      previousUrl !== advanced.imageUrl &&
+      !priceImageStillUsed(previousUrl, catalog, "", [
+        ...priceGuesserImageUrls(advanced),
+        ...orderImageUrls(),
+      ])
+    ) {
+      void deleteMediaByUrl(previousUrl);
+    }
+    showToast("Next item loaded");
+  };
 
   const itemShowing = game.itemRevealed !== false;
   const priceShowing = Boolean(game.priceRevealed);
   const hasItem = Boolean(game.imageUrl);
+  const canQueueCurrent =
+    Boolean(game.imageUrl) || Boolean(game.label.trim()) || game.price != null;
 
   const toggleResult = (kind: PriceGuesserResult) => {
     patch((prev) => ({
@@ -102,6 +209,16 @@ export function PriceGuesserHostPanel() {
           </button>
           <button
             type="button"
+            disabled={queue.length === 0}
+            onClick={loadNextFromQueue}
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-amber-500 bg-amber-600 px-4 text-sm font-semibold text-white hover:bg-amber-500 disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500"
+          >
+            <SkipForward size={16} />
+            Next item
+            {queue.length > 0 ? ` (${queue.length})` : ""}
+          </button>
+          <button
+            type="button"
             onClick={() => setConfirmReset(true)}
             className="inline-flex h-10 items-center gap-2 rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
           >
@@ -117,7 +234,7 @@ export function PriceGuesserHostPanel() {
               saveDisabled={
                 !game.imageUrl && !game.label.trim() && game.price == null
               }
-              pickHint="Pick one to put it on the desk. The curtain starts closed."
+              pickHint="Click an item to put it on the desk, or Queue to stage it for later. The curtain starts closed."
               onSave={async () => {
                 const draft: PriceCatalogItem = {
                   id: "draft",
@@ -143,13 +260,13 @@ export function PriceGuesserHostPanel() {
                   ? await copyMediaUrl(entry.imageUrl)
                   : "";
                 updatePriceGuesser((prev) => {
-                  const savedUrls = new Set(
-                    catalog.map((item) => item.imageUrl),
-                  );
                   if (
                     prev.imageUrl &&
                     prev.imageUrl !== imageUrl &&
-                    !savedUrls.has(prev.imageUrl)
+                    !savedUrls().has(prev.imageUrl) &&
+                    !(prev.queue ?? []).some(
+                      (item) => item.imageUrl === prev.imageUrl,
+                    )
                   ) {
                     void deleteMediaByUrl(prev.imageUrl);
                   }
@@ -165,6 +282,7 @@ export function PriceGuesserHostPanel() {
                   };
                 });
               }}
+              onQueue={(id) => void queueFromCatalog(id)}
               onDelete={(id) => {
                 const entry = catalog.find((item) => item.id === id);
                 updatePriceCatalog((items) =>
@@ -301,6 +419,66 @@ export function PriceGuesserHostPanel() {
               </button>
             </div>
           </div>
+
+          <section className="border-t border-neutral-800 pt-5">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                Upcoming items ({queue.length})
+              </h3>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setBankOpenRequest((current) => current + 1)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500 bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-500"
+                >
+                  <FolderOpen size={14} />
+                  Add saved
+                </button>
+                <button
+                  type="button"
+                  disabled={!canQueueCurrent}
+                  onClick={() => void queueCurrentDesk()}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Queue current
+                </button>
+              </div>
+            </div>
+            {queue.length === 0 ? (
+              <p className="text-sm text-neutral-500">
+                Stage items here from the bank, or queue the current desk item.
+                {" "}
+                <span className="font-semibold text-neutral-400">Next item</span>
+                {" "}
+                loads the first one onto the desk with the curtain closed.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-neutral-500">
+                  Use the arrows to reorder. Top item plays next.
+                </p>
+                <ul className="flex max-w-2xl flex-col gap-2">
+                  {queue.map((item, index) => (
+                    <QueueRow
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      canMoveUp={index > 0}
+                      canMoveDown={index < queue.length - 1}
+                      onMoveUp={() => moveQueueItem(index, -1)}
+                      onMoveDown={() => moveQueueItem(index, 1)}
+                      onRemove={() => {
+                        setQueue(
+                          queue.filter((entry) => entry.id !== item.id),
+                          [item.imageUrl],
+                        );
+                      }}
+                    />
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
         </div>
       </div>
       <Toast message={toastMessage} />
@@ -308,11 +486,79 @@ export function PriceGuesserHostPanel() {
         open={confirmReset}
         onOpenChange={setConfirmReset}
         title="Clear this item?"
-        message="The photo and price will be removed from the spectator screen."
+        message="The photo and price will be removed from the spectator screen. Upcoming items stay queued."
         confirmLabel="Clear"
         variant="danger"
-        onConfirm={reset}
+        onConfirm={clearDesk}
       />
     </div>
+  );
+}
+
+function QueueRow({
+  item,
+  index,
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
+  onRemove,
+}: Readonly<{
+  item: PriceGuesserQueuedItem;
+  index: number;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onRemove: () => void;
+}>) {
+  const name = item.label.trim() || "Untitled item";
+
+  return (
+    <li className="flex items-stretch gap-2 rounded-xl border border-neutral-700 bg-neutral-800/70 p-2">
+      <QueueMoveControls
+        canMoveUp={canMoveUp}
+        canMoveDown={canMoveDown}
+        onMoveUp={onMoveUp}
+        onMoveDown={onMoveDown}
+        label="item"
+      />
+      <span className="flex w-10 shrink-0 items-center justify-center text-lg font-bold text-neutral-400">
+        {index + 1}
+      </span>
+      <span className="relative block h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-neutral-950">
+        {item.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={item.imageUrl}
+            alt=""
+            draggable={false}
+            className="h-full w-full"
+            style={photoFitStyle(item.photoFit)}
+          />
+        ) : (
+          <span className="flex h-full items-center justify-center px-1 text-center text-xs text-neutral-500">
+            No photo
+          </span>
+        )}
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 py-1">
+        <p className="truncate text-base font-semibold text-white">{name}</p>
+        <p className="text-sm font-semibold text-amber-300">
+          {formatPrice(item.price)}
+        </p>
+        {index === 0 ? (
+          <p className="text-xs font-semibold text-sky-400">Plays next</p>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="inline-flex h-14 w-14 shrink-0 self-center items-center justify-center rounded-xl border border-neutral-600 bg-neutral-900 text-neutral-300 hover:border-red-500 hover:text-red-300"
+        aria-label={`Remove ${name} from queue`}
+      >
+        <Trash2 size={22} />
+      </button>
+    </li>
   );
 }

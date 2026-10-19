@@ -80,8 +80,10 @@ import {
 } from "@/lib/trivia/types";
 import {
   createDefaultPriceGuesserState,
+  createPriceGuesserQueuedItem,
   parsePriceGuesserResult,
   withSyncedPriceGuesserResult,
+  type PriceGuesserQueuedItem,
   type PriceGuesserState,
 } from "@/lib/price-guesser/types";
 import {
@@ -741,6 +743,39 @@ function finitePrice(value: unknown): number | null {
     : null;
 }
 
+function normalizePriceGuesserQueuedItem(
+  raw: Partial<PriceGuesserQueuedItem> | undefined,
+  index: number,
+): PriceGuesserQueuedItem | null {
+  if (!raw || typeof raw !== "object") return null;
+  const imageUrl = typeof raw.imageUrl === "string" ? raw.imageUrl : "";
+  const label = typeof raw.label === "string" ? raw.label : "";
+  const price = finitePrice(raw.price);
+  if (!imageUrl && !label.trim() && price == null) return null;
+  return createPriceGuesserQueuedItem({
+    id:
+      typeof raw.id === "string" && raw.id.trim()
+        ? raw.id
+        : `queue-${index}`,
+    imageUrl,
+    label,
+    price,
+    photoFit: normalizePhotoFit(raw.photoFit),
+  });
+}
+
+function normalizePriceGuesserQueue(raw: unknown): PriceGuesserQueuedItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry, index) =>
+      normalizePriceGuesserQueuedItem(
+        entry as Partial<PriceGuesserQueuedItem>,
+        index,
+      ),
+    )
+    .filter((item): item is PriceGuesserQueuedItem => item != null);
+}
+
 function normalizePriceGuesserState(
   raw: Partial<PriceGuesserState> | undefined,
 ): PriceGuesserState {
@@ -755,6 +790,7 @@ function normalizePriceGuesserState(
       typeof raw.itemRevealed === "boolean" ? raw.itemRevealed : true,
     photoFit: normalizePhotoFit(raw.photoFit),
     resultOverlay: parsePriceGuesserResult(raw.resultOverlay),
+    queue: normalizePriceGuesserQueue(raw.queue),
   });
 }
 
