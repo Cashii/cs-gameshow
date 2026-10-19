@@ -1,3 +1,5 @@
+import { PriceShowStage } from "@/components/price/PriceShowStage";
+import "@/styles/price-audience.css";
 import "@/styles/price-wheel-audience.css";
 import {
   priceWheelColumns,
@@ -12,23 +14,25 @@ export function PriceWheelAudienceView({
   const players = game.players ?? [];
   if (players.length === 0) {
     return (
-      <div className="pw-empty">
-        <p>Add players on the operator desk</p>
-      </div>
+      <PriceShowStage>
+        <p className="price-empty">Add players on the operator desk</p>
+      </PriceShowStage>
     );
   }
 
   return (
-    <div
-      className="pw-stage"
-      data-cols={priceWheelColumns(players.length)}
-    >
-      {players.map((player) => (
-        <div key={player.id} className="pw-player">
-          <p className="pw-name">{player.name.trim() || "Player"}</p>
-          <p className="pw-score">{player.score}</p>
-        </div>
-      ))}
-    </div>
+    <PriceShowStage>
+      <div
+        className="pw-stage"
+        data-cols={priceWheelColumns(players.length)}
+      >
+        {players.map((player) => (
+          <div key={player.id} className="pw-player">
+            <p className="pw-name">{player.name.trim() || "Player"}</p>
+            <p className="pw-score">{player.score}</p>
+          </div>
+        ))}
+      </div>
+    </PriceShowStage>
   );
 }

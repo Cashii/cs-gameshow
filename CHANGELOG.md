@@ -1,5 +1,10 @@
 # Updates
 
+## October 19, 2026
+
+1. **Price Wheel** — Big screen scoreboard uses the same show-stage look as Price is Tight and Price Order (gold frames, cream names, gold scores).
+1. **Price Wheel** — Add points with **+5** / **+10** / **+25** / **+50** / **+100**, or type a custom amount and **Add** / **Subtract**. The score field still lets you set the total directly.
+
 ## October 18, 2026
 
 1. **Player screen** — When nothing is live yet, phones show **You're in!** under the logo and ask guests to hang tight until the next game.

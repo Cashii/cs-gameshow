@@ -8,9 +8,15 @@ export type PriceWheelState = {
   players: PriceWheelPlayer[];
 };
 
+export const PRICE_WHEEL_SCORE_PRESETS = [5, 10, 25, 50, 100] as const;
+
 export function clampPriceWheelScore(value: unknown): number {
   if (typeof value !== "number" || !Number.isFinite(value)) return 0;
   return Math.max(-999999, Math.min(999999, Math.round(value)));
+}
+
+export function addPriceWheelScore(score: number, delta: number): number {
+  return clampPriceWheelScore(score + delta);
 }
 
 export function createDefaultPriceWheelState(): PriceWheelState {
