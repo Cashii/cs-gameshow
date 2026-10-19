@@ -184,6 +184,17 @@ function withLiveDrawerTimer(
   };
 }
 
+function withPollTimer(base: PollState, timerFrom: PollState): PollState {
+  return {
+    ...base,
+    timerEnabled: Boolean(timerFrom.timerEnabled),
+    timerDurationMs: timerFrom.timerDurationMs,
+    timerRemainingMs: timerFrom.timerRemainingMs,
+    timerRunning: Boolean(timerFrom.timerRunning),
+    timerEndsAt: timerFrom.timerEndsAt ?? null,
+  };
+}
+
 /** Keep local derby edits, but pull live phone vote tallies for the same race. */
 function mergeDerbyVotes(
   local: DerbyGameState | undefined,
@@ -268,7 +279,7 @@ export function SuiteProvider({
         poolTokens: next.poolTokens,
         calledTokens: next.calledTokens ?? [],
         drawHistory: next.drawHistory ?? [],
-        poll: next.poll,
+        poll: withPollTimer(next.poll, base.poll),
         trivia: next.trivia,
         derby: mergeDerbyVotes(base.derby, next.derby),
         takeIt: mergeTakeItPicks(base.takeIt, next.takeIt),
@@ -302,7 +313,7 @@ export function SuiteProvider({
         if ((role === "operator" || role === "player") && local) {
           replaceSnapshot({
             ...local,
-            poll: next.poll,
+            poll: withPollTimer(next.poll, local.poll),
             trivia: next.trivia,
             derby: mergeDerbyVotes(local.derby, next.derby),
             takeIt: mergeTakeItPicks(local.takeIt, next.takeIt),

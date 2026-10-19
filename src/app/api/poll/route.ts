@@ -9,6 +9,7 @@ import {
 import {
   clampPollScale,
   createEmptyPoll,
+  pollTimerFields,
   withArchivedPoll,
 } from "@/lib/poll/types";
 import { error, isErrorResponse, json, requireRole } from "@/lib/api/helpers";
@@ -81,6 +82,7 @@ export async function POST(request: Request) {
             showPercentages: event.poll?.showPercentages !== false,
             scale: clampPollScale(event.poll?.scale),
             library: prev.poll?.library ?? [],
+            ...pollTimerFields(prev.poll ?? event.poll ?? createEmptyPoll()),
           },
         }));
         return json(snapshot);
@@ -120,6 +122,7 @@ export async function POST(request: Request) {
               showPercentages: prev.poll?.showPercentages !== false,
               scale: clampPollScale(prev.poll?.scale),
               library: prev.poll?.library ?? [],
+              ...pollTimerFields(prev.poll),
             },
           };
         });
@@ -205,6 +208,7 @@ export async function POST(request: Request) {
             showPercentages: prev.poll?.showPercentages !== false,
             scale: clampPollScale(prev.poll?.scale),
             library: prev.poll?.library ?? [],
+            ...pollTimerFields(prev.poll),
           },
         }));
         return json(snapshot);
@@ -217,6 +221,13 @@ export async function POST(request: Request) {
           pollHistory: (prev.pollHistory ?? []).filter(
             (entry) => entry.id !== pollId,
           ),
+        }));
+        return json(snapshot);
+      }
+      case "clearHistory": {
+        const snapshot = await updateEventSuite((prev) => ({
+          ...prev,
+          pollHistory: [],
         }));
         return json(snapshot);
       }

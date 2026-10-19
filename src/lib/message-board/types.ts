@@ -8,6 +8,8 @@ export type MessageBoardPreset = {
   text: string;
   /** Null means the message is ungrouped. */
   groupId: string | null;
+  /** Text size saved with this message. */
+  scale: number;
 };
 
 export type MessageBoardState = {
@@ -78,7 +80,12 @@ export function normalizeMessageBoardPresets(
   const seen = new Set<string>();
   for (const item of raw) {
     if (!item || typeof item !== "object") continue;
-    const record = item as { id?: unknown; text?: unknown; groupId?: unknown };
+    const record = item as {
+      id?: unknown;
+      text?: unknown;
+      groupId?: unknown;
+      scale?: unknown;
+    };
     const text =
       typeof record.text === "string"
         ? record.text.slice(0, MAX_MESSAGE_BOARD_PRESET_LENGTH)
@@ -91,7 +98,12 @@ export function normalizeMessageBoardPresets(
       typeof record.groupId === "string" && groupIds.has(record.groupId)
         ? record.groupId
         : null;
-    presets.push({ id, text, groupId });
+    presets.push({
+      id,
+      text,
+      groupId,
+      scale: clampMessageBoardScale(record.scale),
+    });
     if (presets.length >= MAX_MESSAGE_BOARD_PRESETS) break;
   }
   return presets;

@@ -3,8 +3,10 @@
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { PollQuestionBank } from "@/components/poll/PollQuestionBank";
+import { PollTimerPanel } from "@/components/poll/PollTimerPanel";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Toast, useToast } from "@/components/ui/Toast";
 import { uid } from "@/lib/utils";
 import { mergePollBank } from "@/lib/poll/types";
 import { useSuite } from "@/lib/suite-provider";
@@ -23,6 +25,7 @@ function formatVoteTime(iso: string): string {
 
 export function PollHostPanel() {
   const { state, refreshSnapshot, updatePoll } = useSuite();
+  const { toastMessage, showToast } = useToast();
   const spectatorLive = state.spectatorGame === "poll";
   const poll = state.poll;
   const [question, setQuestion] = useState(poll.question || "");
@@ -56,8 +59,10 @@ export function PollHostPanel() {
       if (!res.ok) throw new Error(data.error ?? "Action failed");
       await refreshSnapshot();
       setMessage("Done");
+      return true;
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Failed");
+      return false;
     } finally {
       setLoading(false);
     }
@@ -102,6 +107,21 @@ export function PollHostPanel() {
     historyPageIndex * HISTORY_PAGE_SIZE,
     historyPageIndex * HISTORY_PAGE_SIZE + HISTORY_PAGE_SIZE,
   );
+
+  const handleClearHistory = () => {
+    const count = history.length;
+    if (count === 0) return;
+    setExpandedHistoryId(null);
+    setHistoryPage(0);
+    void (async () => {
+      const ok = await runAction({ action: "clearHistory" });
+      if (!ok) return;
+      setMessage("");
+      showToast(
+        `Cleared ${count} past poll${count === 1 ? "" : "s"} from history`,
+      );
+    })();
+  };
 
   const questionBank = (
     <PollQuestionBank
@@ -283,313 +303,328 @@ export function PollHostPanel() {
         </SpectatorScreenNotice>
       )}
 
-      <div className="min-h-0 flex-1 overflow-auto px-6 py-6">
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.8fr)]">
-        <div className="space-y-8">
-          <div className="space-y-4">
-          <div>
-            <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-              Question
-            </span>
-            <div className="mt-1.5 flex items-center gap-2">
-              <input
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder="What should we ask?"
-                aria-label="Question"
-                className="min-w-0 flex-1 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-white"
-              />
-              {questionBank}
-            </div>
-          </div>
-
-          <div>
-            <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-              Choices
-            </span>
-            <div className="mt-1.5 space-y-2">
-              {choices.map((choice, i) => (
-                <div key={i} className="flex items-center gap-2">
+      <div className="min-h-0 flex-1 overflow-auto px-6 py-6 lg:overflow-hidden">
+        <div className="grid items-start gap-6 lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.8fr)] lg:overflow-hidden">
+          <div className="space-y-8 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
+            <div className="space-y-4">
+              <div>
+                <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                  Question
+                </span>
+                <div className="mt-1.5 flex items-center gap-2">
                   <input
-                    value={choice}
-                    onChange={(e) => {
-                      const next = [...choices];
-                      next[i] = e.target.value;
-                      setChoices(next);
-                    }}
-                    placeholder={`Choice ${i + 1}`}
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    placeholder="What should we ask?"
+                    aria-label="Question"
                     className="min-w-0 flex-1 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-white"
                   />
+                  {questionBank}
+                </div>
+              </div>
+
+              <div>
+                <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                  Choices
+                </span>
+                <div className="mt-1.5 space-y-2">
+                  {choices.map((choice, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input
+                        value={choice}
+                        onChange={(e) => {
+                          const next = [...choices];
+                          next[i] = e.target.value;
+                          setChoices(next);
+                        }}
+                        placeholder={`Choice ${i + 1}`}
+                        className="min-w-0 flex-1 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setChoices(choices.filter((_, index) => index !== i))
+                        }
+                        disabled={choices.length <= 2}
+                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-neutral-700 text-neutral-400 hover:bg-neutral-800 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-30"
+                        aria-label={`Remove choice ${i + 1}`}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() =>
-                      setChoices(choices.filter((_, index) => index !== i))
+                      setChoices([...choices, `Option ${choices.length + 1}`])
                     }
-                    disabled={choices.length <= 2}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-neutral-700 text-neutral-400 hover:bg-neutral-800 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-30"
-                    aria-label={`Remove choice ${i + 1}`}
+                    disabled={choices.length >= 6}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
                   >
-                    <Trash2 size={16} />
+                    <Plus size={16} />
+                    Add choice
                   </button>
                 </div>
-              ))}
+              </div>
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  setChoices([...choices, `Option ${choices.length + 1}`])
-                }
-                disabled={choices.length >= 6}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
-              >
-                <Plus size={16} />
-                Add choice
-              </button>
-            </div>
-          </div>
-          </div>
-
-          {message && (
-            <p className="text-sm text-neutral-400">{message}</p>
-          )}
-
-          <section>
-            <h3 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-              Past polls ({history.length})
-            </h3>
-            {history.length === 0 ? (
-              <p className="mt-2 text-sm text-neutral-500">
-                Closed or replaced polls appear here so you can review answers later.
-              </p>
-            ) : (
-              <>
-              <ul className="mt-3 space-y-2">
-                {visibleHistory.map((entry) => {
-                  const open = expandedHistoryId === entry.id;
-                  const entryVotes = entry.choices.reduce(
-                    (sum, choice) => sum + choice.votes,
-                    0,
-                  );
-                  return (
-                    <li
-                      key={`${entry.id}-${entry.closedAt}`}
-                      className="rounded-xl border border-neutral-800 bg-neutral-900"
-                    >
-                      <div className="flex items-center gap-1 px-2 py-1">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setExpandedHistoryId(open ? null : entry.id)
-                          }
-                          className="flex min-w-0 flex-1 items-center justify-between gap-3 px-2 py-2 text-left"
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate font-semibold text-white">
-                              {entry.question || "(no question)"}
-                            </p>
-                            <p className="mt-0.5 text-xs text-neutral-500">
-                              {new Date(entry.closedAt).toLocaleString()} ·{" "}
-                              {entryVotes} vote{entryVotes === 1 ? "" : "s"} ·{" "}
-                              {entry.status}
-                            </p>
-                          </div>
-                          <span className="shrink-0 text-sm text-neutral-400 underline underline-offset-2">
-                            {open ? "Hide" : "Review"}
-                          </span>
-                        </button>
-                        <button
-                          type="button"
-                          disabled={loading}
-                          onClick={() =>
-                            setDeleteConfirm({
-                              open: true,
-                              pollId: entry.id,
-                              question: entry.question || "(no question)",
-                            })
-                          }
-                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-700 text-neutral-400 hover:bg-neutral-800 hover:text-red-400 disabled:opacity-40"
-                          aria-label={`Delete past poll: ${entry.question || "untitled"}`}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                      {open ? (
-                        <div className="max-h-96 space-y-3 overflow-y-auto border-t border-neutral-800 px-4 py-3">
-                          <ul className="space-y-1 text-sm text-neutral-300">
-                            {entry.choices.map((choice) => {
-                              const isCorrect =
-                                entry.correctChoiceId === choice.id;
-                              return (
-                                <li
-                                  key={choice.id}
-                                  className={`flex justify-between gap-3 ${
-                                    isCorrect ? "font-semibold text-emerald-300" : ""
-                                  }`}
-                                >
-                                  <span className="truncate">
-                                    {choice.text}
-                                    {isCorrect ? " ✓" : ""}
-                                  </span>
-                                  <strong className="tabular-nums text-white">
-                                    {choice.votes}
-                                  </strong>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                          {entry.voteLog.length === 0 ? (
-                            <p className="text-sm text-neutral-500">No vote log saved.</p>
-                          ) : (
-                            <ul className="space-y-1 text-sm">
-                              {entry.voteLog.map((log) => (
-                                <li
-                                  key={log.id}
-                                  className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-2 text-neutral-400"
-                                >
-                                  <span className="tabular-nums text-neutral-500">
-                                    {formatVoteTime(log.at)}
-                                  </span>
-                                  <span className="min-w-0 truncate">
-                                    <span className="font-medium text-neutral-200">
-                                      {log.deviceCode || log.voterLabel}
-                                    </span>
-                                    <span className="text-neutral-500"> · </span>
-                                    <span>{log.choiceText}</span>
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-              {history.length > HISTORY_PAGE_SIZE ? (
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <button
-                    type="button"
-                    disabled={historyPageIndex === 0}
-                    onClick={() => setHistoryPage(historyPageIndex - 1)}
-                    className="rounded-md border border-neutral-600 px-3 py-1.5 text-sm font-semibold text-neutral-200 hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Previous
-                  </button>
-                  <p className="text-sm text-neutral-400">
-                    {historyPageIndex * HISTORY_PAGE_SIZE + 1}–
-                    {Math.min(
-                      history.length,
-                      (historyPageIndex + 1) * HISTORY_PAGE_SIZE,
-                    )}{" "}
-                    of {history.length}
-                  </p>
-                  <button
-                    type="button"
-                    disabled={historyPageIndex >= historyPageCount - 1}
-                    onClick={() => setHistoryPage(historyPageIndex + 1)}
-                    className="rounded-md border border-neutral-600 px-3 py-1.5 text-sm font-semibold text-neutral-200 hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Next
-                  </button>
-                </div>
-              ) : null}
-              </>
+            {message && (
+              <p className="text-sm text-neutral-400">{message}</p>
             )}
-          </section>
-        </div>
 
-        <div className="space-y-4">
-          {poll.status !== "idle" && (
-            <div>
-              <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                Live tally
-              </span>
-              <p className="mt-1 text-sm text-neutral-400">
-                Status:{" "}
-                <span className="font-semibold text-white">{statusLabel}</span>
-                {" "}
-                — {totalVotes} vote{totalVotes === 1 ? "" : "s"}
-              </p>
-              <ul className="mt-1.5 space-y-1.5 text-sm">
-                {poll.choices.map((c) => {
-                  const isCorrect = poll.correctChoiceId === c.id;
-                  return (
-                    <li
-                      key={c.id}
-                      className={`flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 ${
-                        isCorrect
-                          ? "bg-emerald-950/50 text-emerald-100"
-                          : "text-neutral-300"
-                      }`}
-                    >
-                      <span className="min-w-0 truncate">{c.text}</span>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <strong className="w-8 text-right tabular-nums text-white">
-                          {c.votes}
-                        </strong>
-                        <button
-                          type="button"
-                          disabled={loading}
-                          onClick={() =>
-                            void runAction({
-                              action: "setCorrectChoice",
-                              choiceId: isCorrect ? null : c.id,
-                            })
-                          }
-                          className={`inline-flex w-28 shrink-0 items-center justify-center rounded-md px-2 py-1 text-xs font-semibold whitespace-nowrap disabled:opacity-40 ${
-                            isCorrect
-                              ? "bg-emerald-600 text-white"
-                              : "border border-neutral-600 text-neutral-300 hover:bg-neutral-800"
-                          }`}
-                        >
-                          {isCorrect ? "Correct" : "Mark correct"}
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-
-          {poll.status !== "idle" && (
-            <div>
-              <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                Vote log
-              </span>
-              {voteLog.length === 0 ? (
-                <p className="mt-1.5 text-sm text-neutral-500">
-                  No votes yet.
+            <section>
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                  Past polls ({history.length})
+                </h3>
+                <button
+                  type="button"
+                  disabled={loading || history.length === 0}
+                  onClick={handleClearHistory}
+                  className="shrink-0 text-sm font-semibold text-red-400 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Clear history
+                </button>
+              </div>
+              {history.length === 0 ? (
+                <p className="mt-2 text-sm text-neutral-500">
+                  Closed or replaced polls appear here so you can review answers
+                  later.
                 </p>
               ) : (
-                <ul className="mt-1.5 space-y-1 text-sm">
-                  {voteLog.map((entry) => (
-                    <li
-                      key={entry.id}
-                      className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-2 text-neutral-400"
-                    >
-                      <span className="tabular-nums text-neutral-500">
-                        {formatVoteTime(entry.at)}
-                      </span>
-                      <span className="min-w-0 truncate">
-                        <span className="font-medium text-neutral-200">
-                          {entry.deviceCode || entry.voterLabel}
-                        </span>
-                        <span className="text-neutral-500"> · </span>
-                        <span>{entry.choiceText}</span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <ul className="mt-3 space-y-2">
+                    {visibleHistory.map((entry) => {
+                      const open = expandedHistoryId === entry.id;
+                      const entryVotes = entry.choices.reduce(
+                        (sum, choice) => sum + choice.votes,
+                        0,
+                      );
+                      return (
+                        <li
+                          key={`${entry.id}-${entry.closedAt}`}
+                          className="rounded-xl border border-neutral-800 bg-neutral-900"
+                        >
+                          <div className="flex items-center gap-1 px-2 py-1">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedHistoryId(open ? null : entry.id)
+                              }
+                              className="flex min-w-0 flex-1 items-center justify-between gap-3 px-2 py-2 text-left"
+                            >
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold text-white">
+                                  {entry.question || "(no question)"}
+                                </p>
+                                <p className="mt-0.5 text-xs text-neutral-500">
+                                  {new Date(entry.closedAt).toLocaleString()} ·{" "}
+                                  {entryVotes} vote
+                                  {entryVotes === 1 ? "" : "s"} · {entry.status}
+                                </p>
+                              </div>
+                              <span className="shrink-0 text-sm text-neutral-400 underline underline-offset-2">
+                                {open ? "Hide" : "Review"}
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              disabled={loading}
+                              onClick={() =>
+                                setDeleteConfirm({
+                                  open: true,
+                                  pollId: entry.id,
+                                  question: entry.question || "(no question)",
+                                })
+                              }
+                              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-700 text-neutral-400 hover:bg-neutral-800 hover:text-red-400 disabled:opacity-40"
+                              aria-label={`Delete past poll: ${entry.question || "untitled"}`}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                          {open ? (
+                            <div className="max-h-96 space-y-3 overflow-y-auto border-t border-neutral-800 px-4 py-3">
+                              <ul className="space-y-1 text-sm text-neutral-300">
+                                {entry.choices.map((choice) => {
+                                  const isCorrect =
+                                    entry.correctChoiceId === choice.id;
+                                  return (
+                                    <li
+                                      key={choice.id}
+                                      className={`flex justify-between gap-3 ${
+                                        isCorrect
+                                          ? "font-semibold text-emerald-300"
+                                          : ""
+                                      }`}
+                                    >
+                                      <span className="truncate">
+                                        {choice.text}
+                                        {isCorrect ? " ✓" : ""}
+                                      </span>
+                                      <strong className="tabular-nums text-white">
+                                        {choice.votes}
+                                      </strong>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                              {entry.voteLog.length === 0 ? (
+                                <p className="text-sm text-neutral-500">
+                                  No vote log saved.
+                                </p>
+                              ) : (
+                                <ul className="space-y-1 text-sm">
+                                  {entry.voteLog.map((log) => (
+                                    <li
+                                      key={log.id}
+                                      className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-2 text-neutral-400"
+                                    >
+                                      <span className="tabular-nums text-neutral-500">
+                                        {formatVoteTime(log.at)}
+                                      </span>
+                                      <span className="min-w-0 truncate">
+                                        <span className="font-medium text-neutral-200">
+                                          {log.deviceCode || log.voterLabel}
+                                        </span>
+                                        <span className="text-neutral-500">
+                                          {" "}
+                                          ·{" "}
+                                        </span>
+                                        <span>{log.choiceText}</span>
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {history.length > HISTORY_PAGE_SIZE ? (
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        disabled={historyPageIndex === 0}
+                        onClick={() => setHistoryPage(historyPageIndex - 1)}
+                        className="rounded-md border border-neutral-600 px-3 py-1.5 text-sm font-semibold text-neutral-200 hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Previous
+                      </button>
+                      <p className="text-sm text-neutral-400">
+                        {historyPageIndex * HISTORY_PAGE_SIZE + 1}–
+                        {Math.min(
+                          history.length,
+                          (historyPageIndex + 1) * HISTORY_PAGE_SIZE,
+                        )}{" "}
+                        of {history.length}
+                      </p>
+                      <button
+                        type="button"
+                        disabled={historyPageIndex >= historyPageCount - 1}
+                        onClick={() => setHistoryPage(historyPageIndex + 1)}
+                        className="rounded-md border border-neutral-600 px-3 py-1.5 text-sm font-semibold text-neutral-200 hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  ) : null}
+                </>
               )}
-            </div>
-          )}
-        </div>
-      </div>
+            </section>
+          </div>
 
+          <aside className="flex min-h-0 flex-col gap-4 lg:h-full lg:overflow-hidden">
+            <PollTimerPanel />
+            {poll.status !== "idle" && (
+              <div className="shrink-0">
+                <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                  Live tally
+                </span>
+                <p className="mt-1 text-sm text-neutral-400">
+                  Status:{" "}
+                  <span className="font-semibold text-white">{statusLabel}</span> —{" "}
+                  {totalVotes} vote{totalVotes === 1 ? "" : "s"}
+                </p>
+                <ul className="mt-1.5 space-y-1.5 text-sm">
+                  {poll.choices.map((c) => {
+                    const isCorrect = poll.correctChoiceId === c.id;
+                    return (
+                      <li
+                        key={c.id}
+                        className={`flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 ${
+                          isCorrect
+                            ? "bg-emerald-950/50 text-emerald-100"
+                            : "text-neutral-300"
+                        }`}
+                      >
+                        <span className="min-w-0 truncate">{c.text}</span>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <strong className="w-8 text-right tabular-nums text-white">
+                            {c.votes}
+                          </strong>
+                          <button
+                            type="button"
+                            disabled={loading}
+                            onClick={() =>
+                              void runAction({
+                                action: "setCorrectChoice",
+                                choiceId: isCorrect ? null : c.id,
+                              })
+                            }
+                            className={`inline-flex w-28 shrink-0 items-center justify-center rounded-md px-2 py-1 text-xs font-semibold whitespace-nowrap disabled:opacity-40 ${
+                              isCorrect
+                                ? "bg-emerald-600 text-white"
+                                : "border border-neutral-600 text-neutral-300 hover:bg-neutral-800"
+                            }`}
+                          >
+                            {isCorrect ? "Correct" : "Mark correct"}
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
+            {poll.status !== "idle" && (
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <span className="shrink-0 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                  Vote log
+                </span>
+                {voteLog.length === 0 ? (
+                  <p className="mt-1.5 text-sm text-neutral-500">No votes yet.</p>
+                ) : (
+                  <ul className="mt-1.5 max-h-64 min-h-0 flex-1 space-y-1 overflow-y-auto text-sm lg:max-h-none">
+                    {voteLog.map((entry) => (
+                      <li
+                        key={entry.id}
+                        className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-2 text-neutral-400"
+                      >
+                        <span className="tabular-nums text-neutral-500">
+                          {formatVoteTime(entry.at)}
+                        </span>
+                        <span className="min-w-0 truncate">
+                          <span className="font-medium text-neutral-200">
+                            {entry.deviceCode || entry.voterLabel}
+                          </span>
+                          <span className="text-neutral-500"> · </span>
+                          <span>{entry.choiceText}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </aside>
+        </div>
       </div>
 
       <ConfirmDialog
@@ -607,6 +642,8 @@ export function PollHostPanel() {
           void runAction({ action: "deleteHistory", pollId });
         }}
       />
+
+      <Toast message={toastMessage} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { createSampleFeudGame } from "@/lib/feud/defaults";
 import { normalizeFeudLibrary, type FeudGameState } from "@/lib/feud/types";
 import {
+  clampWheelZoom,
   createDefaultWheelState,
   normalizeWheelBank,
   type WheelGameState,
@@ -33,6 +34,7 @@ import {
   createEmptyPoll,
   MAX_POLL_HISTORY,
   normalizePollLibrary,
+  pollTimerFields,
   type PollHistoryEntry,
   type PollState,
 } from "@/lib/poll/types";
@@ -460,6 +462,7 @@ function normalizePollState(raw: Partial<PollState> | undefined): PollState {
     showPercentages: raw.showPercentages !== false,
     scale: clampPollScale(raw.scale),
     library: normalizePollLibrary(raw.library),
+    ...pollTimerFields(raw),
   };
 }
 
@@ -1022,7 +1025,7 @@ export function normalizeSuiteState(
       return {
         ...createDefaultWheelState(),
         ...wheelRest,
-        zoom: typeof rawWheel.zoom === "number" ? rawWheel.zoom : 1,
+        zoom: clampWheelZoom(rawWheel.zoom),
         showLetterLegend: rawWheel.showLetterLegend ?? true,
         topic: typeof rawWheel.topic === "string" ? rawWheel.topic : "",
         wrongCount:

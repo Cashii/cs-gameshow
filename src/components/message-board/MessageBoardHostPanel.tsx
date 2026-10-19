@@ -38,9 +38,13 @@ function previewText(text: string): string {
   return flat || "Empty message";
 }
 
-function resizeTextarea(el: HTMLTextAreaElement, maxPx: number) {
+function resizeTextarea(
+  el: HTMLTextAreaElement,
+  maxPx: number,
+  minPx = 0,
+) {
   el.style.height = "0px";
-  const next = Math.min(el.scrollHeight, maxPx);
+  const next = Math.min(Math.max(el.scrollHeight, minPx), maxPx);
   el.style.height = `${next}px`;
   el.style.overflowY = el.scrollHeight > maxPx ? "auto" : "hidden";
 }
@@ -48,6 +52,7 @@ function resizeTextarea(el: HTMLTextAreaElement, maxPx: number) {
 function AutoTextarea({
   value,
   maxPx,
+  minPx = 0,
   autoFocus,
   onKeyDown,
   compact = false,
@@ -55,6 +60,7 @@ function AutoTextarea({
 }: TextareaHTMLAttributes<HTMLTextAreaElement> & {
   value: string;
   maxPx: number;
+  minPx?: number;
   compact?: boolean;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -66,8 +72,8 @@ function AutoTextarea({
       ref.current.style.overflowY = "hidden";
       return;
     }
-    resizeTextarea(ref.current, maxPx);
-  }, [value, maxPx, compact]);
+    resizeTextarea(ref.current, maxPx, minPx);
+  }, [value, maxPx, minPx, compact]);
 
   useLayoutEffect(() => {
     if (!autoFocus || !ref.current) return;
@@ -315,7 +321,11 @@ export function MessageBoardHostPanel() {
   const trimmed = text.trim();
   const alreadySaved =
     trimmed.length > 0 &&
-    presets.some((preset) => preset.text.trim() === trimmed);
+    presets.some(
+      (preset) =>
+        preset.text.trim() === trimmed &&
+        clampMessageBoardScale(preset.scale) === scale,
+    );
   const atLimit = presets.length >= MAX_MESSAGE_BOARD_PRESETS;
   const atGroupLimit = groups.length >= MAX_MESSAGE_BOARD_GROUPS;
   const [draft, setDraft] = useState("");
@@ -340,6 +350,21 @@ export function MessageBoardHostPanel() {
     draftTrimmed.length > 0 &&
     presets.some((preset) => preset.text.trim() === draftTrimmed);
 
+  const setOnScreenScale = (nextScale: number) => {
+    const scaleValue = clampMessageBoardScale(nextScale);
+    updateMessageBoard((prev) => ({
+      ...prev,
+      scale: scaleValue,
+      presets: prev.activePresetId
+        ? prev.presets.map((preset) =>
+            preset.id === prev.activePresetId
+              ? { ...preset, scale: scaleValue }
+              : preset,
+          )
+        : prev.presets,
+    }));
+  };
+
   const savePreset = () => {
     if (!trimmed || alreadySaved || atLimit) return;
     const id = uid();
@@ -350,6 +375,7 @@ export function MessageBoardHostPanel() {
           id,
           text: text.slice(0, MAX_MESSAGE_BOARD_PRESET_LENGTH),
           groupId: selectedGroupId,
+          scale: clampMessageBoardScale(prev.scale),
         },
         ...prev.presets,
       ].slice(0, MAX_MESSAGE_BOARD_PRESETS),
@@ -367,6 +393,7 @@ export function MessageBoardHostPanel() {
           id,
           text: draftTrimmed.slice(0, MAX_MESSAGE_BOARD_PRESET_LENGTH),
           groupId: selectedGroupId,
+          scale: clampMessageBoardScale(prev.scale),
         },
         ...prev.presets,
       ].slice(0, MAX_MESSAGE_BOARD_PRESETS),
@@ -380,6 +407,7 @@ export function MessageBoardHostPanel() {
     updateMessageBoard((prev) => ({
       ...prev,
       text: preset.text,
+      scale: clampMessageBoardScale(preset.scale),
       activePresetId: preset.id,
     }));
   };
@@ -454,79 +482,6 @@ export function MessageBoardHostPanel() {
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
-      <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-neutral-800 px-8 py-3">
-        <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-          Message size
-        </span>
-        <span className="min-w-12 text-right text-sm font-semibold tabular-nums text-neutral-200">
-          {Math.round(scale * 100)}%
-        </span>
-        <input
-          type="range"
-          min={MIN_MESSAGE_BOARD_SCALE}
-          max={MAX_MESSAGE_BOARD_SCALE}
-          step={MESSAGE_BOARD_SCALE_STEP}
-          value={scale}
-          aria-label="Message size"
-          onChange={(e) =>
-            updateMessageBoard((prev) => ({
-              ...prev,
-              scale: clampMessageBoardScale(Number.parseFloat(e.target.value)),
-            }))
-          }
-          className="min-w-32 flex-1 accent-blue-500"
-        />
-        <div className="inline-flex items-center gap-1">
-          <button
-            type="button"
-            aria-label="Smaller message"
-            disabled={scale <= MIN_MESSAGE_BOARD_SCALE}
-            onClick={() =>
-              updateMessageBoard((prev) => ({
-                ...prev,
-                scale: clampMessageBoardScale(
-                  (prev.scale ?? DEFAULT_MESSAGE_BOARD_SCALE) -
-                    MESSAGE_BOARD_SCALE_STEP,
-                ),
-              }))
-            }
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40"
-          >
-            <Minus size={16} />
-          </button>
-          <button
-            type="button"
-            aria-label="Larger message"
-            disabled={scale >= MAX_MESSAGE_BOARD_SCALE}
-            onClick={() =>
-              updateMessageBoard((prev) => ({
-                ...prev,
-                scale: clampMessageBoardScale(
-                  (prev.scale ?? DEFAULT_MESSAGE_BOARD_SCALE) +
-                    MESSAGE_BOARD_SCALE_STEP,
-                ),
-              }))
-            }
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40"
-          >
-            <Plus size={16} />
-          </button>
-          <button
-            type="button"
-            disabled={scale === DEFAULT_MESSAGE_BOARD_SCALE}
-            onClick={() =>
-              updateMessageBoard((prev) => ({
-                ...prev,
-                scale: DEFAULT_MESSAGE_BOARD_SCALE,
-              }))
-            }
-            className="ml-1 inline-flex h-8 items-center rounded-md border border-neutral-600 bg-neutral-800 px-2.5 text-sm font-semibold text-white hover:bg-neutral-700 disabled:opacity-40"
-          >
-            Reset
-          </button>
-        </div>
-      </div>
-
       {!spectatorLive && (
         <SpectatorScreenNotice>
           Spectator is not on Message Board. Use the Spectator screen list so
@@ -534,52 +489,113 @@ export function MessageBoardHostPanel() {
         </SpectatorScreenNotice>
       )}
 
-      <div className="flex shrink-0 items-start gap-4 border-b border-neutral-800 px-8 py-5">
-        <label className="min-w-0 flex-1">
+      <div className="grid shrink-0 grid-cols-1 gap-4 border-b border-neutral-800 px-8 py-5 md:grid-cols-2">
+        <div className="min-w-0">
           <span className="mb-2.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
             On screen
           </span>
-          <AutoTextarea
-            value={text}
-            maxPx={72}
-            aria-label="Message on screen"
-            placeholder="Intermission — back in 10 minutes"
-            onChange={(e) =>
-              updateMessageBoard((prev) => ({
-                ...prev,
-                text: e.target.value,
-                activePresetId:
-                  prev.presets.find((preset) => preset.id === prev.activePresetId)
-                    ?.text === e.target.value
-                    ? prev.activePresetId
-                    : null,
-              }))
-            }
-          />
-        </label>
-        <div className="flex shrink-0 gap-2 pt-7">
-          <button
-            type="button"
-            disabled={!trimmed || alreadySaved || atLimit}
-            onClick={savePreset}
-            className="h-8 rounded-md border border-blue-500 bg-blue-600 px-3 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-40"
-          >
-            {alreadySaved ? "Saved" : "Save"}
-          </button>
-          <button
-            type="button"
-            disabled={!trimmed}
-            onClick={() =>
-              updateMessageBoard((prev) => ({
-                ...prev,
-                text: "",
-                activePresetId: null,
-              }))
-            }
-            className="h-8 rounded-md border border-neutral-600 bg-neutral-800 px-3 text-sm font-semibold text-white hover:bg-neutral-700 disabled:opacity-40"
-          >
-            Clear
-          </button>
+          <div className="flex items-center gap-3">
+            <label className="min-w-0 flex-1">
+              <AutoTextarea
+                value={text}
+                minPx={44}
+                maxPx={72}
+                aria-label="Message on screen"
+                placeholder="Intermission — back in 10 minutes"
+                className="!py-[11px] leading-5"
+                onChange={(e) =>
+                  updateMessageBoard((prev) => ({
+                    ...prev,
+                    text: e.target.value,
+                    activePresetId:
+                      prev.presets.find(
+                        (preset) => preset.id === prev.activePresetId,
+                      )?.text === e.target.value
+                        ? prev.activePresetId
+                        : null,
+                  }))
+                }
+              />
+            </label>
+            <div className="flex shrink-0 gap-2">
+              <button
+                type="button"
+                disabled={!trimmed || alreadySaved || atLimit}
+                onClick={savePreset}
+                className="inline-flex h-11 items-center rounded-md border border-blue-500 bg-blue-600 px-5 text-base font-semibold text-white hover:bg-blue-500 disabled:opacity-40"
+              >
+                {alreadySaved ? "Saved" : "Save"}
+              </button>
+              <button
+                type="button"
+                disabled={!trimmed}
+                onClick={() =>
+                  updateMessageBoard((prev) => ({
+                    ...prev,
+                    text: "",
+                    activePresetId: null,
+                  }))
+                }
+                className="inline-flex h-11 items-center rounded-md border border-neutral-600 bg-neutral-800 px-5 text-base font-semibold text-white hover:bg-neutral-700 disabled:opacity-40"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="min-w-0">
+          <span className="mb-2.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+            Message size
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="min-w-12 shrink-0 text-right text-sm font-semibold tabular-nums text-neutral-200">
+              {Math.round(scale * 100)}%
+            </span>
+            <input
+              type="range"
+              min={MIN_MESSAGE_BOARD_SCALE}
+              max={MAX_MESSAGE_BOARD_SCALE}
+              step={MESSAGE_BOARD_SCALE_STEP}
+              value={scale}
+              aria-label="Message size"
+              onChange={(e) =>
+                setOnScreenScale(Number.parseFloat(e.target.value))
+              }
+              className="min-w-0 flex-1 accent-blue-500"
+            />
+            <div className="inline-flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                aria-label="Smaller message"
+                disabled={scale <= MIN_MESSAGE_BOARD_SCALE}
+                onClick={() =>
+                  setOnScreenScale(scale - MESSAGE_BOARD_SCALE_STEP)
+                }
+                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40"
+              >
+                <Minus size={16} />
+              </button>
+              <button
+                type="button"
+                aria-label="Larger message"
+                disabled={scale >= MAX_MESSAGE_BOARD_SCALE}
+                onClick={() =>
+                  setOnScreenScale(scale + MESSAGE_BOARD_SCALE_STEP)
+                }
+                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40"
+              >
+                <Plus size={16} />
+              </button>
+              <button
+                type="button"
+                disabled={scale === DEFAULT_MESSAGE_BOARD_SCALE}
+                onClick={() => setOnScreenScale(DEFAULT_MESSAGE_BOARD_SCALE)}
+                className="ml-1 inline-flex h-10 items-center rounded-md border border-neutral-600 bg-neutral-800 px-3 text-sm font-semibold text-white hover:bg-neutral-700 disabled:opacity-40"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

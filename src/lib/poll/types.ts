@@ -27,7 +27,16 @@ export type PollVoteLogEntry = {
   platform: string;
 };
 
-export type PollState = {
+export type PollTimerState = {
+  /** When true, a running or paused countdown can appear on the big screen. */
+  timerEnabled: boolean;
+  timerDurationMs: number;
+  timerRemainingMs: number;
+  timerRunning: boolean;
+  timerEndsAt: number | null;
+};
+
+export type PollState = PollTimerState & {
   id: string;
   question: string;
   choices: PollChoice[];
@@ -49,6 +58,11 @@ export const MIN_POLL_SCALE = 0.5;
 export const MAX_POLL_SCALE = 2.5;
 export const POLL_SCALE_STEP = 0.1;
 
+export const POLL_DURATION_PRESETS_MS = [30_000, 45_000, 60_000] as const;
+export const DEFAULT_POLL_DURATION_MS = 30_000;
+export const MIN_POLL_DURATION_MS = 5_000;
+export const MAX_POLL_DURATION_MS = 10 * 60_000;
+
 export function clampPollScale(value: unknown): number {
   const n =
     typeof value === "number" && Number.isFinite(value)
@@ -58,6 +72,132 @@ export function clampPollScale(value: unknown): number {
     MAX_POLL_SCALE,
     Math.max(MIN_POLL_SCALE, Math.round(n * 10) / 10),
   );
+}
+
+export function clampPollDurationMs(ms: unknown): number {
+  if (typeof ms !== "number" || !Number.isFinite(ms)) {
+    return DEFAULT_POLL_DURATION_MS;
+  }
+  return Math.min(
+    MAX_POLL_DURATION_MS,
+    Math.max(MIN_POLL_DURATION_MS, Math.round(ms)),
+  );
+}
+
+export function pollRemainingMs(
+  state: Pick<PollState, "timerRunning" | "timerEndsAt" | "timerRemainingMs">,
+  now = Date.now(),
+): number {
+  if (state.timerRunning && state.timerEndsAt != null) {
+    return Math.max(0, Math.round(state.timerEndsAt - now));
+  }
+  return Math.max(0, Math.round(state.timerRemainingMs));
+}
+
+export function startPollTimer(
+  state: PollState,
+  now = Date.now(),
+): PollState {
+  const remaining = pollRemainingMs(state, now);
+  const nextRemaining = remaining > 0 ? remaining : state.timerDurationMs;
+  return {
+    ...state,
+    timerEnabled: true,
+    timerRemainingMs: nextRemaining,
+    timerRunning: true,
+    timerEndsAt: now + nextRemaining,
+  };
+}
+
+export function pausePollTimer(
+  state: PollState,
+  now = Date.now(),
+): PollState {
+  return {
+    ...state,
+    timerRunning: false,
+    timerRemainingMs: pollRemainingMs(state, now),
+    timerEndsAt: null,
+  };
+}
+
+export function resetPollTimer(state: PollState): PollState {
+  return {
+    ...state,
+    timerRunning: false,
+    timerRemainingMs: state.timerDurationMs,
+    timerEndsAt: null,
+  };
+}
+
+export function setPollDuration(
+  state: PollState,
+  durationMs: number,
+): PollState {
+  const next = clampPollDurationMs(durationMs);
+  return {
+    ...state,
+    timerDurationMs: next,
+    timerRemainingMs: next,
+    timerRunning: false,
+    timerEndsAt: null,
+  };
+}
+
+export function setPollTimerEnabled(
+  state: PollState,
+  enabled: boolean,
+): PollState {
+  if (enabled) return { ...state, timerEnabled: true };
+  return pausePollTimer({ ...state, timerEnabled: false });
+}
+
+/** Audience clock is hidden until the operator starts it, and stays up through a pause or zero. */
+export function pollTimerOnScreen(state: PollState): boolean {
+  if (!state.timerEnabled) return false;
+  if (state.timerRunning) return true;
+  return state.timerRemainingMs < state.timerDurationMs;
+}
+
+export function formatPollClock(ms: number): string {
+  const totalSec = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(totalSec / 60);
+  const seconds = totalSec % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+export function formatPollPreset(ms: number): string {
+  if (ms < 60_000) return `${ms / 1000}s`;
+  const minutes = Math.floor(ms / 60_000);
+  const seconds = (ms % 60_000) / 1000;
+  return seconds
+    ? `${minutes}:${String(seconds).padStart(2, "0")}`
+    : `${minutes}m`;
+}
+
+export function pollTimerFields(
+  poll: Partial<PollTimerState> | null | undefined,
+): PollTimerState {
+  const timerDurationMs = clampPollDurationMs(poll?.timerDurationMs);
+  const timerRunning = Boolean(poll?.timerRunning);
+  const timerEndsAt =
+    timerRunning &&
+    typeof poll?.timerEndsAt === "number" &&
+    Number.isFinite(poll.timerEndsAt)
+      ? poll.timerEndsAt
+      : null;
+  const timerRemainingMs =
+    typeof poll?.timerRemainingMs === "number" &&
+    Number.isFinite(poll.timerRemainingMs)
+      ? Math.max(0, Math.round(poll.timerRemainingMs))
+      : timerDurationMs;
+  return {
+    timerEnabled: Boolean(poll?.timerEnabled),
+    timerDurationMs,
+    timerRemainingMs,
+    timerRunning: timerRunning && timerEndsAt != null,
+    timerEndsAt: timerRunning ? timerEndsAt : null,
+  };
 }
 
 export type PollHistoryEntry = {
@@ -88,6 +228,11 @@ export function createDefaultPollState(): PollState {
     showPercentages: true,
     scale: DEFAULT_POLL_SCALE,
     library: [],
+    timerEnabled: false,
+    timerDurationMs: DEFAULT_POLL_DURATION_MS,
+    timerRemainingMs: DEFAULT_POLL_DURATION_MS,
+    timerRunning: false,
+    timerEndsAt: null,
   };
 }
 

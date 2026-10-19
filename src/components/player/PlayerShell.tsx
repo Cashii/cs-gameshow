@@ -27,6 +27,7 @@ function triviaActive(status: string) {
 function PlayerContent() {
   const { state, refreshSnapshot } = useSuite();
   const [votedPollId, setVotedPollId] = useState<string | null>(null);
+  const [votedChoiceId, setVotedChoiceId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [checkingVote, setCheckingVote] = useState(false);
@@ -79,24 +80,33 @@ function PlayerContent() {
     (poll.status === "open" || poll.status === "results");
 
   useEffect(() => {
-    if (!pollLive || poll.status !== "open" || !poll.id || !deviceId) {
+    if (!pollLive || !poll.id || !deviceId) {
       setVotedPollId(null);
+      setVotedChoiceId(null);
       return;
     }
 
     let cancelled = false;
-    setCheckingVote(true);
+    if (poll.status === "open") setCheckingVote(true);
     fetch(
       `/api/poll/status?pollId=${encodeURIComponent(poll.id)}&deviceId=${encodeURIComponent(deviceId)}`,
       { cache: "no-store" },
     )
       .then((r) => r.json())
-      .then((data: { voted?: boolean }) => {
+      .then((data: { voted?: boolean; choiceId?: string }) => {
         if (cancelled) return;
         setVotedPollId(data.voted ? poll.id : null);
+        setVotedChoiceId(
+          data.voted && typeof data.choiceId === "string"
+            ? data.choiceId
+            : null,
+        );
       })
       .catch(() => {
-        if (!cancelled) setVotedPollId(null);
+        if (!cancelled && poll.status === "open") {
+          setVotedPollId(null);
+          setVotedChoiceId(null);
+        }
       })
       .finally(() => {
         if (!cancelled) setCheckingVote(false);
@@ -215,6 +225,7 @@ function PlayerContent() {
   const handleVote = async (choiceId: string) => {
     setLoading(true);
     setMessage("");
+    setVotedChoiceId(choiceId);
     try {
       const res = await fetch("/api/poll", {
         method: "POST",
@@ -233,6 +244,7 @@ function PlayerContent() {
       setVotedPollId(poll.id);
       await refreshSnapshot();
     } catch (e) {
+      setVotedChoiceId(null);
       setMessage(e instanceof Error ? e.message : "Vote failed");
     } finally {
       setLoading(false);
@@ -346,6 +358,7 @@ function PlayerContent() {
       <PlayerPollOverlay
         poll={poll}
         voted={voted}
+        selectedChoiceId={votedChoiceId}
         checkingVote={checkingVote}
         loading={loading}
         message={message}

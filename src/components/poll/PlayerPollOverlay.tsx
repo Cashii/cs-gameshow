@@ -2,16 +2,15 @@
 
 import type { PollState } from "@/lib/poll/types";
 
-const POLL_CHOICE_COLORS = [
-  "border-teal-300 bg-teal-100 text-teal-950 hover:bg-teal-200",
-  "border-sky-300 bg-sky-100 text-sky-950 hover:bg-sky-200",
-  "border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200",
-  "border-violet-300 bg-violet-100 text-violet-950 hover:bg-violet-200",
-];
+const UNSELECTED_CHOICE_CLASS =
+  "border-neutral-600 bg-neutral-800 text-white hover:border-teal-400/70 hover:bg-neutral-700";
+const SELECTED_CHOICE_CLASS =
+  "border-teal-400 bg-teal-500 text-white shadow-[0_0_0_1px_rgba(45,212,191,0.5)]";
 
 export function PlayerPollOverlay({
   poll,
   voted,
+  selectedChoiceId,
   checkingVote,
   loading,
   message,
@@ -20,6 +19,7 @@ export function PlayerPollOverlay({
 }: {
   poll: PollState;
   voted: boolean;
+  selectedChoiceId: string | null;
   checkingVote: boolean;
   loading: boolean;
   message: string;
@@ -38,91 +38,107 @@ export function PlayerPollOverlay({
     <div className="flex h-full w-full flex-col overflow-auto bg-transparent px-4 py-8">
       <div className="mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col">
         <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <p className="text-sm font-semibold tracking-[0.2em] text-teal-600 uppercase">
-          {poll.status === "open"
-            ? voted
-              ? "Vote recorded"
-              : "Live poll"
-            : showCorrect
-              ? "Correct answer"
-              : showPercentages
-                ? "Poll results"
-                : "Poll closed"}
-        </p>
-        <h1 className="mt-2 text-2xl font-bold text-white sm:text-3xl">
-          {question}
-        </h1>
-
-        {checkingVote && poll.status === "open" ? (
-          <p className="mt-8 text-neutral-400">Loading…</p>
-        ) : canVote ? (
-          <div className="mt-8 w-full space-y-3">
-            {poll.choices.map((choice, i) => (
-              <button
-                key={choice.id}
-                type="button"
-                disabled={loading}
-                onClick={() => onVote(choice.id)}
-                className={`w-full rounded-2xl border-2 px-4 py-4 text-center text-lg font-semibold disabled:opacity-50 ${POLL_CHOICE_COLORS[i % POLL_CHOICE_COLORS.length]}`}
-              >
-                {choice.text}
-              </button>
-            ))}
-          </div>
-        ) : poll.status === "open" && voted ? (
-          <p className="mt-8 text-lg font-semibold text-emerald-600">
-            Thanks — your vote is in.
+          <p className="text-sm font-semibold tracking-[0.2em] text-teal-600 uppercase">
+            {poll.status === "open"
+              ? voted
+                ? "Vote recorded"
+                : "O69 Club Poll"
+              : showCorrect
+                ? "Correct answer"
+                : showPercentages
+                  ? "Poll results"
+                  : "Poll closed"}
           </p>
-        ) : (
-          <ul className="mt-8 w-full space-y-3">
-            {poll.choices.map((choice) => {
-              const isCorrect =
-                showCorrect && choice.id === poll.correctChoiceId;
-              return (
-                <li key={choice.id}>
-                  <div
-                    className={`flex items-center justify-center gap-4 ${
-                      isCorrect
-                        ? "font-semibold text-emerald-300"
-                        : "text-white"
+          <h1 className="mt-2 text-2xl font-bold text-white sm:text-3xl">
+            {question}
+          </h1>
+
+          {checkingVote && poll.status === "open" ? (
+            <p className="mt-8 text-neutral-400">Loading…</p>
+          ) : canVote || (poll.status === "open" && voted) ? (
+            <div className="mt-8 w-full space-y-3">
+              {poll.choices.map((choice) => {
+                const selected = selectedChoiceId === choice.id;
+                return (
+                  <button
+                    key={choice.id}
+                    type="button"
+                    disabled={loading || voted}
+                    onClick={() => onVote(choice.id)}
+                    aria-pressed={selected}
+                    className={`w-full rounded-2xl border-2 px-4 py-4 text-center text-lg font-semibold transition-colors disabled:opacity-100 ${
+                      selected ? SELECTED_CHOICE_CLASS : UNSELECTED_CHOICE_CLASS
+                    } ${voted && !selected ? "opacity-55" : ""} ${
+                      loading || voted ? "cursor-default" : ""
                     }`}
                   >
-                    <span>
-                      {choice.text}
-                      {isCorrect ? " ✓" : ""}
-                    </span>
-                    {showPercentages && (
-                      <span className="font-bold tabular-nums">
-                        {total > 0
-                          ? Math.round((choice.votes / total) * 100)
-                          : 0}
-                        %
+                    {choice.text}
+                    {voted && selected ? " ✓" : ""}
+                  </button>
+                );
+              })}
+              {voted ? (
+                <p className="pt-2 text-base font-semibold text-emerald-400">
+                  Thanks — your vote is in.
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <ul className="mt-8 w-full space-y-3">
+              {poll.choices.map((choice) => {
+                const isCorrect =
+                  showCorrect && choice.id === poll.correctChoiceId;
+                const selected = selectedChoiceId === choice.id;
+                return (
+                  <li key={choice.id}>
+                    <div
+                      className={`flex items-center justify-center gap-4 rounded-2xl border-2 px-4 py-3 ${
+                        selected
+                          ? SELECTED_CHOICE_CLASS
+                          : isCorrect
+                            ? "border-emerald-400/80 bg-emerald-500/20 font-semibold text-emerald-100"
+                            : "border-neutral-700 bg-neutral-900 text-white"
+                      }`}
+                    >
+                      <span>
+                        {choice.text}
+                        {isCorrect ? " ✓" : ""}
+                        {selected && !isCorrect ? " · your pick" : ""}
                       </span>
-                    )}
-                  </div>
-                  {showPercentages && (
-                    <div className="mt-1 h-2 overflow-hidden rounded-full bg-teal-100">
-                      <div
-                        className={`mx-auto h-full rounded-full transition-all duration-500 ${
-                          isCorrect ? "bg-emerald-500" : "bg-teal-500"
-                        }`}
-                        style={{
-                          width: `${
-                            total > 0
-                              ? Math.round((choice.votes / total) * 100)
-                              : 0
-                          }%`,
-                        }}
-                      />
+                      {showPercentages && (
+                        <span className="font-bold tabular-nums">
+                          {total > 0
+                            ? Math.round((choice.votes / total) * 100)
+                            : 0}
+                          %
+                        </span>
+                      )}
                     </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                    {showPercentages && (
+                      <div className="mt-1 h-2 overflow-hidden rounded-full bg-neutral-800">
+                        <div
+                          className={`mx-auto h-full rounded-full transition-all duration-500 ${
+                            isCorrect || selected
+                              ? "bg-teal-400"
+                              : "bg-neutral-500"
+                          }`}
+                          style={{
+                            width: `${
+                              total > 0
+                                ? Math.round((choice.votes / total) * 100)
+                                : 0
+                            }%`,
+                          }}
+                        />
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
 
-        {message && <p className="mt-4 text-sm text-red-400">{message}</p>}
+          {message && <p className="mt-4 text-sm text-red-400">{message}</p>}
         </div>
 
         {playerCode ? (

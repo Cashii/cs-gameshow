@@ -1,8 +1,58 @@
 "use client";
 
-import { clampPollScale, type PollState } from "@/lib/poll/types";
+import { useEffect, useState } from "react";
+import {
+  clampPollScale,
+  formatPollClock,
+  pollRemainingMs,
+  pollTimerOnScreen,
+  type PollState,
+} from "@/lib/poll/types";
 import { PlayerVoteQr } from "@/components/poll/PlayerVoteQr";
 import { GameshowLogo } from "@/components/studio/GameshowLogo";
+
+function PollCountdown({ poll }: Readonly<{ poll: PollState }>) {
+  const [now, setNow] = useState<number | null>(null);
+  const visible = pollTimerOnScreen(poll);
+
+  useEffect(() => {
+    if (!visible) return;
+    const tick = () => setNow(Date.now());
+    tick();
+    if (!poll.timerRunning) return;
+    const id = window.setInterval(tick, 200);
+    return () => window.clearInterval(id);
+  }, [visible, poll.timerRunning, poll.timerEndsAt]);
+
+  if (!visible) return null;
+
+  const remaining =
+    now == null ? poll.timerRemainingMs : pollRemainingMs(poll, now);
+  const clock = formatPollClock(remaining);
+  const urgent = remaining > 0 && remaining <= 10_000;
+
+  return (
+    <div
+      className={`absolute top-6 left-8 z-30 sm:top-8 sm:left-16 ${
+        urgent ? "animate-pulse" : ""
+      }`}
+      role="timer"
+      aria-live="polite"
+      aria-label={clock}
+    >
+      <p
+        className={`m-0 text-[clamp(4.25rem,10vw,8rem)] leading-none font-bold tracking-[0.04em] tabular-nums ${
+          urgent ? "text-amber-200" : "text-white"
+        }`}
+        style={{
+          textShadow: "0 2px 12px rgba(0,0,0,0.65)",
+        }}
+      >
+        {clock}
+      </p>
+    </div>
+  );
+}
 
 export function PollSpectatorOverlay({
   poll,
@@ -20,13 +70,7 @@ export function PollSpectatorOverlay({
   const questionMax = stacked ? "5rem" : "8rem";
   const questionVw = stacked ? "5.5vw" : "7.5vw";
   const answerCap = showPercentages ? "36cqh" : "52cqh";
-
-  let statusLabel = "Poll results";
-  if (idle) statusLabel = "Get ready";
-  else if (live && !showPercentages) statusLabel = "Voting open";
-  else if (live) statusLabel = "Live results";
-  else if (!showPercentages) statusLabel = "Choices";
-  else if (showCorrect) statusLabel = "Correct answer";
+  const timerVisible = pollTimerOnScreen(poll);
 
   return (
     <div className="relative z-10 h-full w-full overflow-hidden bg-[#0a0a0a] text-white">
@@ -38,14 +82,11 @@ export function PollSpectatorOverlay({
             <GameshowLogo
               variant="noshadow"
               className={`mx-auto aspect-[699/463] w-auto ${
-                stacked ? "h-12 sm:h-16" : "h-16 sm:h-20"
+                stacked ? "h-16 sm:h-24" : "h-20 sm:h-28"
               }`}
               zoom={1}
               alt=""
             />
-            <p className="mt-2 text-sm font-semibold tracking-[0.28em] text-amber-300 uppercase sm:text-base">
-              {statusLabel}
-            </p>
           </div>
           {live ? (
             <div className="absolute top-0 right-0 z-20 h-48 w-48 sm:h-56 sm:w-56">
@@ -53,10 +94,14 @@ export function PollSpectatorOverlay({
             </div>
           ) : null}
         </div>
-        <div className={`shrink-0 text-center ${live ? "pr-52 sm:pr-60" : ""}`}>
+        <div
+          className={`shrink-0 text-center ${live ? "pr-52 sm:pr-60" : ""} ${
+            timerVisible ? "pl-40 sm:pl-52" : ""
+          }`}
+        >
           <h1
-            className={`font-bold text-white ${
-              live || !stacked ? "mt-3 line-clamp-3" : "mt-2 line-clamp-2"
+            className={`font-bold text-white line-clamp-3 ${
+              timerVisible ? "mt-8 sm:mt-10" : "mt-5 sm:mt-6"
             }`}
             style={{
               fontFamily: "var(--font-oswald), Impact, sans-serif",
@@ -148,8 +193,9 @@ export function PollSpectatorOverlay({
             );
           })}
         </ul>
-
       </div>
+
+      <PollCountdown poll={poll} />
     </div>
   );
 }

@@ -8,6 +8,10 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { Tooltip } from "@/components/ui/Tooltip";
 import {
+  MAX_WHEEL_ZOOM,
+  MIN_WHEEL_ZOOM,
+  WHEEL_ZOOM_STEP,
+  clampWheelZoom,
   createWheelBankPuzzle,
   loadWheelBankPuzzle,
   phraseHasLetter,
@@ -199,6 +203,19 @@ export function WheelHostPanel() {
     }));
   };
 
+  const applyBoardZoom = (nextZoom: number) => {
+    const zoom = clampWheelZoom(nextZoom);
+    updateWheel((prev) => ({
+      ...prev,
+      zoom,
+      bank: prev.activeBankId
+        ? (prev.bank ?? []).map((entry) =>
+            entry.id === prev.activeBankId ? { ...entry, zoom } : entry,
+          )
+        : prev.bank,
+    }));
+  };
+
   const handleSetPhrase = () => {
     const nextPhrase = phraseInput.trim();
     if (!nextPhrase) return;
@@ -211,7 +228,7 @@ export function WheelHostPanel() {
       revealedLetters: phraseChanged ? [] : prev.revealedLetters,
       revealedAll: phraseChanged ? false : prev.revealedAll,
       wrongCount: phraseChanged ? 0 : prev.wrongCount,
-      zoom: prev.zoom || 1,
+      zoom: clampWheelZoom(prev.zoom),
       activeBankId: null,
     }));
     setEditing(false);
@@ -260,14 +277,23 @@ export function WheelHostPanel() {
     if (!phrase) return;
     const topic = phraseForm.topic.trim();
     if (phraseForm.mode === "add") {
-      saveBank([...bank, createWheelBankPuzzle({ phrase, topic })]);
+      saveBank([
+        ...bank,
+        createWheelBankPuzzle({
+          phrase,
+          topic,
+          zoom: clampWheelZoom(wheel.zoom),
+        }),
+      ]);
       setPhraseForm(null);
       return;
     }
     const id = phraseForm.id;
     updateWheel((prev) => {
       const next = (prev.bank ?? []).map((item) =>
-        item.id === id ? { ...item, phrase, topic } : item,
+        item.id === id
+          ? { ...item, phrase, topic, zoom: clampWheelZoom(item.zoom) }
+          : item,
       );
       const isLive = prev.activeBankId === id;
       const phraseChanged = isLive && phrase !== prev.phrase;
@@ -366,40 +392,6 @@ export function WheelHostPanel() {
                 />
               </button>
             </div>
-            <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-              Board zoom
-            </span>
-            <span className="min-w-12 text-right text-sm font-semibold tabular-nums text-neutral-300">
-              {Math.round((wheel.zoom || 1) * 100)}%
-            </span>
-            <div className="inline-flex items-center gap-3">
-              <button
-                type="button"
-                aria-label="Zoom out"
-                onClick={() =>
-                  updateWheel((prev) => ({
-                    ...prev,
-                    zoom: Math.max(0.3, (prev.zoom || 1) - 0.1),
-                  }))
-                }
-                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700"
-              >
-                <Minus size={18} />
-              </button>
-              <button
-                type="button"
-                aria-label="Zoom in"
-                onClick={() =>
-                  updateWheel((prev) => ({
-                    ...prev,
-                    zoom: Math.min(2, (prev.zoom || 1) + 0.1),
-                  }))
-                }
-                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700"
-              >
-                <Plus size={18} />
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -433,8 +425,6 @@ export function WheelHostPanel() {
                       <FolderOpen size={18} />
                     </button>
                   </Tooltip>
-                </div>
-                <div className="flex flex-wrap gap-2">
                   {locked && (
                     <button
                       type="button"
@@ -444,6 +434,42 @@ export function WheelHostPanel() {
                       Change
                     </button>
                   )}
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                    Board zoom
+                  </span>
+                  <span className="min-w-12 text-right text-sm font-semibold tabular-nums text-neutral-300">
+                    {Math.round(clampWheelZoom(wheel.zoom) * 100)}%
+                  </span>
+                  <div className="inline-flex items-center gap-3">
+                    <button
+                      type="button"
+                      aria-label="Zoom out"
+                      disabled={clampWheelZoom(wheel.zoom) <= MIN_WHEEL_ZOOM}
+                      onClick={() =>
+                        applyBoardZoom(
+                          clampWheelZoom(wheel.zoom) - WHEEL_ZOOM_STEP,
+                        )
+                      }
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+                    >
+                      <Minus size={18} />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Zoom in"
+                      disabled={clampWheelZoom(wheel.zoom) >= MAX_WHEEL_ZOOM}
+                      onClick={() =>
+                        applyBoardZoom(
+                          clampWheelZoom(wheel.zoom) + WHEEL_ZOOM_STEP,
+                        )
+                      }
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+                    >
+                      <Plus size={18} />
+                    </button>
+                  </div>
                 </div>
               </div>
               {locked ? (

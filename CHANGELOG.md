@@ -1,5 +1,15 @@
 # Updates
 
+## October 18, 2026
+
+1. **O69 Club Poll** — Configurable countdown with **30s** / **45s** / **1m** presets or a custom time. Start, pause, reset, and **Show** / **Hide** it on the big screen (top left). Status line under the logo is removed so the logo can be larger; the question sits lower so it clears the countdown.
+1. **O69 Club Poll** — On phones, poll answers use one unselected look and one selected look so your pick is obvious. The live header says **O69 Club Poll**.
+1. **O69 Club Poll** — Clear all past polls with **Clear history** (toast confirms it), or delete one at a time with the trash icon. The live vote log scrolls inside the page instead of making the operator screen grow forever.
+1. **Word Up** — Topic title on the big screen is larger and easier to read from the audience.
+1. **Word Up** — Board zoom sits with **Current phrase** and is saved with each phrase and topic, so loading a saved phrase restores its size. **Change** sits next to Current phrase.
+
+1. **Message Board** — On screen and Message size sit side by side. **Save** / **Clear** sit beside the text field; size − / + / Reset sit beside the slider. Size is saved per message.
+
 ## October 17, 2026
 
 1. **Live Drawer** — Clear draw history without deleting called numbers.

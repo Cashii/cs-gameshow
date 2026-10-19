@@ -2,6 +2,8 @@ export type WheelBankPuzzle = {
   id: string;
   topic: string;
   phrase: string;
+  /** Board zoom saved with this phrase (30%–200%). */
+  zoom: number;
 };
 
 export type WheelGameState = {
@@ -18,6 +20,22 @@ export type WheelGameState = {
   activeBankId: string | null;
 };
 
+export const DEFAULT_WHEEL_ZOOM = 1;
+export const MIN_WHEEL_ZOOM = 0.3;
+export const MAX_WHEEL_ZOOM = 2;
+export const WHEEL_ZOOM_STEP = 0.1;
+
+export function clampWheelZoom(value: unknown): number {
+  const n =
+    typeof value === "number" && Number.isFinite(value)
+      ? value
+      : DEFAULT_WHEEL_ZOOM;
+  return Math.min(
+    MAX_WHEEL_ZOOM,
+    Math.max(MIN_WHEEL_ZOOM, Math.round(n * 10) / 10),
+  );
+}
+
 export function createWheelBankPuzzle(
   partial?: Partial<WheelBankPuzzle>,
 ): WheelBankPuzzle {
@@ -25,6 +43,7 @@ export function createWheelBankPuzzle(
     id: partial?.id || Math.random().toString(36).slice(2, 10),
     topic: typeof partial?.topic === "string" ? partial.topic : "",
     phrase: typeof partial?.phrase === "string" ? partial.phrase : "",
+    zoom: clampWheelZoom(partial?.zoom),
   };
 }
 
@@ -46,6 +65,7 @@ export function normalizeWheelBankPuzzle(
         : `bank-${index}-${Date.now()}`,
     topic: typeof item.topic === "string" ? item.topic : "",
     phrase,
+    zoom: item.zoom,
   });
 }
 
@@ -104,6 +124,7 @@ export function loadWheelBankPuzzle(
     ...state,
     phrase: item.phrase.trim(),
     topic: item.topic.trim(),
+    zoom: clampWheelZoom(item.zoom),
     revealedLetters: [],
     revealedAll: false,
     wrongCount: 0,
@@ -117,7 +138,7 @@ export function createDefaultWheelState(): WheelGameState {
     topic: "",
     revealedLetters: [],
     revealedAll: false,
-    zoom: 1,
+    zoom: DEFAULT_WHEEL_ZOOM,
     showLetterLegend: true,
     wrongCount: 0,
     bank: [],
