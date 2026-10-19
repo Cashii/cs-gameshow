@@ -10,6 +10,7 @@ import {
 } from "@/lib/poll/types";
 import { PlayerVoteQr } from "@/components/poll/PlayerVoteQr";
 import { GameshowLogo } from "@/components/studio/GameshowLogo";
+import { StandbyScreen } from "@/components/studio/StandbyScreen";
 
 function PollCountdown({ poll }: Readonly<{ poll: PollState }>) {
   const [now, setNow] = useState<number | null>(null);
@@ -59,10 +60,14 @@ export function PollSpectatorOverlay({
 }: Readonly<{ poll: PollState }>) {
   const total = poll.choices.reduce((s, c) => s + c.votes, 0);
   const live = poll.status === "open";
-  const idle = poll.status === "idle";
   const showCorrect =
     poll.correctAnswerRevealed && Boolean(poll.correctChoiceId);
-  const showPercentages = poll.showPercentages !== false && !idle;
+  // Keep standby while the operator drafts; Voting Live reveals the question.
+  if (poll.status === "idle") {
+    return <StandbyScreen />;
+  }
+
+  const showPercentages = poll.showPercentages !== false;
   const scale = clampPollScale(poll.scale);
   const count = poll.choices.length;
   const rows = Math.max(1, Math.ceil(count / 2));
@@ -109,7 +114,7 @@ export function PollSpectatorOverlay({
               lineHeight: 1.05,
             }}
           >
-            {poll.question.trim() || (idle ? "Waiting for a poll" : "Question?")}
+            {poll.question.trim() || "Question?"}
           </h1>
         </div>
 

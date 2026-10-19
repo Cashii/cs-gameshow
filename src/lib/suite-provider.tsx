@@ -39,7 +39,11 @@ import {
   createDefaultTakeItState,
   type TakeItGameState,
 } from "@/lib/take-it-or-leave-it/types";
-import type { PollState } from "@/lib/poll/types";
+import { mergePollLive, type PollState } from "@/lib/poll/types";
+import {
+  createDefaultTriviaState,
+  type TriviaGameState,
+} from "@/lib/trivia/types";
 import {
   createDefaultMessageBoardState,
   type MessageBoardState,
@@ -93,6 +97,7 @@ type SuiteContextValue = {
   ) => void;
   updateTakeIt: (updater: (game: TakeItGameState) => TakeItGameState) => void;
   updatePoll: (updater: (poll: PollState) => PollState) => void;
+  updateTrivia: (updater: (trivia: TriviaGameState) => TriviaGameState) => void;
   updateMessageBoard: (
     updater: (board: MessageBoardState) => MessageBoardState,
   ) => void;
@@ -184,7 +189,10 @@ function withLiveDrawerTimer(
   };
 }
 
-function withPollTimer(base: PollState, timerFrom: PollState): PollState {
+function withTriviaTimer(
+  base: TriviaGameState,
+  timerFrom: TriviaGameState,
+): TriviaGameState {
   return {
     ...base,
     timerEnabled: Boolean(timerFrom.timerEnabled),
@@ -279,8 +287,8 @@ export function SuiteProvider({
         poolTokens: next.poolTokens,
         calledTokens: next.calledTokens ?? [],
         drawHistory: next.drawHistory ?? [],
-        poll: withPollTimer(next.poll, base.poll),
-        trivia: next.trivia,
+        poll: mergePollLive(next.poll, base.poll),
+        trivia: withTriviaTimer(next.trivia, base.trivia),
         derby: mergeDerbyVotes(base.derby, next.derby),
         takeIt: mergeTakeItPicks(base.takeIt, next.takeIt),
         liveDrawer: withLiveDrawerTimer(
@@ -313,8 +321,8 @@ export function SuiteProvider({
         if ((role === "operator" || role === "player") && local) {
           replaceSnapshot({
             ...local,
-            poll: withPollTimer(next.poll, local.poll),
-            trivia: next.trivia,
+            poll: mergePollLive(next.poll, local.poll),
+            trivia: withTriviaTimer(next.trivia, local.trivia),
             derby: mergeDerbyVotes(local.derby, next.derby),
             takeIt: mergeTakeItPicks(local.takeIt, next.takeIt),
           });
@@ -538,6 +546,16 @@ export function SuiteProvider({
     [applyLocalSuite],
   );
 
+  const updateTrivia = useCallback(
+    (updater: (trivia: TriviaGameState) => TriviaGameState) => {
+      applyLocalSuite((prev) => ({
+        ...prev,
+        trivia: updater(prev.trivia ?? createDefaultTriviaState()),
+      }));
+    },
+    [applyLocalSuite],
+  );
+
   const updateMessageBoard = useCallback(
     (updater: (board: MessageBoardState) => MessageBoardState) => {
       applyLocalSuite((prev) => ({
@@ -640,15 +658,27 @@ export function SuiteProvider({
 
   const applyServerSnapshot = useCallback(
     (next: EventSnapshot) => {
+      const local = snapshotRef.current;
+      const merged: EventSnapshot = local
+        ? {
+            ...next,
+            poll: mergePollLive(next.poll, local.poll),
+            trivia: withTriviaTimer(next.trivia, local.trivia),
+            liveDrawer: withLiveDrawerTimer(
+              pickLiveDrawer(local.liveDrawer, next.liveDrawer),
+              local.liveDrawer,
+            ),
+          }
+        : next;
       confirmedRevisionRef.current = Math.max(
         confirmedRevisionRef.current,
-        next.revision,
+        merged.revision,
       );
-      rememberPersisted(snapshotToSuite(next));
-      replaceSnapshot(next);
+      rememberPersisted(snapshotToSuite(merged));
+      replaceSnapshot(merged);
       if (role === "operator") {
         lastLocalBroadcastAtRef.current = Date.now();
-        publishLocalSuite(snapshotToSuite(next));
+        publishLocalSuite(snapshotToSuite(merged));
       }
     },
     [rememberPersisted, replaceSnapshot, role],
@@ -697,6 +727,7 @@ export function SuiteProvider({
       updateLiveDrawer,
       updateTakeIt,
       updatePoll,
+      updateTrivia,
       updateMessageBoard,
       updateDerby,
       updateJeoparody,
@@ -725,6 +756,7 @@ export function SuiteProvider({
       updateLiveDrawer,
       updateTakeIt,
       updatePoll,
+      updateTrivia,
       updateMessageBoard,
       updateDerby,
       updateJeoparody,

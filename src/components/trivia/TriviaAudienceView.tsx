@@ -1,20 +1,57 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import type { TriviaGameState } from "@/lib/trivia/types";
 import {
   MIN_TRIVIA_OPTIONS,
+  formatTriviaClock,
   optionTextForChoice,
   triviaChoiceIdAt,
+  triviaRemainingMs,
+  triviaTimerOnScreen,
 } from "@/lib/trivia/types";
 import { PlayerVoteQr } from "@/components/poll/PlayerVoteQr";
 import { StandbyScreen } from "@/components/studio/StandbyScreen";
 import "@/styles/trivia-audience.css";
 
+function TriviaCountdown({ trivia }: Readonly<{ trivia: TriviaGameState }>) {
+  const [now, setNow] = useState<number | null>(null);
+  const visible = triviaTimerOnScreen(trivia);
+
+  useEffect(() => {
+    if (!visible) return;
+    const tick = () => setNow(Date.now());
+    tick();
+    if (!trivia.timerRunning) return;
+    const id = window.setInterval(tick, 200);
+    return () => window.clearInterval(id);
+  }, [visible, trivia.timerRunning, trivia.timerEndsAt]);
+
+  if (!visible) return null;
+
+  const remaining =
+    now == null ? trivia.timerRemainingMs : triviaRemainingMs(trivia, now);
+  const clock = formatTriviaClock(remaining);
+  const urgent = remaining > 0 && remaining <= 10_000;
+
+  return (
+    <div
+      className={`trivia-countdown ${urgent ? "trivia-countdown-urgent" : ""}`}
+      role="timer"
+      aria-live="polite"
+      aria-label={clock}
+    >
+      <p className="trivia-countdown-clock">{clock}</p>
+    </div>
+  );
+}
+
 export function TriviaAudienceView({
   trivia,
 }: Readonly<{ trivia: TriviaGameState }>) {
-  const waiting = !trivia.question.trim();
+  // Keep standby while the operator drafts the next question; Open voting reveals it.
+  const waiting =
+    trivia.status === "idle" || !trivia.question.trim();
   const showSplit =
     trivia.status === "revealed" || trivia.status === "finished";
   const options =
@@ -47,6 +84,7 @@ export function TriviaAudienceView({
     <div className="trivia-stage">
       <div className="trivia-glow" aria-hidden />
       <div className="trivia-sparkles" aria-hidden />
+      <TriviaCountdown trivia={trivia} />
       <h1 className="trivia-question">{trivia.question.trim()}</h1>
       <div
         className="trivia-choices"

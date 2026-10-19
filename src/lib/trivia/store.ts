@@ -9,6 +9,7 @@ import {
   isTriviaChoiceOpen,
   mergeTriviaBank,
   normalizeTriviaOptions,
+  pauseTriviaTimer,
   syncTriviaOptionsFields,
   TRIVIA_CHOICE_IDS,
   withTriviaHistoryAppended,
@@ -258,16 +259,12 @@ export async function triviaSetup(input: {
 }): Promise<EventSnapshot> {
   return updateEventSuite((prev) => {
     const t = prev.trivia ?? createDefaultTriviaState();
-    if (t.status === "open" || t.status === "locked") {
-      throw new Error("Finish the current vote first");
+    // Draft saves from input blur can race "Open voting"; never clobber a live round.
+    if (t.status !== "idle") {
+      return prev;
     }
-    if (t.status === "revealed" && t.remainingCount > 1) {
-      throw new Error("Start the next question first");
-    }
-    if (t.status === "finished") {
-      throw new Error("Reset the series to play again");
-    }
-    const roundIndex = t.roundIndex === 0 ? 1 : t.roundIndex;
+    // Keep roundIndex unchanged while drafting — bumping 0→1 was resetting the
+    // host form mid-edit via the panel sync effect.
     const synced = syncTriviaOptionsFields({
       options: input.options,
       optionA: input.optionA ?? t.optionA,
@@ -280,14 +277,13 @@ export async function triviaSetup(input: {
         ...t,
         status: "idle",
         roundId: t.roundId || crypto.randomUUID(),
-        roundIndex,
         question: input.question.trim() || t.question || "True or false?",
         options: synced.options,
         optionA: synced.optionA,
         optionB: synced.optionB,
         choiceCounts: synced.choiceCounts,
-        choiceACount: 0,
-        choiceBCount: 0,
+        choiceACount: synced.choiceACount,
+        choiceBCount: synced.choiceBCount,
         survivingChoiceId: null,
       },
     };
@@ -341,7 +337,9 @@ export async function triviaLock(): Promise<EventSnapshot> {
   return updateEventSuite((prev) => {
     const t = prev.trivia ?? createDefaultTriviaState();
     if (t.status !== "open") throw new Error("Voting is not open");
-    return { ...prev, trivia: { ...t, status: "locked" } };
+    // Freeze the countdown at whatever time is left — do not reset to zero.
+    const withTimer = t.timerRunning ? pauseTriviaTimer(t) : t;
+    return { ...prev, trivia: { ...withTimer, status: "locked" } };
   });
 }
 
@@ -619,11 +617,22 @@ export async function triviaResetSeries(): Promise<EventSnapshot> {
   const db = await getDb();
   await votesCol(db).then((c) => c.deleteMany({ eventId: EVENT_ID }));
   await playersCol(db).then((c) => c.deleteMany({ eventId: EVENT_ID }));
-  return updateEventSuite((prev) => ({
-    ...prev,
-    trivia: {
-      ...createDefaultTriviaState(),
-      library: prev.trivia?.library ?? [],
-    },
-  }));
+  return updateEventSuite((prev) => {
+    const prior = prev.trivia;
+    const defaults = createDefaultTriviaState();
+    const timerDurationMs =
+      typeof prior?.timerDurationMs === "number" &&
+      Number.isFinite(prior.timerDurationMs)
+        ? prior.timerDurationMs
+        : defaults.timerDurationMs;
+    return {
+      ...prev,
+      trivia: {
+        ...defaults,
+        library: prior?.library ?? [],
+        timerDurationMs,
+        timerRemainingMs: timerDurationMs,
+      },
+    };
+  });
 }

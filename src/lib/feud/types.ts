@@ -45,6 +45,10 @@ export type FeudGameState = {
   showAnswerScores: boolean;
   /** Which team receives points when an answer is revealed. */
   awardTeam: "left" | "right" | "none";
+  /**
+   * Bumped to flash a single X on the big screen without changing round strikes.
+   */
+  soloStrikeFlash: number;
   library: FeudBankQuestion[];
 };
 

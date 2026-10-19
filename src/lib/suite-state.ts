@@ -72,6 +72,7 @@ import {
   normalizeTriviaOptions,
   normalizeTriviaLibrary,
   syncTriviaOptionsFields,
+  triviaTimerFields,
   type TriviaGameState,
   type TriviaQueuedQuestion,
   type TriviaRoundHistory,
@@ -651,6 +652,7 @@ function normalizeTriviaState(
           .filter((item): item is TriviaRoundHistory => item != null)
       : [],
     library: normalizeTriviaLibrary(raw.library),
+    ...triviaTimerFields(raw),
   };
 }
 
@@ -1005,6 +1007,11 @@ export function normalizeSuiteState(
           : raw.feud?.awardTeam === "none"
             ? "none"
             : "left",
+      soloStrikeFlash:
+        typeof raw.feud?.soloStrikeFlash === "number" &&
+        Number.isFinite(raw.feud.soloStrikeFlash)
+          ? Math.max(0, Math.floor(raw.feud.soloStrikeFlash))
+          : 0,
       rounds: raw.feud?.rounds?.length
         ? raw.feud.rounds
         : createSampleFeudGame().rounds,

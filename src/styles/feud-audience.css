@@ -403,7 +403,7 @@
 
 .feud-audience .bigx-inner {
   font-family: "Arial Black", "Helvetica Neue", Arial, sans-serif;
-  font-size: min(calc(88vw / var(--strike-count)), 82vh, 850px);
+  font-size: min(calc(88vw / var(--strike-count, 1)), 82vh, 850px);
   font-style: normal;
   line-height: 0.8;
   font-weight: 900;

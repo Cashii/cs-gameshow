@@ -2,6 +2,19 @@
 
 ## October 18, 2026
 
+1. **Player screen** — When nothing is live yet, phones show **You're in!** under the logo and ask guests to hang tight until the next game.
+1. **Elimination Trivia** — Configurable countdown with **30s** / **45s** / **1m** presets or a custom time. Start, pause, reset, and **Show** / **Hide** it on the big screen (top left).
+1. **Elimination Trivia** — **Open voting** works on the first click after editing the question (no longer needs a second press).
+1. **Elimination Trivia** — The big screen stays on standby while you prep a question. The question appears when you **Open voting**.
+1. **Elimination Trivia** — **Lock voting** pauses the countdown at the time left instead of jumping to zero.
+1. **Elimination Trivia** — **Live** / **Standby** switch puts the question on screen and opens voting. Use **Close voting** under the answers to lock (do not flip the switch back off).
+1. **Elimination Trivia** — After you pick who survives, phones update right away to won or out.
+1. **Elimination Trivia** — When voting is locked, phones keep the answer buttons on screen (disabled) with **Voting is closed**.
+1. **Elimination Trivia** — Editing question 1 answers no longer snaps Answer A back to the default when you move to Answer B.
+1. **Elimination Trivia** — After a reveal, phones go straight to won/out without flashing the wrong middle screen.
+1. **O69 Club Poll** — The big screen stays on standby while you draft. The question appears when voting goes live.
+1. **O69 Club Poll** — Adding or removing answers updates the big screen and phones right away.
+1. **Friendly Feud** — Strikes still build to **X** / **XX** / **XXX** on the big screen. Use **Single Strike** for a one-off single X that does not count toward the three strikes.
 1. **O69 Club Poll** — Configurable countdown with **30s** / **45s** / **1m** presets or a custom time. Start, pause, reset, and **Show** / **Hide** it on the big screen (top left). Status line under the logo is removed so the logo can be larger; the question sits lower so it clears the countdown.
 1. **O69 Club Poll** — On phones, poll answers use one unselected look and one selected look so your pick is obvious. The live header says **O69 Club Poll**.
 1. **O69 Club Poll** — Clear all past polls with **Clear history** (toast confirms it), or delete one at a time with the trash icon. The live vote log scrolls inside the page instead of making the operator screen grow forever.

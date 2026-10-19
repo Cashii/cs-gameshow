@@ -53,6 +53,7 @@ export function ActiveGameBoard({
           rightTeam={state.feud.rightTeam}
           showTeamScores={state.feud.showTeamScores}
           showAnswerScores={state.feud.showAnswerScores}
+          soloStrikeFlash={state.feud.soloStrikeFlash ?? 0}
           onToggleFullscreen={onToggleFullscreen}
         />
       </div>

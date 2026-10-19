@@ -80,6 +80,10 @@ function RoundScore({ value }: Readonly<{ value: number }>) {
   );
 }
 
+type StrikeFlash =
+  | { kind: "tracked"; count: number; key: number }
+  | { kind: "solo"; key: number };
+
 export function FeudAudienceView({
   round,
   showHeader,
@@ -87,6 +91,7 @@ export function FeudAudienceView({
   rightTeam,
   showTeamScores = true,
   showAnswerScores = true,
+  soloStrikeFlash = 0,
   embedded = false,
   onToggleFullscreen,
 }: Readonly<{
@@ -96,23 +101,31 @@ export function FeudAudienceView({
   rightTeam: FeudTeam;
   showTeamScores?: boolean;
   showAnswerScores?: boolean;
+  /** Bumped to flash a single X without changing round.strikes. */
+  soloStrikeFlash?: number;
   embedded?: boolean;
   onToggleFullscreen?: () => void;
 }>) {
   const strikes = round.strikes || 0;
-  const [strikePulse, setStrikePulse] = useState<number | null>(null);
+  const [strikeFlash, setStrikeFlash] = useState<StrikeFlash | null>(null);
   const prevStrikesRef = useRef(strikes);
+  const prevSoloRef = useRef(soloStrikeFlash);
+  const flashKeyRef = useRef(0);
 
   useEffect(() => {
     const prev = prevStrikesRef.current;
     prevStrikesRef.current = strikes;
     if (strikes <= prev) return;
 
+    flashKeyRef.current += 1;
+    const key = flashKeyRef.current;
     const frame = requestAnimationFrame(() => {
-      setStrikePulse(strikes);
+      setStrikeFlash({ kind: "tracked", count: strikes, key });
     });
     const t = setTimeout(() => {
-      setStrikePulse(null);
+      setStrikeFlash((current) =>
+        current?.kind === "tracked" && current.key === key ? null : current,
+      );
     }, 3500);
 
     return () => {
@@ -120,6 +133,28 @@ export function FeudAudienceView({
       clearTimeout(t);
     };
   }, [strikes]);
+
+  useEffect(() => {
+    const prev = prevSoloRef.current;
+    prevSoloRef.current = soloStrikeFlash;
+    if (soloStrikeFlash <= prev) return;
+
+    flashKeyRef.current += 1;
+    const key = flashKeyRef.current;
+    const frame = requestAnimationFrame(() => {
+      setStrikeFlash({ kind: "solo", key });
+    });
+    const t = setTimeout(() => {
+      setStrikeFlash((current) =>
+        current?.kind === "solo" && current.key === key ? null : current,
+      );
+    }, 3500);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(t);
+    };
+  }, [soloStrikeFlash]);
 
   const total = round.answers.reduce(
     (sum, a) => (a.revealed ? sum + (a.points || 0) : sum),
@@ -188,17 +223,22 @@ export function FeudAudienceView({
         {showTeamScores && <TeamScore team={rightTeam} side="right" />}
       </div>
 
-      {strikePulse != null && strikePulse > 0 && (
-        <div key={strikePulse} className="bigx">
+      {strikeFlash != null && (
+        <div key={strikeFlash.key} className="bigx">
           <div
             className="bigx-inner"
             style={
               {
-                "--strike-count": Math.max(1, strikePulse),
+                "--strike-count":
+                  strikeFlash.kind === "tracked"
+                    ? Math.max(1, strikeFlash.count)
+                    : 1,
               } as React.CSSProperties
             }
           >
-            {"X".repeat(Math.max(1, strikePulse))}
+            {strikeFlash.kind === "tracked"
+              ? "X".repeat(Math.max(1, strikeFlash.count))
+              : "X"}
           </div>
         </div>
       )}

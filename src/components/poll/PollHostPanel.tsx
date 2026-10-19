@@ -8,7 +8,7 @@ import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { uid } from "@/lib/utils";
-import { mergePollBank } from "@/lib/poll/types";
+import { mergePollBank, nextPollChoiceId } from "@/lib/poll/types";
 import { useSuite } from "@/lib/suite-provider";
 
 const HISTORY_PAGE_SIZE = 10;
@@ -28,12 +28,11 @@ export function PollHostPanel() {
   const { toastMessage, showToast } = useToast();
   const spectatorLive = state.spectatorGame === "poll";
   const poll = state.poll;
-  const [question, setQuestion] = useState(poll.question || "");
-  const [choices, setChoices] = useState(
-    poll.choices.length >= 2
-      ? poll.choices.map((c) => c.text)
-      : ["Option A", "Option B"],
-  );
+  const question = poll.question || "";
+  const choices = poll.choices.length >= 2 ? poll.choices : [
+    { id: "a", text: "Option A", votes: 0 },
+    { id: "b", text: "Option B", votes: 0 },
+  ];
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(
@@ -68,17 +67,64 @@ export function PollHostPanel() {
     }
   };
 
-  const choicePayload = () =>
-    choices.map((text, i) => ({
-      id: String.fromCharCode(97 + i),
-      text,
-    }));
-
   const handleOpen = () => {
     void runAction({
       action: "open",
       question,
-      choices: choicePayload(),
+      choices: choices.map((choice) => ({
+        id: choice.id,
+        text: choice.text,
+      })),
+    });
+  };
+
+  const setQuestion = (value: string) => {
+    updatePoll((prev) => ({ ...prev, question: value }));
+  };
+
+  const setChoiceText = (index: number, text: string) => {
+    updatePoll((prev) => ({
+      ...prev,
+      choices: prev.choices.map((choice, i) =>
+        i === index ? { ...choice, text } : choice,
+      ),
+    }));
+  };
+
+  const removeChoice = (index: number) => {
+    updatePoll((prev) => {
+      if (prev.choices.length <= 2) return prev;
+      const removedId = prev.choices[index]?.id;
+      const nextChoices = prev.choices.filter((_, i) => i !== index);
+      return {
+        ...prev,
+        choices: nextChoices,
+        correctChoiceId:
+          prev.correctChoiceId && prev.correctChoiceId === removedId
+            ? null
+            : prev.correctChoiceId,
+        correctAnswerRevealed:
+          prev.correctChoiceId && prev.correctChoiceId === removedId
+            ? false
+            : prev.correctAnswerRevealed,
+      };
+    });
+  };
+
+  const addChoice = () => {
+    updatePoll((prev) => {
+      if (prev.choices.length >= 6) return prev;
+      return {
+        ...prev,
+        choices: [
+          ...prev.choices,
+          {
+            id: nextPollChoiceId(prev.choices),
+            text: "",
+            votes: 0,
+          },
+        ],
+      };
     });
   };
 
@@ -128,23 +174,17 @@ export function PollHostPanel() {
       questions={poll.library ?? []}
       canSave={
         Boolean(question.trim()) &&
-        choices.filter((choice) => choice.trim()).length >= 2
+        choices.filter((choice) => choice.text.trim()).length >= 2
       }
       onSave={() => {
         const texts = choices
-          .map((choice) => choice.trim())
+          .map((choice) => choice.text.trim())
           .filter(Boolean)
           .slice(0, 6);
         if (!question.trim() || texts.length < 2) return;
-        const liveTexts = poll.choices.map((choice) => choice.text);
-        const sameChoices =
-          liveTexts.length === choices.length &&
-          liveTexts.every((text, index) => text === choices[index]);
-        const correctIndex = sameChoices
-          ? poll.choices.findIndex(
-              (choice) => choice.id === poll.correctChoiceId,
-            )
-          : -1;
+        const correctIndex = poll.choices.findIndex(
+          (choice) => choice.id === poll.correctChoiceId,
+        );
         updatePoll((prev) => ({
           ...prev,
           library: mergePollBank(prev.library ?? [], [
@@ -168,8 +208,6 @@ export function PollHostPanel() {
           text: choice.text,
           votes: 0,
         }));
-        setQuestion(entry.question);
-        setChoices(nextChoices.map((choice) => choice.text));
         updatePoll((prev) => ({
           ...prev,
           id: uid(),
@@ -329,22 +367,16 @@ export function PollHostPanel() {
                 </span>
                 <div className="mt-1.5 space-y-2">
                   {choices.map((choice, i) => (
-                    <div key={i} className="flex items-center gap-2">
+                    <div key={choice.id} className="flex items-center gap-2">
                       <input
-                        value={choice}
-                        onChange={(e) => {
-                          const next = [...choices];
-                          next[i] = e.target.value;
-                          setChoices(next);
-                        }}
+                        value={choice.text}
+                        onChange={(e) => setChoiceText(i, e.target.value)}
                         placeholder={`Choice ${i + 1}`}
                         className="min-w-0 flex-1 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-white"
                       />
                       <button
                         type="button"
-                        onClick={() =>
-                          setChoices(choices.filter((_, index) => index !== i))
-                        }
+                        onClick={() => removeChoice(i)}
                         disabled={choices.length <= 2}
                         className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-neutral-700 text-neutral-400 hover:bg-neutral-800 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-30"
                         aria-label={`Remove choice ${i + 1}`}
@@ -358,9 +390,7 @@ export function PollHostPanel() {
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={() =>
-                      setChoices([...choices, `Option ${choices.length + 1}`])
-                    }
+                    onClick={addChoice}
                     disabled={choices.length >= 6}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
                   >

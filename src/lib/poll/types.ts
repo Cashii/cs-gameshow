@@ -17,6 +17,16 @@ export type PollChoice = {
   votes: number;
 };
 
+const POLL_CHOICE_IDS = ["a", "b", "c", "d", "e", "f"] as const;
+
+/** Next unused a–f id for a poll choice. */
+export function nextPollChoiceId(choices: ReadonlyArray<{ id: string }>): string {
+  for (const id of POLL_CHOICE_IDS) {
+    if (!choices.some((choice) => choice.id === id)) return id;
+  }
+  return `x${choices.length}`;
+}
+
 export type PollVoteLogEntry = {
   id: string;
   at: string;
@@ -52,6 +62,41 @@ export type PollState = PollTimerState & {
   scale: number;
   library: PollBankQuestion[];
 };
+
+/**
+ * Keep operator question/choice edits; pull live vote tallies from remote for
+ * matching choice ids. Timer fields stay on the local clock.
+ */
+export function mergePollLive(remote: PollState, local: PollState): PollState {
+  const samePoll = Boolean(local.id) && local.id === remote.id;
+  const remoteVotes = new Map(
+    remote.choices.map((choice) => [choice.id, choice.votes]),
+  );
+  const choices =
+    samePoll && local.choices.length > 0
+      ? local.choices.map((choice) => ({
+          ...choice,
+          votes: remoteVotes.has(choice.id)
+            ? (remoteVotes.get(choice.id) as number)
+            : choice.votes,
+        }))
+      : remote.choices;
+
+  return {
+    ...remote,
+    question: samePoll ? local.question : remote.question,
+    choices,
+    correctChoiceId: samePoll ? local.correctChoiceId : remote.correctChoiceId,
+    showPercentages: samePoll ? local.showPercentages : remote.showPercentages,
+    scale: samePoll ? local.scale : remote.scale,
+    library: (local.library?.length ? local.library : remote.library) ?? [],
+    timerEnabled: Boolean(local.timerEnabled),
+    timerDurationMs: local.timerDurationMs,
+    timerRemainingMs: local.timerRemainingMs,
+    timerRunning: Boolean(local.timerRunning),
+    timerEndsAt: local.timerEndsAt ?? null,
+  };
+}
 
 export const DEFAULT_POLL_SCALE = 1;
 export const MIN_POLL_SCALE = 0.5;

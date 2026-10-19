@@ -32,6 +32,7 @@ function PlayerContent() {
   const [loading, setLoading] = useState(false);
   const [checkingVote, setCheckingVote] = useState(false);
   const [me, setMe] = useState<TriviaMe | null>(null);
+  const [meSyncKey, setMeSyncKey] = useState("");
   const [derbyRacerId, setDerbyRacerId] = useState<DerbyRacerId | null>(null);
   const [checkingDerby, setCheckingDerby] = useState(false);
   const [takeItMe, setTakeItMe] = useState<TakeItMe | null>(null);
@@ -42,37 +43,55 @@ function PlayerContent() {
   const takeIt = state.takeIt ?? createDefaultTakeItState();
   const spectatorGame = state.spectatorGame ?? state.activeGame;
   const deviceId = getOrCreateDeviceId();
-  const playerCode = getDeviceCode(deviceId);
+  const [playerCode, setPlayerCode] = useState("");
   const voted = votedPollId === poll.id;
+  const triviaMeKey = [
+    trivia.status,
+    trivia.roundId,
+    trivia.survivingChoiceId ?? "",
+    trivia.remainingCount,
+    trivia.winnerCodes.join(","),
+  ].join("|");
+  const mePending =
+    spectatorGame === "trivia" &&
+    triviaActive(trivia.status) &&
+    meSyncKey !== triviaMeKey;
+
+  useEffect(() => {
+    setPlayerCode(getDeviceCode(getOrCreateDeviceId()));
+  }, []);
 
   useEffect(() => {
     if (spectatorGame !== "trivia" || !triviaActive(trivia.status) || !deviceId) {
       setMe(null);
+      setMeSyncKey("");
       return;
     }
     let cancelled = false;
+    const key = triviaMeKey;
     fetch(
       `/api/trivia/me?deviceId=${encodeURIComponent(deviceId)}`,
       { cache: "no-store" },
     )
       .then((r) => r.json())
       .then((data: TriviaMe) => {
-        if (!cancelled) setMe(data);
+        if (cancelled) return;
+        setMe(data);
+        setMeSyncKey(key);
       })
       .catch(() => {
-        if (!cancelled) setMe(null);
+        if (cancelled) return;
+        setMe(null);
+        setMeSyncKey(key);
       });
     return () => {
       cancelled = true;
     };
   }, [
-    trivia.status,
-    trivia.roundId,
-    trivia.survivingChoiceId,
-    trivia.remainingCount,
-    trivia.winnerCodes,
+    triviaMeKey,
     deviceId,
     spectatorGame,
+    trivia.status,
   ]);
 
   const pollLive =
@@ -318,6 +337,7 @@ function PlayerContent() {
         deviceId={deviceId}
         playerCode={playerCode}
         me={me}
+        mePending={mePending}
         loading={loading}
         message={message}
         onVote={handleTriviaVote}
@@ -371,13 +391,12 @@ function PlayerContent() {
   return (
     <StandbyScreen
       size="player"
-      subtitle="Stand by — waiting for the next game."
+      title="You're in!"
+      subtitle="Hang tight — the next game will show up here when it's ready."
     >
-      {playerCode ? (
-        <div className="mt-3 text-sm tracking-widest text-neutral-500">
-          {playerCode}
-        </div>
-      ) : null}
+      <div className="min-h-5 text-sm tracking-widest text-neutral-500">
+        {playerCode}
+      </div>
     </StandbyScreen>
   );
 }

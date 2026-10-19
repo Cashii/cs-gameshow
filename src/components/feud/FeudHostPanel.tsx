@@ -156,6 +156,13 @@ export function FeudHostPanel() {
       r.strikes = clamp((r.strikes || 0) - 1, 0, 3);
     });
 
+  const flashSoloStrike = () => {
+    updateFeud((prev) => ({
+      ...prev,
+      soloStrikeFlash: (prev.soloStrikeFlash ?? 0) + 1,
+    }));
+  };
+
   const openAddRound = () => {
     setQuestionDialogMode("add");
     setQuestionDraft("");
@@ -511,7 +518,7 @@ export function FeudHostPanel() {
                   </span>
                 ))}
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 <IconButton
                   label="Add Strike"
                   onClick={addStrike}
@@ -521,6 +528,11 @@ export function FeudHostPanel() {
                   label="Remove Strike"
                   onClick={removeStrike}
                   disabled={!round.strikes}
+                  style={{ marginRight: 0 }}
+                />
+                <IconButton
+                  label="Single Strike"
+                  onClick={flashSoloStrike}
                   style={{ marginRight: 0 }}
                 />
               </div>
@@ -884,6 +896,7 @@ export function FeudHostPanel() {
               rightTeam={feud.rightTeam}
               showTeamScores={feud.showTeamScores}
               showAnswerScores={feud.showAnswerScores}
+              soloStrikeFlash={feud.soloStrikeFlash ?? 0}
               embedded
             />
           </div>

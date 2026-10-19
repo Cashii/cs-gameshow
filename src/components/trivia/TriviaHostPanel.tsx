@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSuite } from "@/lib/suite-provider";
 import {
   createTriviaQueuedQuestion,
   MAX_TRIVIA_OPTIONS,
   mergeTriviaBank,
   MIN_TRIVIA_OPTIONS,
+  pauseTriviaTimer,
   syncTriviaOptionsFields,
   triviaChoiceIdAt,
   triviaChoiceIndex,
@@ -17,6 +18,7 @@ import {
   type TriviaStatus,
 } from "@/lib/trivia/types";
 import { TriviaQuestionBank } from "@/components/trivia/TriviaQuestionBank";
+import { TriviaTimerPanel } from "@/components/trivia/TriviaTimerPanel";
 import {
   OperatorNotice,
   SpectatorScreenNotice,
@@ -57,7 +59,7 @@ function triviaStatusClass(
 }
 
 export function TriviaHostPanel() {
-  const { state, refreshSnapshot, setState } = useSuite();
+  const { state, refreshSnapshot, setState, updateTrivia } = useSuite();
   const trivia = state.trivia;
   const spectatorLive = state.spectatorGame === "trivia";
   const [question, setQuestion] = useState(trivia.question || "");
@@ -73,6 +75,9 @@ export function TriviaHostPanel() {
     () => trivia.queue ?? [],
   );
   const [bankOpenRequest, setBankOpenRequest] = useState(0);
+  const draftRef = useRef({ question, options });
+  const setupSeqRef = useRef(0);
+  draftRef.current = { question, options };
 
   const runAction = async (body: Record<string, unknown>) => {
     setLoading(true);
@@ -201,17 +206,34 @@ export function TriviaHostPanel() {
 
   const persistQuestionDraft = () => {
     if (trivia.status !== "idle") return;
-    setQuestion((currentQuestion) => {
-      setOptions((currentOptions) => {
-        void runAction({
-          action: "setup",
-          question: currentQuestion,
-          options: currentOptions,
+    const seq = ++setupSeqRef.current;
+    const { question: draftQuestion, options: draftOptions } = draftRef.current;
+    void (async () => {
+      setLoading(true);
+      setMessage("");
+      try {
+        const res = await fetch("/api/trivia", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "setup",
+            question: draftQuestion,
+            options: draftOptions,
+          }),
         });
-        return currentOptions;
-      });
-      return currentQuestion;
-    });
+        const data = (await res.json()) as { error?: string };
+        if (!res.ok) throw new Error(data.error ?? "Action failed");
+        // Ignore outdated draft saves so a slower earlier blur cannot wipe later edits.
+        if (seq !== setupSeqRef.current) return;
+        await refreshSnapshot();
+      } catch (e) {
+        if (seq === setupSeqRef.current) {
+          setMessage(e instanceof Error ? e.message : "Failed");
+        }
+      } finally {
+        if (seq === setupSeqRef.current) setLoading(false);
+      }
+    })();
   };
 
   const queue = queueDraft;
@@ -263,23 +285,54 @@ export function TriviaHostPanel() {
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
             Game actions
           </span>
-          {trivia.status === "idle" && (
-            <button
-              type="button"
-              disabled={loading || !question.trim()}
-              onClick={() =>
-                void runAction({
-                  action: "open",
-                  question,
-                  options,
-                })
-              }
-              className="inline-flex h-10 items-center rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40"
-            >
-              {settingUpNext
-                ? `Open question ${questionNumber}`
-                : "Open voting"}
-            </button>
+          {trivia.status !== "finished" && (
+            <>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={trivia.status !== "idle"}
+                aria-label="Put question on screen"
+                disabled={
+                  loading ||
+                  trivia.status !== "idle" ||
+                  !question.trim()
+                }
+                onPointerDown={(event) => {
+                  // Keep focus in the question field so blur→setup does not race open.
+                  if (event.button === 0) event.preventDefault();
+                }}
+                onClick={() => {
+                  if (trivia.status !== "idle") return;
+                  void runAction({
+                    action: "open",
+                    question,
+                    options,
+                  });
+                }}
+                className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-40 ${
+                  trivia.status !== "idle"
+                    ? "bg-emerald-500"
+                    : "bg-neutral-500"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                    trivia.status !== "idle"
+                      ? "translate-x-5"
+                      : "translate-x-0"
+                  }`}
+                />
+              </button>
+              <span
+                className={`text-sm font-semibold ${
+                  trivia.status !== "idle"
+                    ? "text-emerald-400"
+                    : "text-red-400"
+                }`}
+              >
+                {trivia.status !== "idle" ? "Live" : "Standby"}
+              </span>
+            </>
           )}
           <button
             type="button"
@@ -467,20 +520,25 @@ export function TriviaHostPanel() {
               </button>
             ) : null}
           </div>
+          {trivia.status === "open" ? (
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => {
+                updateTrivia((prev) =>
+                  prev.timerRunning ? pauseTriviaTimer(prev) : prev,
+                );
+                void runAction({ action: "lock" });
+              }}
+              className="mt-3 w-full rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-40"
+            >
+              Close voting
+            </button>
+          ) : null}
           </div>
 
           {(trivia.status !== "idle" || trivia.remainingCount > 0) && (
           <div className="flex flex-wrap gap-2">
-            {trivia.status === "open" && (
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => void runAction({ action: "lock" })}
-                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-40"
-              >
-                Lock voting
-              </button>
-            )}
             {trivia.status === "locked" && (
               <>
                 {liveOptions.map((option, index) => {
@@ -704,6 +762,7 @@ export function TriviaHostPanel() {
         </div>
 
         <div className="space-y-4">
+          <TriviaTimerPanel />
           <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
             <p className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
               Counts

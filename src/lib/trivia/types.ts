@@ -48,7 +48,16 @@ export type TriviaRoundHistory = {
   answeredCount: number;
 };
 
-export type TriviaGameState = {
+export type TriviaTimerState = {
+  /** When true, a running or paused countdown can appear on the big screen. */
+  timerEnabled: boolean;
+  timerDurationMs: number;
+  timerRemainingMs: number;
+  timerRunning: boolean;
+  timerEndsAt: number | null;
+};
+
+export type TriviaGameState = TriviaTimerState & {
   status: TriviaStatus;
   roundId: string;
   roundIndex: number;
@@ -68,6 +77,140 @@ export type TriviaGameState = {
   history: TriviaRoundHistory[];
   library: TriviaBankQuestion[];
 };
+
+export const TRIVIA_DURATION_PRESETS_MS = [30_000, 45_000, 60_000] as const;
+export const DEFAULT_TRIVIA_DURATION_MS = 30_000;
+export const MIN_TRIVIA_DURATION_MS = 5_000;
+export const MAX_TRIVIA_DURATION_MS = 10 * 60_000;
+
+export function clampTriviaDurationMs(ms: unknown): number {
+  if (typeof ms !== "number" || !Number.isFinite(ms)) {
+    return DEFAULT_TRIVIA_DURATION_MS;
+  }
+  return Math.min(
+    MAX_TRIVIA_DURATION_MS,
+    Math.max(MIN_TRIVIA_DURATION_MS, Math.round(ms)),
+  );
+}
+
+export function triviaRemainingMs(
+  state: Pick<
+    TriviaGameState,
+    "timerRunning" | "timerEndsAt" | "timerRemainingMs"
+  >,
+  now = Date.now(),
+): number {
+  if (state.timerRunning && state.timerEndsAt != null) {
+    return Math.max(0, Math.round(state.timerEndsAt - now));
+  }
+  return Math.max(0, Math.round(state.timerRemainingMs));
+}
+
+export function startTriviaTimer(
+  state: TriviaGameState,
+  now = Date.now(),
+): TriviaGameState {
+  const remaining = triviaRemainingMs(state, now);
+  const nextRemaining = remaining > 0 ? remaining : state.timerDurationMs;
+  return {
+    ...state,
+    timerEnabled: true,
+    timerRemainingMs: nextRemaining,
+    timerRunning: true,
+    timerEndsAt: now + nextRemaining,
+  };
+}
+
+export function pauseTriviaTimer(
+  state: TriviaGameState,
+  now = Date.now(),
+): TriviaGameState {
+  return {
+    ...state,
+    timerRunning: false,
+    timerRemainingMs: triviaRemainingMs(state, now),
+    timerEndsAt: null,
+  };
+}
+
+export function resetTriviaTimer(state: TriviaGameState): TriviaGameState {
+  return {
+    ...state,
+    timerRunning: false,
+    timerRemainingMs: state.timerDurationMs,
+    timerEndsAt: null,
+  };
+}
+
+export function setTriviaDuration(
+  state: TriviaGameState,
+  durationMs: number,
+): TriviaGameState {
+  const next = clampTriviaDurationMs(durationMs);
+  return {
+    ...state,
+    timerDurationMs: next,
+    timerRemainingMs: next,
+    timerRunning: false,
+    timerEndsAt: null,
+  };
+}
+
+export function setTriviaTimerEnabled(
+  state: TriviaGameState,
+  enabled: boolean,
+): TriviaGameState {
+  if (enabled) return { ...state, timerEnabled: true };
+  return pauseTriviaTimer({ ...state, timerEnabled: false });
+}
+
+/** Audience clock is hidden until the operator starts it, and stays up through a pause or zero. */
+export function triviaTimerOnScreen(state: TriviaGameState): boolean {
+  if (!state.timerEnabled) return false;
+  if (state.timerRunning) return true;
+  return state.timerRemainingMs < state.timerDurationMs;
+}
+
+export function formatTriviaClock(ms: number): string {
+  const totalSec = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(totalSec / 60);
+  const seconds = totalSec % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+export function formatTriviaPreset(ms: number): string {
+  if (ms < 60_000) return `${ms / 1000}s`;
+  const minutes = Math.floor(ms / 60_000);
+  const seconds = (ms % 60_000) / 1000;
+  return seconds
+    ? `${minutes}:${String(seconds).padStart(2, "0")}`
+    : `${minutes}m`;
+}
+
+export function triviaTimerFields(
+  trivia: Partial<TriviaTimerState> | null | undefined,
+): TriviaTimerState {
+  const timerDurationMs = clampTriviaDurationMs(trivia?.timerDurationMs);
+  const timerRunning = Boolean(trivia?.timerRunning);
+  const timerEndsAt =
+    timerRunning &&
+    typeof trivia?.timerEndsAt === "number" &&
+    Number.isFinite(trivia.timerEndsAt)
+      ? trivia.timerEndsAt
+      : null;
+  const timerRemainingMs =
+    typeof trivia?.timerRemainingMs === "number" &&
+    Number.isFinite(trivia.timerRemainingMs)
+      ? Math.max(0, Math.round(trivia.timerRemainingMs))
+      : timerDurationMs;
+  return {
+    timerEnabled: Boolean(trivia?.timerEnabled),
+    timerDurationMs,
+    timerRemainingMs,
+    timerRunning: timerRunning && timerEndsAt != null,
+    timerEndsAt: timerRunning ? timerEndsAt : null,
+  };
+}
 
 export type TriviaBankQuestion = {
   id: string;
@@ -240,6 +383,11 @@ export function createDefaultTriviaState(): TriviaGameState {
     queue: [],
     history: [],
     library: [],
+    timerEnabled: false,
+    timerDurationMs: DEFAULT_TRIVIA_DURATION_MS,
+    timerRemainingMs: DEFAULT_TRIVIA_DURATION_MS,
+    timerRunning: false,
+    timerEndsAt: null,
   };
 }
 
