@@ -1070,6 +1070,7 @@ export function normalizeSuiteState(
         ...wheelRest,
         zoom: clampWheelZoom(rawWheel.zoom),
         showLetterLegend: rawWheel.showLetterLegend ?? true,
+        strikesEnabled: rawWheel.strikesEnabled !== false,
         topic: typeof rawWheel.topic === "string" ? rawWheel.topic : "",
         wrongCount:
           typeof rawWheel.wrongCount === "number" ? rawWheel.wrongCount : 0,

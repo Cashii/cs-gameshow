@@ -2,6 +2,7 @@
 
 ## October 21, 2026
 
+1. **Word Up** — **Strikes** toggle (next to Letter legend) turns the big-screen X on or off for wrong letters. Letters still mark as guessed either way.
 1. **Word Up** — **Save to bank** / **Update in bank** puts the current phrase, topic, and board zoom into Phrases and topics. A toast confirms the save. Each saved phrase shows its zoom in that list.
 1. **Live Drawer** — On narrower operator screens, the color count **+** / **−** buttons stay fully visible instead of getting cut off.
 1. **Price is Tight** — Queue upcoming items from the item bank (**Queue**) or the current desk (**Queue current**). Reorder or remove them in **Upcoming items**, then press **Next item** to load the first one onto the desk with the curtain closed.

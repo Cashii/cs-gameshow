@@ -352,7 +352,10 @@ export function WheelHostPanel() {
     updateWheel((prev) => ({
       ...prev,
       revealedLetters: [...prev.revealedLetters, letter],
-      wrongCount: hit ? prev.wrongCount : (prev.wrongCount ?? 0) + 1,
+      wrongCount:
+        hit || prev.strikesEnabled === false
+          ? prev.wrongCount
+          : (prev.wrongCount ?? 0) + 1,
     }));
   };
 
@@ -393,7 +396,7 @@ export function WheelHostPanel() {
             </button>
           </div>
 
-          <div className="ml-auto flex flex-wrap items-center gap-3">
+          <div className="ml-auto flex flex-wrap items-center gap-4">
             <div className="inline-flex h-10 items-center gap-2">
               <span className="text-sm font-semibold text-neutral-200">
                 Letter legend
@@ -416,6 +419,36 @@ export function WheelHostPanel() {
                 <span
                   className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
                     wheel.showLetterLegend ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+            <div className="inline-flex h-10 items-center gap-2">
+              <span className="text-sm font-semibold text-neutral-200">
+                Strikes
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={wheel.strikesEnabled !== false}
+                aria-label="Toggle strikes for wrong letters"
+                onClick={() =>
+                  updateWheel((prev) => ({
+                    ...prev,
+                    strikesEnabled: prev.strikesEnabled === false,
+                  }))
+                }
+                className={`relative h-6 w-11 rounded-full transition-colors ${
+                  wheel.strikesEnabled !== false
+                    ? "bg-emerald-500"
+                    : "bg-neutral-500"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                    wheel.strikesEnabled !== false
+                      ? "translate-x-5"
+                      : "translate-x-0"
                   }`}
                 />
               </button>

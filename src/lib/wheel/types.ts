@@ -13,6 +13,8 @@ export type WheelGameState = {
   revealedAll: boolean;
   zoom: number;
   showLetterLegend: boolean;
+  /** When false, wrong letter guesses do not add a strike X. */
+  strikesEnabled: boolean;
   wrongCount: number;
   /** Saved topics/phrases you can load onto the board anytime. */
   bank: WheelBankPuzzle[];
@@ -140,6 +142,7 @@ export function createDefaultWheelState(): WheelGameState {
     revealedAll: false,
     zoom: DEFAULT_WHEEL_ZOOM,
     showLetterLegend: true,
+    strikesEnabled: true,
     wrongCount: 0,
     bank: [],
     activeBankId: null,
