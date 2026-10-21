@@ -228,6 +228,72 @@ function historyTokenClass(number: string): string {
   return "size-8 text-base";
 }
 
+/** +/- stepper that keeps both buttons visible when the panel is narrow. */
+function ColorDrawStepper({
+  name,
+  count,
+  available,
+  empty,
+  borderColor,
+  disabled,
+  onDecrease,
+  onIncrease,
+  onCountChange,
+}: Readonly<{
+  name: string;
+  count: number;
+  available: number;
+  empty: boolean;
+  borderColor: string;
+  disabled: boolean;
+  onDecrease: () => void;
+  onIncrease: () => void;
+  onCountChange: (value: number) => void;
+}>) {
+  return (
+    <div
+      className={`mt-1 flex h-14 w-full min-w-0 items-stretch overflow-hidden rounded-md border-2 bg-neutral-700 ${
+        empty ? "opacity-40" : ""
+      }`}
+      style={{ borderColor }}
+    >
+      <button
+        type="button"
+        aria-label={`Decrease ${name}`}
+        disabled={disabled || empty || count <= 0}
+        onClick={onDecrease}
+        className="inline-flex w-10 shrink-0 items-center justify-center text-white hover:bg-black/25 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <Minus size={24} strokeWidth={2.75} />
+      </button>
+      {empty ? (
+        <div className="flex min-w-0 flex-1 items-center justify-center px-0.5 text-xl font-bold leading-none tabular-nums text-neutral-400">
+          0
+        </div>
+      ) : (
+        <input
+          type="number"
+          min={0}
+          max={available}
+          value={count}
+          aria-label={`${name} draw count`}
+          onChange={(e) => onCountChange(Number(e.target.value) || 0)}
+          className="h-full min-w-0 flex-1 bg-transparent px-0.5 text-center text-xl font-bold leading-none tabular-nums text-white [appearance:textfield] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        />
+      )}
+      <button
+        type="button"
+        aria-label={`Increase ${name}`}
+        disabled={disabled || empty || count >= available}
+        onClick={onIncrease}
+        className="inline-flex w-10 shrink-0 items-center justify-center text-white hover:bg-black/25 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <Plus size={24} strokeWidth={2.75} />
+      </button>
+    </div>
+  );
+}
+
 const SUMMARY_FIRST_COLUMN_COLOR_IDS = new Set(
   LIVE_DRAWER_COLORS.slice(0, 4).map((color) => color.id),
 );
@@ -996,56 +1062,23 @@ export function LiveDrawerHostPanel() {
                           className={`min-w-0 text-xs font-semibold ${empty ? "text-neutral-600" : "text-neutral-300"}`}
                         >
                           {c.name}
-                          <div
-                            className={`mt-1 grid h-14 w-full grid-cols-[3rem_minmax(2.5rem,1fr)_3rem] items-stretch overflow-hidden rounded-md border-2 bg-neutral-700 ${
-                              empty ? "opacity-40" : ""
-                            }`}
-                            style={{ borderColor: c.hex }}
-                          >
-                            <button
-                              type="button"
-                              aria-label={`Decrease ${c.name}`}
-                              disabled={loading || empty || count <= 0}
-                              onClick={() =>
-                                setColorDrawCount(c.id, c.name, count - 1)
-                              }
-                              className="inline-flex items-center justify-center text-white hover:bg-black/25 disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                              <Minus size={26} strokeWidth={2.75} />
-                            </button>
-                            {empty ? (
-                              <div className="flex items-center justify-center px-1 text-xl font-bold leading-none tabular-nums text-neutral-400">
-                                0
-                              </div>
-                            ) : (
-                              <input
-                                type="number"
-                                min={0}
-                                max={available}
-                                value={count}
-                                aria-label={`${c.name} draw count`}
-                                onChange={(e) =>
-                                  setColorDrawCount(
-                                    c.id,
-                                    c.name,
-                                    Number(e.target.value) || 0,
-                                  )
-                                }
-                                className="h-full w-full bg-transparent px-1 text-center text-xl font-bold leading-none tabular-nums text-white [appearance:textfield] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                              />
-                            )}
-                            <button
-                              type="button"
-                              aria-label={`Increase ${c.name}`}
-                              disabled={loading || empty || count >= available}
-                              onClick={() =>
-                                setColorDrawCount(c.id, c.name, count + 1)
-                              }
-                              className="inline-flex items-center justify-center text-white hover:bg-black/25 disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                              <Plus size={26} strokeWidth={2.75} />
-                            </button>
-                          </div>
+                          <ColorDrawStepper
+                            name={c.name}
+                            count={count}
+                            available={available}
+                            empty={empty}
+                            borderColor={c.hex}
+                            disabled={loading}
+                            onDecrease={() =>
+                              setColorDrawCount(c.id, c.name, count - 1)
+                            }
+                            onIncrease={() =>
+                              setColorDrawCount(c.id, c.name, count + 1)
+                            }
+                            onCountChange={(value) =>
+                              setColorDrawCount(c.id, c.name, value)
+                            }
+                          />
                         </div>
                       );
                     })}
@@ -1069,56 +1102,23 @@ export function LiveDrawerHostPanel() {
                           className={`min-w-0 text-xs font-semibold ${empty ? "text-neutral-600" : "text-neutral-300"}`}
                         >
                           {c.name}
-                          <div
-                            className={`mt-1 grid h-14 w-full grid-cols-[3rem_minmax(2.5rem,1fr)_3rem] items-stretch overflow-hidden rounded-md border-2 bg-neutral-700 ${
-                              empty ? "opacity-40" : ""
-                            }`}
-                            style={{ borderColor: c.hex }}
-                          >
-                            <button
-                              type="button"
-                              aria-label={`Decrease ${c.name}`}
-                              disabled={loading || empty || count <= 0}
-                              onClick={() =>
-                                setColorDrawCount(c.id, c.name, count - 1)
-                              }
-                              className="inline-flex items-center justify-center text-white hover:bg-black/25 disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                              <Minus size={26} strokeWidth={2.75} />
-                            </button>
-                            {empty ? (
-                              <div className="flex items-center justify-center px-1 text-xl font-bold leading-none tabular-nums text-neutral-400">
-                                0
-                              </div>
-                            ) : (
-                              <input
-                                type="number"
-                                min={0}
-                                max={available}
-                                value={count}
-                                aria-label={`${c.name} draw count`}
-                                onChange={(e) =>
-                                  setColorDrawCount(
-                                    c.id,
-                                    c.name,
-                                    Number(e.target.value) || 0,
-                                  )
-                                }
-                                className="h-full w-full bg-transparent px-1 text-center text-xl font-bold leading-none tabular-nums text-white [appearance:textfield] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                              />
-                            )}
-                            <button
-                              type="button"
-                              aria-label={`Increase ${c.name}`}
-                              disabled={loading || empty || count >= available}
-                              onClick={() =>
-                                setColorDrawCount(c.id, c.name, count + 1)
-                              }
-                              className="inline-flex items-center justify-center text-white hover:bg-black/25 disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                              <Plus size={26} strokeWidth={2.75} />
-                            </button>
-                          </div>
+                          <ColorDrawStepper
+                            name={c.name}
+                            count={count}
+                            available={available}
+                            empty={empty}
+                            borderColor={c.hex}
+                            disabled={loading}
+                            onDecrease={() =>
+                              setColorDrawCount(c.id, c.name, count - 1)
+                            }
+                            onIncrease={() =>
+                              setColorDrawCount(c.id, c.name, count + 1)
+                            }
+                            onCountChange={(value) =>
+                              setColorDrawCount(c.id, c.name, value)
+                            }
+                          />
                         </div>
                       );
                     })}
@@ -1130,47 +1130,17 @@ export function LiveDrawerHostPanel() {
                       }`}
                     >
                       Any
-                      <div
-                        className={`mt-1 grid h-14 w-full grid-cols-[3rem_minmax(2.5rem,1fr)_3rem] items-stretch overflow-hidden rounded-md border-2 border-neutral-400 bg-neutral-700 ${
-                          anyAvailable === 0 && anyCount === 0 ? "opacity-40" : ""
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          aria-label="Decrease Any"
-                          disabled={loading || anyCount <= 0}
-                          onClick={() => setAnyDrawCount(anyCount - 1)}
-                          className="inline-flex items-center justify-center text-white hover:bg-black/25 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          <Minus size={26} strokeWidth={2.75} />
-                        </button>
-                        {anyAvailable === 0 && anyCount === 0 ? (
-                          <div className="flex items-center justify-center px-1 text-xl font-bold leading-none tabular-nums text-neutral-400">
-                            0
-                          </div>
-                        ) : (
-                          <input
-                            type="number"
-                            min={0}
-                            max={anyAvailable}
-                            value={anyCount}
-                            aria-label="Any draw count"
-                            onChange={(e) =>
-                              setAnyDrawCount(Number(e.target.value) || 0)
-                            }
-                            className="h-full w-full bg-transparent px-1 text-center text-xl font-bold leading-none tabular-nums text-white [appearance:textfield] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                          />
-                        )}
-                        <button
-                          type="button"
-                          aria-label="Increase Any"
-                          disabled={loading || anyCount >= anyAvailable}
-                          onClick={() => setAnyDrawCount(anyCount + 1)}
-                          className="inline-flex items-center justify-center text-white hover:bg-black/25 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          <Plus size={26} strokeWidth={2.75} />
-                        </button>
-                      </div>
+                      <ColorDrawStepper
+                        name="Any"
+                        count={anyCount}
+                        available={anyAvailable}
+                        empty={anyAvailable === 0 && anyCount === 0}
+                        borderColor="#a3a3a3"
+                        disabled={loading}
+                        onDecrease={() => setAnyDrawCount(anyCount - 1)}
+                        onIncrease={() => setAnyDrawCount(anyCount + 1)}
+                        onCountChange={setAnyDrawCount}
+                      />
                     </div>
                   </div>
                   <button

@@ -1,15 +1,14 @@
 # Updates
 
-## October 19, 2026
+## October 21, 2026
 
+1. **Word Up** — **Save to bank** / **Update in bank** puts the current phrase, topic, and board zoom into Phrases and topics. A toast confirms the save. Each saved phrase shows its zoom in that list.
+1. **Live Drawer** — On narrower operator screens, the color count **+** / **−** buttons stay fully visible instead of getting cut off.
 1. **Price is Tight** — Queue upcoming items from the item bank (**Queue**) or the current desk (**Queue current**). Reorder or remove them in **Upcoming items**, then press **Next item** to load the first one onto the desk with the curtain closed.
 1. **Price is Tight** — Upcoming items sit in a top-to-bottom list. Use the large up/down arrows to reorder (touch-friendly). The top item is marked **Plays next**.
 1. **Elimination Trivia** — Upcoming questions use the same large up/down arrows to reorder. The top question is marked **Plays next**.
 1. **Price Wheel** — Big screen scoreboard uses the same show-stage look as Price is Tight and Price Order (gold frames, cream names, gold scores).
 1. **Price Wheel** — Add points with **+5** / **+10** / **+25** / **+50** / **+100**, or type a custom amount and **Add** / **Subtract**. The score field still lets you set the total directly.
-
-## October 18, 2026
-
 1. **Player screen** — When nothing is live yet, phones show **You're in!** under the logo and ask guests to hang tight until the next game.
 1. **Elimination Trivia** — Configurable countdown with **30s** / **45s** / **1m** presets or a custom time. Start, pause, reset, and **Show** / **Hide** it on the big screen (top left).
 1. **Elimination Trivia** — **Open voting** works on the first click after editing the question (no longer needs a second press).
@@ -28,11 +27,7 @@
 1. **O69 Club Poll** — Clear all past polls with **Clear history** (toast confirms it), or delete one at a time with the trash icon. The live vote log scrolls inside the page instead of making the operator screen grow forever.
 1. **Word Up** — Topic title on the big screen is larger and easier to read from the audience.
 1. **Word Up** — Board zoom sits with **Current phrase** and is saved with each phrase and topic, so loading a saved phrase restores its size. **Change** sits next to Current phrase.
-
 1. **Message Board** — On screen and Message size sit side by side. **Save** / **Clear** sit beside the text field; size − / + / Reset sit beside the slider. Size is saved per message.
-
-## October 17, 2026
-
 1. **Live Drawer** — Clear draw history without deleting called numbers.
 1. **Live Drawer** — Build a **Queued Tokens** list: select numbers, press **Queue tokens**, then **Draw** the group you want. Tap a queued number twice to remove it (first tap turns it red). Use **Add** on a group to add more numbers.
 1. **Live Drawer** — **Add tokens** in Token Summary opens a form for new numbers. Optional notes can be added there, or edited and cleared later in a note form.

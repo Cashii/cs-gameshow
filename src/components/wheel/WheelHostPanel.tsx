@@ -6,6 +6,7 @@ import { Check, FolderOpen, Minus, Pencil, Plus, Trash2, X } from "lucide-react"
 import { useSuite } from "@/lib/suite-provider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
+import { Toast, useToast } from "@/components/ui/Toast";
 import { Tooltip } from "@/components/ui/Tooltip";
 import {
   MAX_WHEEL_ZOOM,
@@ -173,9 +174,9 @@ export function WheelHostPanel() {
   const [editing, setEditing] = useState(!wheel.phrase);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [pendingLoadId, setPendingLoadId] = useState<string | null>(null);
-  const [notice, setNotice] = useState("");
   const [bankOpen, setBankOpen] = useState(false);
   const [phraseForm, setPhraseForm] = useState<PhraseForm | null>(null);
+  const { toastMessage, showToast } = useToast();
 
   useEffect(() => {
     if (wheel.phrase) return;
@@ -232,7 +233,6 @@ export function WheelHostPanel() {
       activeBankId: null,
     }));
     setEditing(false);
-    setNotice("");
   };
 
   const handleStartChange = () => {
@@ -250,18 +250,18 @@ export function WheelHostPanel() {
       return next;
     });
     if (!loaded) {
-      setNotice("That bank item needs a phrase before you can load it.");
+      showToast("That bank item needs a phrase before you can load it.");
       return;
     }
     setEditing(false);
     setBankOpen(false);
-    setNotice("Phrase loaded from the bank.");
+    showToast("Phrase loaded from the bank.");
   };
 
   const handleLoadBank = (bankId: string) => {
     const item = bank.find((entry) => entry.id === bankId);
     if (!item?.phrase.trim()) {
-      setNotice("That bank item needs a phrase before you can load it.");
+      showToast("That bank item needs a phrase before you can load it.");
       return;
     }
     if (boardHasProgress) {
@@ -269,6 +269,34 @@ export function WheelHostPanel() {
       return;
     }
     applyLoadBank(bankId);
+  };
+
+  const currentInBank =
+    Boolean(wheel.activeBankId) &&
+    bank.some((item) => item.id === wheel.activeBankId);
+
+  const handleSaveCurrentToBank = () => {
+    const phrase = wheel.phrase.trim();
+    if (!phrase) return;
+    const topic = wheel.topic.trim();
+    const zoom = clampWheelZoom(wheel.zoom);
+    if (currentInBank && wheel.activeBankId) {
+      const id = wheel.activeBankId;
+      saveBank(
+        bank.map((item) =>
+          item.id === id ? { ...item, phrase, topic, zoom } : item,
+        ),
+      );
+      showToast("Updated the bank entry for this phrase.");
+      return;
+    }
+    const entry = createWheelBankPuzzle({ phrase, topic, zoom });
+    updateWheel((prev) => ({
+      ...prev,
+      bank: [...(prev.bank ?? []), entry],
+      activeBankId: entry.id,
+    }));
+    showToast("Current phrase saved to the bank.");
   };
 
   const savePhraseForm = () => {
@@ -406,10 +434,6 @@ export function WheelHostPanel() {
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="w-full p-6">
           <div className="space-y-6">
-            {notice ? (
-              <p className="text-sm text-sky-300">{notice}</p>
-            ) : null}
-
             <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
@@ -425,6 +449,15 @@ export function WheelHostPanel() {
                       <FolderOpen size={18} />
                     </button>
                   </Tooltip>
+                  {locked && wheel.phrase.trim() ? (
+                    <button
+                      type="button"
+                      onClick={handleSaveCurrentToBank}
+                      className="inline-flex h-10 items-center rounded-md border border-sky-500 bg-sky-600 px-4 text-sm font-semibold text-white hover:bg-sky-500"
+                    >
+                      {currentInBank ? "Update in bank" : "Save to bank"}
+                    </button>
+                  ) : null}
                   {locked && (
                     <button
                       type="button"
@@ -598,20 +631,31 @@ export function WheelHostPanel() {
                   Phrases and topics
                 </Dialog.Title>
                 <Dialog.Description className="mt-1 text-sm text-neutral-400">
-                  Pick a phrase to put it on the board. Each one shows its topic.
-                  Add, edit, or delete phrases here.
+                  Pick a phrase to put it on the board. Each one shows its topic
+                  and saved board zoom. Add, edit, or delete phrases here.
                 </Dialog.Description>
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setPhraseForm({ mode: "add", topic: "", phrase: "" })
-                }
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-neutral-700 bg-neutral-800 px-3 text-sm font-medium text-white hover:bg-neutral-700"
-              >
-                <Plus size={16} />
-                Add phrase
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                {wheel.phrase.trim() ? (
+                  <button
+                    type="button"
+                    onClick={handleSaveCurrentToBank}
+                    className="inline-flex h-9 items-center rounded-lg border border-teal-500 bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-500"
+                  >
+                    {currentInBank ? "Update current" : "Save current"}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPhraseForm({ mode: "add", topic: "", phrase: "" })
+                  }
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-neutral-700 bg-neutral-800 px-3 text-sm font-medium text-white hover:bg-neutral-700"
+                >
+                  <Plus size={16} />
+                  Add phrase
+                </button>
+              </div>
             </div>
             {phraseForm?.mode === "add" ? (
               <form
@@ -648,6 +692,9 @@ export function WheelHostPanel() {
                   autoFocus
                   className="min-w-40 flex-2 rounded-lg border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-500 focus:ring-2 focus:ring-sky-500 focus:outline-none"
                 />
+                <span className="rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm font-semibold tabular-nums text-neutral-300">
+                  Zoom {Math.round(clampWheelZoom(wheel.zoom) * 100)}%
+                </span>
                 <button
                   type="button"
                   onClick={() => setPhraseForm(null)}
@@ -670,7 +717,7 @@ export function WheelHostPanel() {
             ) : null}
             {bank.length === 0 ? (
               <p className="px-6 pb-6 text-sm text-neutral-500">
-                No saved phrases yet. Add one here.
+                No saved phrases yet. Save the current phrase, or add one here.
               </p>
             ) : (
               <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-6 pb-6">
@@ -726,6 +773,9 @@ export function WheelHostPanel() {
                             autoFocus
                             className="min-w-40 flex-2 rounded-md border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
                           />
+                          <span className="rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm font-semibold tabular-nums text-neutral-300">
+                            Zoom {Math.round(clampWheelZoom(item.zoom) * 100)}%
+                          </span>
                           <button
                             type="button"
                             onClick={() => setPhraseForm(null)}
@@ -761,6 +811,8 @@ export function WheelHostPanel() {
                             </span>
                             <span className="mt-1 block text-xs leading-relaxed text-neutral-400">
                               {item.topic.trim() || "No topic"}
+                              {" · "}
+                              Zoom {Math.round(clampWheelZoom(item.zoom) * 100)}%
                             </span>
                           </span>
                           {selected ? (
@@ -811,6 +863,8 @@ export function WheelHostPanel() {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      <Toast message={toastMessage} />
 
       <ConfirmDialog
         open={resetConfirmOpen}
