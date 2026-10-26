@@ -31,6 +31,7 @@ function triviaStatusLabel(
   status: TriviaStatus,
   questionNumber: number,
   settingUpNext: boolean,
+  noWinners: boolean,
 ): string {
   switch (status) {
     case "open":
@@ -40,7 +41,7 @@ function triviaStatusLabel(
     case "revealed":
       return `Question ${questionNumber} closed`;
     case "finished":
-      return "Winners";
+      return noWinners ? "Game over" : "Winners";
     default:
       return settingUpNext
         ? `Set up question ${questionNumber}`
@@ -131,6 +132,8 @@ export function TriviaHostPanel() {
     trivia.status === "revealed" && trivia.remainingCount > 1;
   const nobodySurvived =
     trivia.status === "revealed" && trivia.remainingCount === 0;
+  const gameEndedEmpty =
+    trivia.status === "finished" && trivia.winnerCodes.length === 0;
 
   useEffect(() => {
     setQuestion(trivia.question || "");
@@ -145,6 +148,7 @@ export function TriviaHostPanel() {
     trivia.status,
     questionNumber,
     settingUpNext,
+    gameEndedEmpty,
   );
 
   const answersLocked =
@@ -489,7 +493,14 @@ export function TriviaHostPanel() {
           title={`Nobody survived question ${trivia.roundIndex}`}
         >
           Try this round again to put those players back in and ask a different
-          question. Undo reveal to keep this question and pick the other side.
+          question, or end the game with no winners. Undo reveal to keep this
+          question and pick the other side.
+        </OperatorNotice>
+      ) : null}
+
+      {gameEndedEmpty ? (
+        <OperatorNotice className="mb-6" title="Game over">
+          Nobody survived. Undo end if you want to try this round again.
         </OperatorNotice>
       ) : null}
 
@@ -624,14 +635,24 @@ export function TriviaHostPanel() {
               </>
             )}
             {nobodySurvived && (
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => void runAction({ action: "retryRound" })}
-                className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-40"
-              >
-                Try this round again
-              </button>
+              <>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => void runAction({ action: "retryRound" })}
+                  className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-40"
+                >
+                  Try this round again
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => void runAction({ action: "endGame" })}
+                  className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-amber-400 disabled:opacity-40"
+                >
+                  End game
+                </button>
+              </>
             )}
             {(trivia.status === "revealed" || trivia.status === "finished") && (
               <button
@@ -640,7 +661,11 @@ export function TriviaHostPanel() {
                 onClick={() => void runAction({ action: "undoReveal" })}
                 className="rounded-lg border border-teal-500 bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
               >
-                {trivia.status === "finished" ? "Undo winners" : "Undo reveal"}
+                {trivia.status === "finished"
+                  ? gameEndedEmpty
+                    ? "Undo end"
+                    : "Undo winners"
+                  : "Undo reveal"}
               </button>
             )}
             {trivia.status === "revealed" && trivia.remainingCount > 1 && (
@@ -915,7 +940,12 @@ export function TriviaHostPanel() {
             {nobodySurvived ? (
               <p className="mt-3 text-sm text-amber-400">
                 Nobody survived. Try this round again for a different question,
-                or undo the reveal and pick the other side.
+                end the game, or undo the reveal and pick the other side.
+              </p>
+            ) : null}
+            {gameEndedEmpty ? (
+              <p className="mt-3 text-sm text-amber-400">
+                Game over. Nobody survived.
               </p>
             ) : null}
           </div>

@@ -69,9 +69,11 @@ export function TriviaAudienceView({
     statusText = `${trivia.answeredCount} answers in`;
   } else if (trivia.status === "finished") {
     statusText =
-      trivia.winnerCodes.length === 1
-        ? `Winner ${trivia.winnerCodes[0] ?? ""}`
-        : `${trivia.remainingCount} winners`;
+      trivia.winnerCodes.length === 0
+        ? "No winners"
+        : trivia.winnerCodes.length === 1
+          ? `Winner ${trivia.winnerCodes[0] ?? ""}`
+          : `${trivia.remainingCount} winners`;
   } else if (survivingLabel) {
     statusText = `${survivingLabel} survives`;
   }

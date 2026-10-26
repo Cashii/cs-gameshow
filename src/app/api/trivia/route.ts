@@ -1,6 +1,7 @@
 import {
   castTriviaVote,
   triviaDeclareWinners,
+  triviaEndGame,
   triviaLock,
   triviaNextQuestion,
   triviaOpen,
@@ -89,6 +90,8 @@ export async function POST(request: Request) {
         return json(await triviaUndoReveal());
       case "retryRound":
         return json(await triviaRetryRound());
+      case "endGame":
+        return json(await triviaEndGame());
       case "nextQuestion":
         return json(await triviaNextQuestion());
       case "declareWinners":

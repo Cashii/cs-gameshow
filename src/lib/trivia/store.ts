@@ -536,6 +536,36 @@ export async function triviaUndoReveal(): Promise<EventSnapshot> {
   }));
 }
 
+export async function triviaEndGame(): Promise<EventSnapshot> {
+  const event = await ensureEvent();
+  const trivia = event.trivia ?? createDefaultTriviaState();
+  if (trivia.status !== "revealed") {
+    throw new Error("Reveal a question before ending the game");
+  }
+
+  const db = await getDb();
+  const stillIn = await playersCol(db).then((c) =>
+    c.countDocuments({ eventId: EVENT_ID, status: "active" }),
+  );
+  if (stillIn > 0) {
+    throw new Error("Players are still in");
+  }
+
+  return updateEventSuite((prev) => {
+    const t = prev.trivia ?? createDefaultTriviaState();
+    return {
+      ...prev,
+      trivia: {
+        ...t,
+        status: "finished",
+        remainingCount: 0,
+        winnerCodes: [],
+        history: withTriviaHistoryAppended(t),
+      },
+    };
+  });
+}
+
 export async function triviaDeclareWinners(): Promise<EventSnapshot> {
   const event = await ensureEvent();
   const trivia = event.trivia ?? createDefaultTriviaState();

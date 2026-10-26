@@ -42,7 +42,11 @@ export function PlayerTriviaPanel({
         <StatusScreen
           eyebrow="Elimination Trivia"
           title="You're out"
-          body={`${trivia.remainingCount} still in.`}
+          body={
+            trivia.status === "finished" && trivia.remainingCount === 0
+              ? "The game is over."
+              : `${trivia.remainingCount} still in.`
+          }
           playerCode={playerCode}
           tone="out"
         />
@@ -95,7 +99,11 @@ export function PlayerTriviaPanel({
       <StatusScreen
         eyebrow="Elimination Trivia"
         title="You're out"
-        body={`${trivia.remainingCount} still in.`}
+        body={
+          trivia.status === "finished" && trivia.remainingCount === 0
+            ? "The game is over."
+            : `${trivia.remainingCount} still in.`
+        }
         playerCode={playerCode}
         tone="out"
       />
