@@ -88,8 +88,9 @@ import {
 } from "@/lib/price-guesser/types";
 import {
   createDefaultPriceOrderState,
+  isPlayerOrderCorrect,
   PRICE_ORDER_MAX_ITEMS,
-  syncPriceOrderSlots,
+  syncPriceOrder,
   withSyncedPriceOrderResult,
   type PriceOrderItem,
   type PriceOrderState,
@@ -900,14 +901,32 @@ function normalizePriceOrderState(
         .filter((item): item is PriceOrderItem => item != null)
     : defaults.items;
   const visible = items.filter((item) => item.imageUrl);
-  const order = syncPriceOrderSlots(
+  const order = syncPriceOrder(
     Array.isArray(raw.order) ? raw.order : [],
     visible,
   );
+  const resultShown = Boolean(raw.resultShown);
+  let resultCorrect =
+    typeof raw.resultCorrect === "boolean" ? raw.resultCorrect : null;
+  const answerRevealed =
+    typeof raw.answerRevealed === "boolean"
+      ? raw.answerRevealed
+      : resultShown || resultCorrect != null;
+  if (resultShown && resultCorrect == null) {
+    resultCorrect = isPlayerOrderCorrect({
+      items,
+      order,
+      resultShown,
+      resultCorrect: null,
+      answerRevealed,
+    });
+  }
   return withSyncedPriceOrderResult({
     items,
     order,
-    resultShown: Boolean(raw.resultShown),
+    resultShown,
+    resultCorrect,
+    answerRevealed,
   });
 }
 

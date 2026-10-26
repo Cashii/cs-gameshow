@@ -462,8 +462,8 @@
 
 .price-order-piece {
   --order-tag-h: clamp(2.6rem, 6vh, 4.5rem);
-  --order-label-h: 2.75rem;
-  --order-stack-gap: 0.75rem;
+  --order-label-h: 3.75rem;
+  --order-stack-gap: 0.35rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -481,13 +481,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
   width: 100%;
   height: 100%;
   max-width: 100%;
   min-width: 0;
   min-height: 0;
-  container-type: inline-size;
+  gap: var(--order-stack-gap);
+  container-type: size;
   container-name: order-stack;
 }
 
@@ -517,9 +517,12 @@
 }
 
 .price-order-slot .price-order-curtain-stage {
-  flex: 1 1 0;
-  min-height: 0;
-  width: 100%;
+  flex: 0 0 auto;
+  align-self: center;
+  width: min(
+    100cqw,
+    calc(100cqh - var(--order-tag-h) - var(--order-label-h) - var(--order-stack-gap))
+  );
   max-width: 100%;
 }
 
@@ -531,15 +534,13 @@
   border-radius: 0.75rem;
 }
 
-/* Grow the square photo to the largest size that still fits the slot. */
+/* Largest square that still fits the column width and the space above the name. */
 .price-order-slot .price-order-photo-wrap {
-  flex: 1 1 0;
-  min-height: 0;
-  width: auto;
+  flex: 0 0 auto;
+  width: 100%;
   max-width: 100%;
   aspect-ratio: 1 / 1;
   height: auto;
-  max-height: 100%;
   align-self: center;
 }
 
@@ -563,10 +564,11 @@
 }
 
 .price-order-slot .price-photo-frame {
+  box-sizing: border-box;
   width: 100%;
-  height: 100%;
-  aspect-ratio: auto;
-  flex: 1 1 auto;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  flex: 0 0 auto;
   min-height: 0;
   border-radius: 0.75rem;
   border-width: 3px;
@@ -622,6 +624,8 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
+  box-sizing: border-box;
+  height: var(--order-label-h);
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: clamp(0.85rem, 8cqw, 1.3rem);

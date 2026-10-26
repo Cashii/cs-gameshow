@@ -16,14 +16,28 @@ export type PriceOrderItem = {
 
 export type PriceOrderState = {
   items: PriceOrderItem[];
-  /** Slot ids from cheapest to most expensive. `null` is an empty slot. */
-  order: Array<string | null>;
-  /** Spectator result overlay. Host shows it after prices are revealed. */
+  /** On-screen order, left to right. Stays as arranged until the order is revealed. */
+  order: string[];
+  /** Spectator result overlay. */
   resultShown: boolean;
+  /** True after Reveal order, until the board is cleared. */
+  answerRevealed: boolean;
+  /**
+   * Whether the arrangement was correct when it was judged.
+   * Null until the operator reveals the order or shows the result.
+   * Sorting the board does not change this.
+   */
+  resultCorrect: boolean | null;
 };
 
 export function createDefaultPriceOrderState(): PriceOrderState {
-  return { items: [], order: [], resultShown: false };
+  return {
+    items: [],
+    order: [],
+    resultShown: false,
+    resultCorrect: null,
+    answerRevealed: false,
+  };
 }
 
 export function createEmptyPriceOrderItem(): PriceOrderItem {
@@ -44,13 +58,14 @@ export function visiblePriceOrderItems(
   return state.items.filter((item) => item.imageUrl);
 }
 
-export function syncPriceOrderSlots(
+/** On-screen ids, left to right. New photos are appended. Empty slots are dropped. */
+export function syncPriceOrder(
   order: ReadonlyArray<string | null | undefined>,
   visible: readonly PriceOrderItem[],
-): Array<string | null> {
+): string[] {
   const visibleIds = new Set(visible.map((item) => item.id));
   const seen = new Set<string>();
-  const slots: Array<string | null> = [];
+  const next: string[] = [];
   for (const entry of order) {
     if (
       typeof entry !== "string" ||
@@ -58,72 +73,75 @@ export function syncPriceOrderSlots(
       !visibleIds.has(entry) ||
       seen.has(entry)
     ) {
-      slots.push(null);
       continue;
     }
     seen.add(entry);
-    slots.push(entry);
+    next.push(entry);
   }
-  while (slots.length < visible.length) slots.push(null);
-  while (slots.length > visible.length) {
-    const emptyAt = slots.lastIndexOf(null);
-    if (emptyAt >= 0) slots.splice(emptyAt, 1);
-    else slots.pop();
+  for (const item of visible) {
+    if (!seen.has(item.id)) next.push(item.id);
   }
-  return slots;
-}
-
-export function placedPriceOrderIds(state: PriceOrderState): Set<string> {
-  const ids = new Set<string>();
-  for (const id of state.order) {
-    if (id) ids.add(id);
-  }
-  return ids;
-}
-
-export function unplacedPriceOrderItems(
-  state: PriceOrderState,
-): PriceOrderItem[] {
-  const placed = placedPriceOrderIds(state);
-  return visiblePriceOrderItems(state).filter((item) => !placed.has(item.id));
-}
-
-export function priceOrderSlots(
-  state: PriceOrderState,
-): Array<PriceOrderItem | null> {
-  const visible = visiblePriceOrderItems(state);
-  const byId = new Map(visible.map((item) => [item.id, item]));
-  return syncPriceOrderSlots(state.order, visible).map((id) =>
-    id ? (byId.get(id) ?? null) : null,
-  );
+  return next;
 }
 
 export function orderedPriceOrderItems(
   state: PriceOrderState,
 ): PriceOrderItem[] {
-  return priceOrderSlots(state).filter(
-    (item): item is PriceOrderItem => item != null,
-  );
+  const visible = visiblePriceOrderItems(state);
+  const byId = new Map(visible.map((item) => [item.id, item]));
+  return syncPriceOrder(state.order, visible).flatMap((id) => {
+    const item = byId.get(id);
+    return item ? [item] : [];
+  });
 }
 
-export function isPriceOrderComplete(state: PriceOrderState): boolean {
-  const slots = priceOrderSlots(state);
-  return slots.length > 0 && slots.every((item) => item != null);
+/** Every card in the operator row, including items that do not have a photo yet. */
+export function boardPriceOrderItems(state: PriceOrderState): PriceOrderItem[] {
+  const byId = new Map(state.items.map((item) => [item.id, item]));
+  return syncPriceOrder(state.order, state.items).flatMap((id) => {
+    const item = byId.get(id);
+    return item ? [item] : [];
+  });
 }
 
-export function allPlacedPricesRevealed(state: PriceOrderState): boolean {
-  const ordered = orderedPriceOrderItems(state);
-  return ordered.length > 0 && ordered.every((item) => item.priceRevealed);
+/** Every on-screen item has a price, so the answer can be sorted. */
+export function priceOrderAnswerReady(state: PriceOrderState): boolean {
+  const visible = visiblePriceOrderItems(state);
+  return visible.length > 0 && visible.every((item) => item.price != null);
 }
 
-export function priceOrderResultReady(state: PriceOrderState): boolean {
-  return isPriceOrderComplete(state) && allPlacedPricesRevealed(state);
+export function sortPriceOrderByPrice(
+  items: readonly PriceOrderItem[],
+): PriceOrderItem[] {
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => {
+      const aPrice = a.item.price;
+      const bPrice = b.item.price;
+      if (aPrice == null && bPrice == null) return a.index - b.index;
+      if (aPrice == null) return 1;
+      if (bPrice == null) return -1;
+      if (aPrice !== bPrice) return aPrice - bPrice;
+      return a.index - b.index;
+    })
+    .map(({ item }) => item);
 }
 
 export function withSyncedPriceOrderResult(
   state: PriceOrderState,
 ): PriceOrderState {
-  if (state.resultShown && !priceOrderResultReady(state)) {
+  if (visiblePriceOrderItems(state).length === 0) {
+    if (!state.resultShown && state.resultCorrect == null && !state.answerRevealed) {
+      return state;
+    }
+    return {
+      ...state,
+      resultShown: false,
+      resultCorrect: null,
+      answerRevealed: false,
+    };
+  }
+  if (state.resultShown && state.resultCorrect == null) {
     return { ...state, resultShown: false };
   }
   return state;

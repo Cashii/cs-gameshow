@@ -2,39 +2,28 @@
 
 import { useState } from "react";
 import {
-  ChevronDown,
-  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   FolderOpen,
   Plus,
   RotateCcw,
   Trash2,
-  X,
 } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import {
   PRICE_ORDER_MAX_ITEMS,
   createDefaultPriceOrderState,
+  boardPriceOrderItems,
   createEmptyPriceOrderItem,
   isPlayerOrderCorrect,
   orderedPriceOrderItems,
-  priceOrderResultReady,
-  priceOrderSlots,
-  syncPriceOrderSlots,
-  unplacedPriceOrderItems,
-  visiblePriceOrderItems,
+  priceOrderAnswerReady,
+  sortPriceOrderByPrice,
   type PriceOrderItem,
   type PriceOrderState,
 } from "@/lib/price-order/types";
-import {
-  formatPrice,
-  parsePriceInput,
-  priceInputValue,
-} from "@/lib/price/format";
-import {
-  DEFAULT_PHOTO_FIT,
-  photoFitStyle,
-  type PhotoFit,
-} from "@/lib/price/photo-fit";
+import { parsePriceInput, priceInputValue } from "@/lib/price/format";
+import { DEFAULT_PHOTO_FIT } from "@/lib/price/photo-fit";
 import { copyMediaUrl, deleteMediaByUrl } from "@/lib/media/upload";
 import { PriceItemLibrary } from "@/components/price/PriceItemLibrary";
 import {
@@ -49,6 +38,7 @@ import { Toast, useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { StatusSwitch } from "@/components/operator/StatusSwitch";
+import { usePriceItemLayoutAnimation } from "@/components/price-order/usePriceItemLayoutAnimation";
 
 export function PriceOrderHostPanel() {
   const { state, updatePriceOrder, updatePriceCatalog } = useSuite();
@@ -56,7 +46,6 @@ export function PriceOrderHostPanel() {
   const catalog = state.priceCatalog ?? [];
   const { toastMessage, showToast } = useToast();
   const spectatorLive = state.spectatorGame === "priceOrder";
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [bankOpenRequest, setBankOpenRequest] = useState(0);
   const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
@@ -65,25 +54,28 @@ export function PriceOrderHostPanel() {
     updatePriceOrder(updater);
   };
 
-  const unplaced = unplacedPriceOrderItems(game);
   const ordered = orderedPriceOrderItems(game);
-  const slots = priceOrderSlots(game);
-  const visibleItems = visiblePriceOrderItems(game);
+  const board = boardPriceOrderItems(game);
+  const orderKey = board.map((item) => item.id).join(",");
+  const orderRowRef = usePriceItemLayoutAnimation(orderKey);
+  const visibleItems = ordered;
   const allItemsRevealed =
     visibleItems.length > 0 &&
-    visibleItems.every((item) => item.itemRevealed !== false);
+    visibleItems.every((item) => item.itemRevealed);
   const canAdd = game.items.length < PRICE_ORDER_MAX_ITEMS;
-  const selectedUnplaced =
-    selectedId && unplaced.some((item) => item.id === selectedId)
-      ? selectedId
-      : null;
+  const answerReady = priceOrderAnswerReady(game);
+  const revealDisabled =
+    !answerReady || (game.answerRevealed && isPlayerOrderCorrect(game));
 
   const updateItem = (
     id: string,
     updater: (item: PriceOrderItem) => PriceOrderItem,
+    options?: { clearAnswer?: boolean },
   ) => {
     patch((prev) => ({
       ...prev,
+      resultShown: options?.clearAnswer ? false : prev.resultShown,
+      resultCorrect: options?.clearAnswer ? null : prev.resultCorrect,
       items: prev.items.map((item) => (item.id === id ? updater(item) : item)),
     }));
   };
@@ -104,66 +96,64 @@ export function PriceOrderHostPanel() {
     if (item?.imageUrl && !savedUrls.has(item.imageUrl)) {
       void deleteMediaByUrl(item.imageUrl);
     }
-    if (selectedId === id) setSelectedId(null);
-    patch((prev) => {
-      const items = prev.items.filter((entry) => entry.id !== id);
-      return {
-        ...prev,
-        items,
-        order: syncPriceOrderSlots(
-          prev.order.map((entryId) => (entryId === id ? null : entryId)),
-          visiblePriceOrderItems({ ...prev, items }),
-        ),
-      };
-    });
-  };
-
-  const placeSelectedAt = (index: number) => {
-    if (!selectedUnplaced) return;
-    const id = selectedUnplaced;
-    patch((prev) => {
-      const visible = visiblePriceOrderItems(prev);
-      const next = syncPriceOrderSlots(prev.order, visible);
-      if (next[index] || next.includes(id)) return prev;
-      next[index] = id;
-      return { ...prev, order: next };
-    });
-    setSelectedId(null);
+    patch((prev) => ({
+      ...prev,
+      items: prev.items.filter((entry) => entry.id !== id),
+      resultShown: false,
+      resultCorrect: null,
+    }));
   };
 
   const moveOrdered = (index: number, direction: -1 | 1) => {
     patch((prev) => {
-      const visible = visiblePriceOrderItems(prev);
-      const next = syncPriceOrderSlots(prev.order, visible);
+      const next = boardPriceOrderItems(prev).map((item) => item.id);
       const nextIndex = index + direction;
       if (nextIndex < 0 || nextIndex >= next.length) return prev;
       const current = next[index];
       next[index] = next[nextIndex];
       next[nextIndex] = current;
-      return { ...prev, order: next };
+      return {
+        ...prev,
+        order: next,
+        resultShown: false,
+        resultCorrect: null,
+      };
     });
-  };
-
-  const removeFromOrder = (id: string) => {
-    patch((prev) => ({
-      ...prev,
-      order: syncPriceOrderSlots(
-        prev.order.map((entryId) => (entryId === id ? null : entryId)),
-        visiblePriceOrderItems(prev),
-      ),
-    }));
   };
 
   const revealItem = (id: string, revealed: boolean) => {
     updateItem(id, (item) => ({ ...item, priceRevealed: revealed }));
   };
 
-  const resultReady = priceOrderResultReady(game);
-  const resultCorrect = resultReady && isPlayerOrderCorrect(game);
+  const revealOrder = () => {
+    patch((prev) => {
+      if (!priceOrderAnswerReady(prev)) return prev;
+      const correct = isPlayerOrderCorrect(prev);
+      const sorted = sortPriceOrderByPrice(boardPriceOrderItems(prev));
+      return {
+        ...prev,
+        order: sorted.map((item) => item.id),
+        resultCorrect: correct,
+        answerRevealed: true,
+      };
+    });
+  };
+
+  const toggleResult = () => {
+    patch((prev) => {
+      if (prev.resultShown) return { ...prev, resultShown: false };
+      if (!priceOrderAnswerReady(prev)) return prev;
+      return {
+        ...prev,
+        resultShown: true,
+        resultCorrect: prev.resultCorrect ?? isPlayerOrderCorrect(prev),
+      };
+    });
+  };
+
   const resultAction = resultButton(
     Boolean(game.resultShown),
-    resultReady,
-    resultCorrect,
+    game.resultCorrect,
   );
 
   const hideAll = () => {
@@ -171,15 +161,6 @@ export function PriceOrderHostPanel() {
       ...prev,
       items: prev.items.map((item) => ({ ...item, priceRevealed: false })),
     }));
-  };
-
-  const clearOrder = () => {
-    patch((prev) => ({
-      ...prev,
-      order: visiblePriceOrderItems(prev).map(() => null),
-      items: prev.items.map((item) => ({ ...item, priceRevealed: false })),
-    }));
-    setSelectedId(null);
   };
 
   const liveImageUrls = () => [
@@ -197,7 +178,6 @@ export function PriceOrderHostPanel() {
         void deleteMediaByUrl(item.imageUrl);
       }
     }
-    setSelectedId(null);
     patch(() => createDefaultPriceOrderState());
   };
 
@@ -256,10 +236,18 @@ export function PriceOrderHostPanel() {
           </button>
           <button
             type="button"
-            disabled={!resultReady && !game.resultShown}
-            onClick={() =>
-              patch((prev) => ({ ...prev, resultShown: !prev.resultShown }))
+            disabled={revealDisabled}
+            onClick={revealOrder}
+            className="inline-flex h-10 items-center rounded-md border border-amber-400 bg-amber-500 px-4 text-sm font-semibold text-neutral-950 hover:bg-amber-400 disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500"
+          >
+            Reveal order
+          </button>
+          <button
+            type="button"
+            disabled={
+              !game.resultShown && game.resultCorrect == null && !answerReady
             }
+            onClick={toggleResult}
             className={`inline-flex h-10 items-center rounded-md border px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500 ${resultAction.className}`}
           >
             {resultAction.label}
@@ -341,15 +329,11 @@ export function PriceOrderHostPanel() {
                     if (imageUrl) void deleteMediaByUrl(imageUrl);
                     return prev;
                   }
-                  const items = [...prev.items, next];
                   return {
                     ...prev,
-                    items,
-                    order: syncPriceOrderSlots(
-                      prev.order,
-                      visiblePriceOrderItems({ ...prev, items }),
-                    ),
+                    items: [...prev.items, next],
                     resultShown: false,
+                    resultCorrect: null,
                   };
                 });
               }}
@@ -378,277 +362,156 @@ export function PriceOrderHostPanel() {
         </SpectatorScreenNotice>
       )}
       <div className="min-h-0 flex-1 overflow-auto">
-        <div className="flex w-full flex-col gap-6 px-6 py-6">
-          <div className="grid grid-cols-1 items-start lg:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)]">
-            <div className="flex flex-col gap-4 pb-6 lg:sticky lg:top-4 lg:pr-6 lg:pb-0">
-              {unplaced.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {unplaced.map((item) => {
-                    const selected = selectedUnplaced === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedId((current) =>
-                            current === item.id ? null : item.id,
-                          );
-                        }}
-                        className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-sm ${
-                          selected
-                            ? "border-sky-400 bg-sky-500/15 text-white ring-2 ring-sky-400/60"
-                            : "border-neutral-700 bg-neutral-900 text-neutral-200 hover:border-neutral-500"
-                        }`}
-                      >
-                        <CroppedThumb
-                          src={item.imageUrl}
-                          fit={item.photoFit}
-                          className="h-10 w-10 rounded"
-                        />
-                        <span className="max-w-28 truncate">
-                          {item.label.trim() || "Untitled"}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              <section className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="min-w-0 flex-1 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-                    Player order (cheapest → most expensive)
-                  </h3>
-                  <button
-                    type="button"
-                    disabled={ordered.length === 0}
-                    onClick={clearOrder}
-                    className="inline-flex h-8 shrink-0 items-center rounded-md border border-teal-500 bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Clear list
-                  </button>
-                </div>
-                {slots.length === 0 && game.items.length > 0 && (
-                  <p className="text-sm text-neutral-500">Empty list</p>
-                )}
-                {slots.map((item, index) =>
-                  item ? (
-                    <div key={item.id} className="flex flex-col gap-2">
-                      <div className="flex items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-2">
-                        <span className="w-6 text-center text-sm font-bold text-amber-300">
-                          {index + 1}
-                        </span>
-                        <CroppedThumb
-                          src={item.imageUrl}
-                          fit={item.photoFit}
-                          className="h-12 w-12 rounded"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-white">
-                            {item.label.trim() || "Untitled"}
-                          </p>
-                          <p className="text-sm font-semibold tabular-nums text-amber-300">
-                            {formatPrice(item.price)}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-1">
-                          <button
-                            type="button"
-                            disabled={index === 0}
-                            onClick={() => moveOrdered(index, -1)}
-                            className="rounded-md p-1.5 text-neutral-300 hover:bg-neutral-800 disabled:opacity-30"
-                            aria-label="Move up"
-                          >
-                            <ChevronUp size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            disabled={index === slots.length - 1}
-                            onClick={() => moveOrdered(index, 1)}
-                            className="rounded-md p-1.5 text-neutral-300 hover:bg-neutral-800 disabled:opacity-30"
-                            aria-label="Move down"
-                          >
-                            <ChevronDown size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removeFromOrder(item.id)}
-                            className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-800 hover:text-red-300"
-                            aria-label="Clear from list"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex flex-nowrap items-center gap-2 px-1">
-                        <StatusSwitch
-                          size="sm"
-                          checked={item.itemRevealed !== false}
-                          labelOn="Curtain open"
-                          labelOff="Curtain closed"
-                          ariaLabel={`${item.label.trim() || "Item"} curtain`}
-                          onToggle={() =>
-                            updateItem(item.id, (prev) => ({
-                              ...prev,
-                              itemRevealed: !(prev.itemRevealed !== false),
-                            }))
-                          }
-                        />
-                        <StatusSwitch
-                          size="sm"
-                          checked={item.priceRevealed}
-                          disabled={item.price == null}
-                          labelOn="Price showing"
-                          labelOff="Price hidden"
-                          ariaLabel={`${item.label.trim() || "Item"} price`}
-                          onToggle={() =>
-                            revealItem(item.id, !item.priceRevealed)
-                          }
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      key={`slot-${index}`}
-                      type="button"
-                      disabled={!selectedUnplaced}
-                      onClick={() => placeSelectedAt(index)}
-                      className={`flex min-h-14 items-center gap-3 rounded-xl border border-dashed px-3 py-2 text-left text-sm ${
-                        selectedUnplaced
-                          ? "border-sky-500 bg-sky-500/10 text-sky-200 hover:border-sky-400"
-                          : "border-neutral-800 bg-neutral-950 text-neutral-500"
-                      }`}
-                    >
-                      <span className="w-6 text-center text-sm font-bold text-amber-300/80">
-                        {index + 1}
-                      </span>
-                      <span>
-                        {selectedUnplaced
-                          ? `Place in slot ${index + 1}`
-                          : `Slot ${index + 1}`}
-                      </span>
-                    </button>
-                  ),
-                )}
-              </section>
-            </div>
-
-            <section className="flex flex-col gap-3 border-t border-neutral-700 pt-6 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
-              <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-                Items ({game.items.length}/{PRICE_ORDER_MAX_ITEMS})
-              </h3>
-
-              <div className="flex flex-wrap items-stretch gap-3">
-                {game.items.map((item, index) => (
-                  <article
-                    key={item.id}
-                    className="flex w-64 shrink-0 flex-col gap-2 rounded-xl border border-neutral-800 bg-neutral-900 p-3"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold text-white">
-                        Item {index + 1}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item.id)}
-                        className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-red-300"
-                        aria-label={`Remove item ${index + 1}`}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                    <SquarePhotoEditor
-                      imageUrl={item.imageUrl}
-                      fit={item.photoFit ?? DEFAULT_PHOTO_FIT}
-                      onUploaded={(url) =>
-                        updateItem(item.id, (prev) => ({
-                          ...prev,
-                          imageUrl: url,
-                          priceRevealed: false,
-                          itemRevealed: false,
-                          photoFit: { ...DEFAULT_PHOTO_FIT },
-                        }))
-                      }
-                      onFitChange={(photoFit) =>
-                        updateItem(item.id, (prev) => ({ ...prev, photoFit }))
-                      }
-                      onError={showToast}
-                    />
-                    {item.imageUrl ? (
-                      <StatusSwitch
-                        checked={item.itemRevealed !== false}
-                        labelOn="Curtain open"
-                        labelOff="Curtain closed"
-                        ariaLabel={`${item.label.trim() || `Item ${index + 1}`} curtain`}
-                        onToggle={() =>
-                          updateItem(item.id, (prev) => ({
-                            ...prev,
-                            itemRevealed: !(prev.itemRevealed !== false),
-                          }))
-                        }
-                      />
-                    ) : null}
-                    <input
-                      type="text"
-                      value={item.label}
-                      onChange={(event) =>
-                        updateItem(item.id, (prev) => ({
-                          ...prev,
-                          label: event.target.value,
-                        }))
-                      }
-                      placeholder="Name (optional)"
-                      className="h-8 rounded-lg border border-neutral-700 bg-neutral-950 px-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
-                    />
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={
-                        priceDrafts[item.id] ?? priceInputValue(item.price)
-                      }
-                      onChange={(event) => {
-                        const next = event.target.value;
-                        setPriceDrafts((drafts) => ({
-                          ...drafts,
-                          [item.id]: next,
-                        }));
-                        updateItem(item.id, (prev) => ({
-                          ...prev,
-                          price: parsePriceInput(next),
-                          priceRevealed: false,
-                        }));
-                      }}
-                      placeholder="Price"
-                      className="h-8 rounded-lg border border-neutral-700 bg-neutral-950 px-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
-                    />
-                  </article>
-                ))}
-                {canAdd ? (
-                  <div className="flex min-h-72 w-64 shrink-0 flex-col items-center justify-center gap-4 self-stretch rounded-xl border border-dashed border-neutral-600 bg-neutral-950 px-4 py-8">
+        <div className="flex w-full flex-col gap-3 px-6 py-6">
+          <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+            On display ({board.length}/{PRICE_ORDER_MAX_ITEMS})
+          </h3>
+          <div
+            ref={orderRowRef}
+            className="flex items-stretch gap-3 overflow-x-auto pb-1"
+          >
+            {board.map((item, index) => (
+              <article
+                key={item.id}
+                data-price-move={item.id}
+                className="relative flex w-64 shrink-0 flex-col gap-2 rounded-xl border border-neutral-800 bg-neutral-900 p-3"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-bold text-amber-300">
+                    {index + 1}
+                  </span>
+                  <div className="flex shrink-0 items-center gap-1">
                     <button
                       type="button"
-                      onClick={addItem}
-                      className="flex flex-col items-center gap-3 text-neutral-300 hover:text-sky-200"
+                      disabled={index === 0}
+                      onClick={() => moveOrdered(index, -1)}
+                      className="rounded-md p-1.5 text-neutral-300 hover:bg-neutral-800 disabled:opacity-30"
+                      aria-label="Move left"
                     >
-                      <span className="flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-current">
-                        <Plus size={22} />
-                      </span>
-                      <span className="text-sm font-semibold">Add item</span>
+                      <ChevronLeft size={16} />
                     </button>
                     <button
                       type="button"
-                      onClick={() =>
-                        setBankOpenRequest((current) => current + 1)
-                      }
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500 bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-500"
+                      disabled={index === board.length - 1}
+                      onClick={() => moveOrdered(index, 1)}
+                      className="rounded-md p-1.5 text-neutral-300 hover:bg-neutral-800 disabled:opacity-30"
+                      aria-label="Move right"
                     >
-                      <FolderOpen size={14} />
-                      Choose from bank
+                      <ChevronRight size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(item.id)}
+                      className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-800 hover:text-red-300"
+                      aria-label={`Remove item ${index + 1}`}
+                    >
+                      <Trash2 size={16} />
                     </button>
                   </div>
-                ) : null}
+                </div>
+                <SquarePhotoEditor
+                  imageUrl={item.imageUrl}
+                  fit={item.photoFit ?? DEFAULT_PHOTO_FIT}
+                  onUploaded={(url) =>
+                    updateItem(
+                      item.id,
+                      (prev) => ({
+                        ...prev,
+                        imageUrl: url,
+                        priceRevealed: false,
+                        itemRevealed: false,
+                        photoFit: { ...DEFAULT_PHOTO_FIT },
+                      }),
+                      { clearAnswer: true },
+                    )
+                  }
+                  onFitChange={(photoFit) =>
+                    updateItem(item.id, (prev) => ({ ...prev, photoFit }))
+                  }
+                  onError={showToast}
+                />
+                <input
+                  type="text"
+                  value={item.label}
+                  onChange={(event) =>
+                    updateItem(item.id, (prev) => ({
+                      ...prev,
+                      label: event.target.value,
+                    }))
+                  }
+                  placeholder="Name (optional)"
+                  className="h-8 rounded-lg border border-neutral-700 bg-neutral-950 px-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
+                />
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={priceDrafts[item.id] ?? priceInputValue(item.price)}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setPriceDrafts((drafts) => ({
+                      ...drafts,
+                      [item.id]: next,
+                    }));
+                    updateItem(
+                      item.id,
+                      (prev) => ({
+                        ...prev,
+                        price: parsePriceInput(next),
+                        priceRevealed: false,
+                      }),
+                      { clearAnswer: true },
+                    );
+                  }}
+                  placeholder="Price"
+                  className="h-8 rounded-lg border border-neutral-700 bg-neutral-950 px-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
+                />
+                <StatusSwitch
+                  size="sm"
+                  checked={item.itemRevealed}
+                  disabled={!item.imageUrl}
+                  labelOn="Curtain open"
+                  labelOff="Curtain closed"
+                  ariaLabel={`${item.label.trim() || "Item"} curtain`}
+                  onToggle={() =>
+                    updateItem(item.id, (prev) => ({
+                      ...prev,
+                      itemRevealed: !prev.itemRevealed,
+                    }))
+                  }
+                />
+                <StatusSwitch
+                  size="sm"
+                  checked={item.priceRevealed}
+                  disabled={item.price == null}
+                  labelOn="Price showing"
+                  labelOff="Price hidden"
+                  ariaLabel={`${item.label.trim() || "Item"} price`}
+                  onToggle={() => revealItem(item.id, !item.priceRevealed)}
+                />
+              </article>
+            ))}
+            {canAdd ? (
+              <div className="flex min-h-72 w-64 shrink-0 flex-col items-center justify-center gap-4 self-stretch rounded-xl border border-dashed border-neutral-600 bg-neutral-950 px-4 py-8">
+                <button
+                  type="button"
+                  onClick={addItem}
+                  className="flex flex-col items-center gap-3 text-neutral-300 hover:text-sky-200"
+                >
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-current">
+                    <Plus size={22} />
+                  </span>
+                  <span className="text-sm font-semibold">Add item</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBankOpenRequest((current) => current + 1)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500 bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-500"
+                >
+                  <FolderOpen size={14} />
+                  Load saved item
+                </button>
               </div>
-            </section>
+            ) : null}
           </div>
         </div>
       </div>
@@ -657,7 +520,7 @@ export function PriceOrderHostPanel() {
         open={confirmReset}
         onOpenChange={setConfirmReset}
         title="Reset Price Order?"
-        message="This removes every item, photo, and the player list from the spectator screen."
+        message="This removes every item and photo from the spectator screen."
         confirmLabel="Reset"
         variant="danger"
         onConfirm={reset}
@@ -668,8 +531,7 @@ export function PriceOrderHostPanel() {
 
 function resultButton(
   shown: boolean,
-  ready: boolean,
-  correct: boolean,
+  correct: boolean | null,
 ): { label: string; className: string } {
   if (shown) {
     return {
@@ -677,13 +539,13 @@ function resultButton(
       className: "border-teal-500 bg-teal-600 hover:bg-teal-500",
     };
   }
-  if (correct) {
+  if (correct === true) {
     return {
       label: "Show Perfect order",
       className: "border-green-500 bg-green-600 hover:bg-green-700",
     };
   }
-  if (ready) {
+  if (correct === false) {
     return {
       label: "Show Not quite",
       className: "border-red-500 bg-red-600 hover:bg-red-700",
@@ -693,29 +555,4 @@ function resultButton(
     label: "Show result",
     className: "border-neutral-600 bg-neutral-700 text-neutral-500",
   };
-}
-
-function CroppedThumb({
-  src,
-  fit,
-  className,
-}: Readonly<{
-  src: string;
-  fit: PhotoFit | undefined;
-  className: string;
-}>) {
-  if (!src) {
-    return <span className={`bg-neutral-800 ${className}`} />;
-  }
-  return (
-    <span className={`relative block overflow-hidden ${className}`}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt=""
-        className="h-full w-full"
-        style={photoFitStyle(fit)}
-      />
-    </span>
-  );
 }

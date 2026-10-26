@@ -57,6 +57,7 @@ import {
 } from "@/lib/price-guesser/types";
 import {
   createDefaultPriceOrderState,
+  syncPriceOrder,
   withSyncedPriceOrderResult,
   type PriceOrderState,
 } from "@/lib/price-order/types";
@@ -602,12 +603,16 @@ export function SuiteProvider({
 
   const updatePriceOrder = useCallback(
     (updater: (game: PriceOrderState) => PriceOrderState) => {
-      applyLocalSuite((prev) => ({
-        ...prev,
-        priceOrder: withSyncedPriceOrderResult(
-          updater(prev.priceOrder ?? createDefaultPriceOrderState()),
-        ),
-      }));
+      applyLocalSuite((prev) => {
+        const next = updater(prev.priceOrder ?? createDefaultPriceOrderState());
+        return {
+          ...prev,
+          priceOrder: withSyncedPriceOrderResult({
+            ...next,
+            order: syncPriceOrder(next.order, next.items),
+          }),
+        };
+      });
     },
     [applyLocalSuite],
   );

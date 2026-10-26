@@ -415,7 +415,7 @@ export function PriceGuesserHostPanel() {
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-sky-500 bg-sky-600 px-3 text-sm font-semibold text-white hover:bg-sky-500"
               >
                 <FolderOpen size={16} />
-                Choose from item bank
+                Load saved item
               </button>
             </div>
           </div>

@@ -2,8 +2,8 @@
 
 import { useLayoutEffect, useRef, type RefObject } from "react";
 
-const DURATION_MS = 450;
-const EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+const DURATION_MS = 500;
+const EASING = "cubic-bezier(0.4, 0.05, 0.2, 1)";
 
 function measureMoveNodes(root: HTMLElement): Map<string, DOMRect> {
   const next = new Map<string, DOMRect>();
@@ -16,6 +16,14 @@ function measureMoveNodes(root: HTMLElement): Map<string, DOMRect> {
 
 function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function sameIdSet(a: Map<string, DOMRect>, b: Map<string, DOMRect>): boolean {
+  if (a.size !== b.size) return false;
+  for (const id of a.keys()) {
+    if (!b.has(id)) return false;
+  }
+  return true;
 }
 
 function playMoveAnimation(
@@ -82,7 +90,10 @@ export function usePriceItemLayoutAnimation(
     if (!root) return;
 
     const next = measureMoveNodes(root);
-    if (!primed.current || prefersReducedMotion()) {
+    const sameItems = sameIdSet(prevRects.current, next);
+    // Adding or removing items just updates the row. Only a rearrange
+    // (including the answer sort) slides items that were already on screen.
+    if (!primed.current || prefersReducedMotion() || !sameItems) {
       primed.current = true;
       prevRects.current = next;
       return;

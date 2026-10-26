@@ -166,6 +166,15 @@ export function SquarePhotoEditor({
               <LoaderCircle className="animate-spin" size={28} />
             </span>
           )}
+          <button
+            type="button"
+            disabled={busy}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={openPicker}
+            className="absolute right-1.5 bottom-1.5 z-10 rounded-md bg-neutral-950/80 px-1.5 py-0.5 text-[11px] font-semibold text-sky-300 hover:text-sky-200 disabled:opacity-40"
+          >
+            Replace photo
+          </button>
         </div>
       ) : (
         <button
@@ -182,10 +191,6 @@ export function SquarePhotoEditor({
       )}
 
       {imageUrl && (
-        <>
-          <p className="text-[11px] leading-tight text-neutral-500">
-            Fitted in the square. Zoom in to crop, drag to reposition.
-          </p>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -227,15 +232,6 @@ export function SquarePhotoEditor({
               <RotateCcw size={14} />
             </button>
           </div>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={openPicker}
-            className="self-start text-xs font-semibold text-sky-400 hover:text-sky-300"
-          >
-            Replace photo
-          </button>
-        </>
       )}
 
       <input

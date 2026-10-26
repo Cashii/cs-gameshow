@@ -466,8 +466,8 @@ export function TriviaHostPanel() {
           title={`Question ${questionNumber} again`}
         >
           {trivia.roundIndex <= 1
-            ? "The last question is cleared. Enter a different question, or use Add saved, then open voting."
-            : `${trivia.remainingCount} players are back in. Enter a different question, or use Add saved, then open voting.`}
+            ? "The last question is cleared. Enter a different question, or use Load saved question, then open voting."
+            : `${trivia.remainingCount} players are back in. Enter a different question, or use Load saved question, then open voting.`}
         </OperatorNotice>
       ) : null}
       {settingUpNext && !replacingRound ? (
@@ -519,7 +519,7 @@ export function TriviaHostPanel() {
               className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500 bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-40"
             >
               <FolderOpen size={14} />
-              Add saved
+              Load saved question
             </button>
           </div>
           <label className="block">
@@ -682,7 +682,7 @@ export function TriviaHostPanel() {
                   className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500 bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-40"
                 >
                   <FolderOpen size={14} />
-                  Add saved
+                  Load saved question
                 </button>
                 <button
                   type="button"
