@@ -13,7 +13,7 @@ There is no player phone board.
 5. Use the left and right arrows on each card to rearrange them into the order the player calls. The cards slide into place on the desk and on the big screen.
 6. When the player confirms, **Reveal order** slides the row from cheapest to most expensive, on the desk and on the big screen. Prices and curtains stay as you left them. The button turns off after that. It turns on again only if you change the order and that order is no longer cheapest to most expensive.
 7. **Show Perfect order** or **Show Not quite** puts the result graphic on the spectator screen, based on the order before the sort. **Hide result** takes it down. Rearranging or editing a price clears that call so you can judge again.
-8. **Reset game** removes everything.
+8. **Reset Game** removes everything.
 
 ## Spectator
 

@@ -24,6 +24,7 @@ import {
   type TriviaStatus,
 } from "@/lib/trivia/types";
 import { TriviaQuestionBank } from "@/components/trivia/TriviaQuestionBank";
+import { ResetButton } from "@/components/ui/ResetButton";
 import { TriviaTimerPanel } from "@/components/trivia/TriviaTimerPanel";
 import {
   OperatorNotice,
@@ -459,14 +460,12 @@ export function TriviaHostPanel() {
               </span>
             </>
           )}
-          <button
-            type="button"
+          <ResetButton
             disabled={loading}
             onClick={() => void runAction({ action: "resetSeries" })}
-            className="inline-flex h-10 items-center rounded-md border border-red-800 px-4 text-sm font-semibold text-red-300 hover:bg-red-950 disabled:opacity-40"
           >
-            Reset series
-          </button>
+            Reset Series
+          </ResetButton>
           <div className="ml-auto">
             <TriviaQuestionBank
               questions={trivia.library ?? []}

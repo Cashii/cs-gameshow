@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Pause, Play } from "lucide-react";
 import { StatusSwitch } from "@/components/operator/StatusSwitch";
+import { ResetButton } from "@/components/ui/ResetButton";
 import { useSuite } from "@/lib/suite-provider";
 import {
   LIVE_DRAWER_DURATION_PRESETS_MS,
@@ -174,13 +175,9 @@ export function LiveDrawerTimerPanel() {
           {game.timerRunning ? <Pause size={18} /> : <Play size={18} />}
           {timerActionLabel}
         </button>
-        <button
-          type="button"
-          onClick={() => updateLiveDrawer(resetLiveDrawerTimer)}
-          className={`${controlButtonClass} border border-neutral-600 bg-neutral-800 text-white hover:bg-neutral-700`}
-        >
-          Reset
-        </button>
+        <ResetButton onClick={() => updateLiveDrawer(resetLiveDrawerTimer)}>
+          Reset Clock
+        </ResetButton>
       </div>
     </section>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pause, Play, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Pause, Play, Plus, Trash2 } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import {
   MAX_QUESTION_TIME_TEAMS,
@@ -22,6 +22,7 @@ import {
 } from "@/lib/question-time/types";
 import { QuestionRepository } from "@/components/question-time/QuestionRepository";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ResetButton } from "@/components/ui/ResetButton";
 import { uid } from "@/lib/utils";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 
@@ -192,21 +193,10 @@ export function QuestionTimeHostPanel() {
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
             Game actions
           </span>
-          <button
-            type="button"
-            onClick={resetScores}
-            className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
-          >
-            Reset scores
-          </button>
-          <button
-            type="button"
-            onClick={() => setConfirmReset(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-red-500 bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
-          >
-            <RotateCcw size={16} />
-            Reset game
-          </button>
+          <ResetButton onClick={resetScores}>Reset Scores</ResetButton>
+          <ResetButton onClick={() => setConfirmReset(true)}>
+            Reset Game
+          </ResetButton>
         </div>
       </div>
 
@@ -291,13 +281,9 @@ export function QuestionTimeHostPanel() {
                     {game.timerRunning ? <Pause size={16} /> : <Play size={16} />}
                     {timerActionLabel}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => patch(resetQuestionTimeTimer)}
-                    className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
-                  >
-                    Reset clock
-                  </button>
+                  <ResetButton onClick={() => patch(resetQuestionTimeTimer)}>
+                    Reset Clock
+                  </ResetButton>
                 </div>
               </div>
 

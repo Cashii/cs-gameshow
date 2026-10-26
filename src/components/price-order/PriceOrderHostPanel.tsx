@@ -6,7 +6,6 @@ import {
   ChevronRight,
   FolderOpen,
   Plus,
-  RotateCcw,
   Trash2,
 } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
@@ -39,6 +38,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { StatusSwitch } from "@/components/operator/StatusSwitch";
 import { usePriceItemLayoutAnimation } from "@/components/price-order/usePriceItemLayoutAnimation";
+import { ResetButton } from "@/components/ui/ResetButton";
 
 export function PriceOrderHostPanel() {
   const { state, updatePriceOrder, updatePriceCatalog } = useSuite();
@@ -252,14 +252,9 @@ export function PriceOrderHostPanel() {
           >
             {resultAction.label}
           </button>
-          <button
-            type="button"
-            onClick={() => setConfirmReset(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-red-500 bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
-          >
-            <RotateCcw size={16} />
-            Reset game
-          </button>
+          <ResetButton onClick={() => setConfirmReset(true)}>
+            Reset Game
+          </ResetButton>
           <div className="ml-auto">
             <PriceItemLibrary
               items={catalog}

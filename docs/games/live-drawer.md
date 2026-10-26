@@ -15,7 +15,7 @@ Colored numbered token pool with multi-draw reveal on the spectator screen.
 
 ## Countdown
 
-Optional, in the right column above **Draw history**. Use **Show** / **Hide** beside the clock. Pick **30s**, **45s**, or **1m**, or set a custom length, then **Start** at the bottom. The big screen shows only the time. **Reset** hides it until the next start. Turning the countdown off hides it immediately. Collapse the right column with the panel button when you want more room for Token Summary.
+Optional, in the right column above **Draw history**. Use **Show** / **Hide** beside the clock. Pick **30s**, **45s**, or **1m**, or set a custom length, then **Start** at the bottom. The big screen shows only the time. **Reset Clock** hides it until the next start. Turning the countdown off hides it immediately. Collapse the right column with the panel button when you want more room for Token Summary.
 
 ## Colors
 

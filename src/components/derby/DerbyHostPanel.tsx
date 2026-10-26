@@ -22,6 +22,7 @@ import { DerbyHorse } from "@/components/derby/DerbyHorse";
 import { DerbyToy } from "@/components/derby/DerbyToy";
 import { publishDerbyClock } from "@/lib/derby/clock";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
+import { ResetButton } from "@/components/ui/ResetButton";
 
 function newRaceId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -229,13 +230,7 @@ export function DerbyHostPanel() {
                 Start race
               </button>
             )}
-            <button
-              type="button"
-              onClick={reset}
-              className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
-            >
-              Reset
-            </button>
+            <ResetButton onClick={reset}>Reset Race</ResetButton>
             {game.phase === "idle" ? (
               <button
                 type="button"
@@ -409,7 +404,7 @@ export function DerbyHostPanel() {
               : ""}
             . Winner picks are locked. Use{" "}
             <span className="font-semibold">Race again</span> for a new round, or{" "}
-            <span className="font-semibold">Reset</span> to clear the winner.
+            <span className="font-semibold">Reset Race</span> to clear the winner.
           </div>
         ) : null}
         </div>

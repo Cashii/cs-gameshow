@@ -11,6 +11,7 @@ import {
   type TakeItCard,
 } from "@/lib/take-it-or-leave-it/types";
 import { countCards, countUnopened } from "@/lib/take-it-or-leave-it/logic";
+import { ResetButton } from "@/components/ui/ResetButton";
 
 export function TakeItOrLeaveItHostPanel() {
   const { state, updateTakeIt, refreshSnapshot } = useSuite();
@@ -143,14 +144,12 @@ export function TakeItOrLeaveItHostPanel() {
               <p className="mt-2 text-sm text-red-300">{message}</p>
             ) : null}
           </div>
-          <button
-            type="button"
+          <ResetButton
             disabled={loading}
             onClick={() => void runAction("reset")}
-            className="rounded-md border border-red-500 bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-40"
           >
             Reset Game
-          </button>
+          </ResetButton>
         </div>
       </div>
 

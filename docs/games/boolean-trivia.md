@@ -18,7 +18,7 @@ You can stage several upcoming questions in a queue. Starting the next question 
 6. If remaining hits **0**, **Undo reveal** and pick the other side. **Try this round again** puts those players back in and clears the question so you can ask a different one for the same round. **End game** closes the series with no winners. **Undo end** brings that choice back.
 7. If remaining is still above your cut, **Start question N** (pulls the next queued question when one exists) and repeat from step 3.
 8. When remaining is the size you want, click **Declare remaining as winners**. Those phones get the winner screen. If you play until **1**, declare that one player the same way.
-9. Review past rounds under **History**. **Undo winners** takes you back to the last reveal if you called it too soon. **Reset series**, in the bar under the title, clears votes, the player list, the queue, and history.
+9. Review past rounds under **History**. **Undo winners** takes you back to the last reveal if you called it too soon. **Reset Series**, in the bar under the title, clears votes, the player list, the queue, and history.
 
 ## Player (`/player`)
 
@@ -42,6 +42,6 @@ Device IDs stay in Mongo (`triviaVotes`, `triviaPlayers`), not on the public eve
 
 ## Questions
 
-The folder icon in the bar under the title opens saved questions. Each row shows the question and every answer. **Add question** stores a new question with its answers. **Mark correct** on an answer (or leave them all blank). **Edit** changes a saved question, including which answer is correct. **Save current question** stores the question on screen. **Save upcoming** stores the queue. **Add to upcoming** puts a saved question at the end of the upcoming queue. **Use now** puts one on the current question while you are on standby. The question on screen, votes, and history stay. **Reset series** does not delete the list.
+The folder icon in the bar under the title opens saved questions. Each row shows the question and every answer. **Add question** stores a new question with its answers. **Mark correct** on an answer (or leave them all blank). **Edit** changes a saved question, including which answer is correct. **Save current question** stores the question on screen. **Save upcoming** stores the queue. **Add to upcoming** puts a saved question at the end of the upcoming queue. **Use now** puts one on the current question while you are on standby. The question on screen, votes, and history stay. **Reset Series** does not delete the list.
 
 On the current question, **Mark correct** sets which answer should survive. You can do the same when you add or edit a saved question. If a correct answer is marked, the operator screen shows **Correct** on that answer, and the **Survive** button for it is green after voting closes. Saved questions from before this have no mark until you set one. The big screen and phones do not show which answer is correct.

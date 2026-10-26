@@ -1,14 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Eye,
-  EyeOff,
-  Plus,
-  RefreshCw,
-  RotateCcw,
-  Trash2,
-} from "lucide-react";
+import { Eye, EyeOff, Plus, Trash2 } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import { useSound } from "@/lib/feud/useSound";
 import {
@@ -27,6 +20,7 @@ import {
 } from "@/lib/jeoparody/types";
 import { JeoparodyCategoryBank } from "@/components/jeoparody/JeoparodyCategoryBank";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ResetButton } from "@/components/ui/ResetButton";
 import { uid } from "@/lib/utils";
 
 type Tab = "play" | "setup";
@@ -213,35 +207,31 @@ export function JeoparodyHostPanel() {
             </button>
           ))}
         </div>
-        <button
-          type="button"
+        <ResetButton
           onClick={() =>
             setConfirm({
               open: true,
-              title: "Reset board",
+              title: "Reset Board",
               message: "Unplay every clue and return to the board?",
               onConfirm: resetBoard,
             })
           }
-          className="inline-flex h-10 items-center gap-2 rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
         >
-          <RotateCcw size={16} /> Reset board
-        </button>
-        <button
-          type="button"
+          Reset Board
+        </ResetButton>
+        <ResetButton
           onClick={() =>
             setConfirm({
               open: true,
-              title: "Reset scores",
+              title: "Reset Scores",
               message: "Set every contestant score to 0?",
               onConfirm: resetScores,
               variant: "danger",
             })
           }
-          className="inline-flex h-10 items-center gap-2 rounded-md border border-red-500 bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
         >
-          <RefreshCw size={16} /> Reset scores
-        </button>
+          Reset Scores
+        </ResetButton>
         <button
           type="button"
           onClick={() =>

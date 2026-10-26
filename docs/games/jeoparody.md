@@ -11,7 +11,7 @@ No Daily Double or Final Jeopardy.
 - Reveal or hide the response
 - Award **correct** (+value) or **incorrect** (−value) to a contestant
 - Return to the board (that cell stays empty)
-- Reset board and reset scores separately
+- **Reset Board** and **Reset Scores** separately
 - Toggle contestant scores on the spectator screen
 
 ## Spectator

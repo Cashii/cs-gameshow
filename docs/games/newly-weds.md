@@ -10,8 +10,8 @@ There is no player phone board.
 2. Put **Newly Weds** on the Spectator screen.
 3. Type the question. It appears live on the projector.
 4. Name the teams (add up to eight, remove down to two) and tap **+1** / **+5** / **+10** (or type a score) as they earn points.
-5. Pick a timer length (presets or minutes/seconds), then **Start**. **Pause**, **Resume**, and **Reset clock** control the same countdown the audience sees.
-6. **Clear question** blanks the board. **Reset scores** zeros every team. **Reset game** clears the question, scores, and clock but keeps team names and the timer length.
+5. Pick a timer length (presets or minutes/seconds), then **Start**. **Pause**, **Resume**, and **Reset Clock** control the same countdown the audience sees.
+6. **Clear question** blanks the board. **Reset Scores** zeros every team. **Reset Game** clears the question, scores, and clock but keeps team names and the timer length.
 
 ## Spectator
 

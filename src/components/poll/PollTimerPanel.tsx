@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Pause, Play } from "lucide-react";
 import { StatusSwitch } from "@/components/operator/StatusSwitch";
+import { ResetButton } from "@/components/ui/ResetButton";
 import { useSuite } from "@/lib/suite-provider";
 import {
   POLL_DURATION_PRESETS_MS,
@@ -171,13 +172,9 @@ export function PollTimerPanel() {
           {poll.timerRunning ? <Pause size={18} /> : <Play size={18} />}
           {timerActionLabel}
         </button>
-        <button
-          type="button"
-          onClick={() => updatePoll(resetPollTimer)}
-          className={`${controlButtonClass} border border-neutral-600 bg-neutral-800 text-white hover:bg-neutral-700`}
-        >
-          Reset
-        </button>
+        <ResetButton onClick={() => updatePoll(resetPollTimer)}>
+          Reset Clock
+        </ResetButton>
       </div>
     </section>
   );

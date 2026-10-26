@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pause, Play, RotateCcw } from "lucide-react";
+import { Pause, Play } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import {
   PICTIONARY_DURATION_PRESETS_MS,
@@ -20,6 +20,7 @@ import {
 } from "@/lib/pictionary/types";
 import { PictionaryWordBank } from "@/components/pictionary/PictionaryWordBank";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ResetButton } from "@/components/ui/ResetButton";
 import { uid } from "@/lib/utils";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { StatusSwitch } from "@/components/operator/StatusSwitch";
@@ -121,14 +122,9 @@ export function PictionaryHostPanel() {
               }))
             }
           />
-          <button
-            type="button"
-            onClick={() => setConfirmReset(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-red-500 bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
-          >
-            <RotateCcw size={16} />
-            Reset game
-          </button>
+          <ResetButton onClick={() => setConfirmReset(true)}>
+            Reset Game
+          </ResetButton>
         </div>
       </div>
 
@@ -334,13 +330,9 @@ export function PictionaryHostPanel() {
                   {game.timerRunning ? <Pause size={16} /> : <Play size={16} />}
                   {timerActionLabel}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => patch(resetPictionaryTimer)}
-                  className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
-                >
-                  Reset clock
-                </button>
+                <ResetButton onClick={() => patch(resetPictionaryTimer)}>
+                  Reset Clock
+                </ResetButton>
               </div>
             </div>
 

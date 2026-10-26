@@ -15,11 +15,11 @@ While the race is idle, phones on `/player` can pick a toy or horse. Vote tallie
 2. Put **Derby** on the Spectator screen so the projector shows the track (phones follow that screen for voting).
 3. Choose a **Theme**. The pick syncs to the spectator display immediately.
 4. In the header, set **Race length** in seconds (5–600). Length locks while a race is running.
-5. Set **Horse size** / **Toy size** if the projector sprites need to be larger or smaller. Reset keeps this scale.
+5. Set **Horse size** / **Toy size** if the projector sprites need to be larger or smaller. **Reset Race** keeps this scale.
 6. Watch **Player votes** while guests pick on their phones.
 7. Pick the winning color. The audience does not see this pick.
 8. Click **Start race**. Racers run for the chosen length, then the chosen one hits the finish line.
-9. **Reset** returns racers to the starting line, clears votes, and keeps the current theme, size, and race length.
+9. **Reset Race** returns racers to the starting line, clears votes, and keeps the current theme, size, and race length.
 
 Starting again after a finish (same winner or a new one) opens a new voting window.
 

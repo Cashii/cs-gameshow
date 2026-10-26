@@ -5,6 +5,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Check, FolderOpen, Minus, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ResetButton } from "@/components/ui/ResetButton";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -387,13 +388,9 @@ export function WheelHostPanel() {
             >
               Reveal All
             </button>
-            <button
-              type="button"
-              onClick={() => setResetConfirmOpen(true)}
-              className="inline-flex h-10 items-center rounded-md border border-red-500 bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
-            >
+            <ResetButton onClick={() => setResetConfirmOpen(true)}>
               Reset Game
-            </button>
+            </ResetButton>
           </div>
 
           <div className="ml-auto flex flex-wrap items-center gap-4">

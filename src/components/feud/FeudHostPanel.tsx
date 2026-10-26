@@ -8,8 +8,6 @@ import {
   Pencil,
   Eye,
   EyeOff,
-  RotateCcw,
-  RefreshCw,
   GripVertical,
   ChevronDown,
   Check,
@@ -23,7 +21,13 @@ import { IconButton, NumberInput, TextInput } from "@/components/ui/Primitives";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ResetButton } from "@/components/ui/ResetButton";
 import { FeudAudienceView } from "./FeudAudienceView";
+
+const RED_TEAM = "#dc2626";
+const BLUE_TEAM = "#2563eb";
+const RED_TEAM_INK = "#b91c1c";
+const BLUE_TEAM_INK = "#1d4ed8";
 
 const ghostIconButtonStyle: CSSProperties = {
   marginRight: 0,
@@ -324,20 +328,8 @@ export function FeudHostPanel() {
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
             Game actions
           </span>
-          <button
-            type="button"
-            onClick={resetRound}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
-          >
-            <RotateCcw size={16} /> Reset Round
-          </button>
-          <button
-            type="button"
-            onClick={resetGame}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-red-500 bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
-          >
-            <RefreshCw size={16} /> Reset Game
-          </button>
+          <ResetButton onClick={resetRound}>Reset Round</ResetButton>
+          <ResetButton onClick={resetGame}>Reset Game</ResetButton>
         </div>
       </div>
 
@@ -414,7 +406,8 @@ export function FeudHostPanel() {
             >
               {(["leftTeam", "rightTeam"] as const).map((key, i) => {
                 const team = feud[key];
-                const label = key === "leftTeam" ? "Left" : "Right";
+                const isRed = key === "leftTeam";
+                const label = isRed ? "Red" : "Blue";
                 return (
                   <div key={key} style={{ display: "contents" }}>
                     {i === 1 && (
@@ -432,8 +425,25 @@ export function FeudHostPanel() {
                         display: "flex",
                         flexDirection: "column",
                         gap: 8,
+                        padding: 12,
+                        borderRadius: 12,
+                        background: isRed
+                          ? "rgba(220, 38, 38, 0.14)"
+                          : "rgba(37, 99, 235, 0.14)",
+                        border: `2px solid ${isRed ? RED_TEAM : BLUE_TEAM}`,
                       }}
                     >
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          letterSpacing: "0.06em",
+                          textTransform: "uppercase",
+                          color: isRed ? RED_TEAM_INK : BLUE_TEAM_INK,
+                        }}
+                      >
+                        {label} team
+                      </div>
                       <div>
                         <label
                           style={{
@@ -586,12 +596,25 @@ export function FeudHostPanel() {
                 {(["left", "right", "none"] as const).map((side) => {
                   const selected = (feud.awardTeam ?? "left") === side;
                   let name = "No one";
-                  if (side === "left") name = feud.leftTeam.name || "Left";
-                  else if (side === "right") name = feud.rightTeam.name || "Right";
+                  let border = "#737373";
+                  let ink = "#525252";
+                  let tint = "rgba(82, 82, 82, 0.1)";
+                  if (side === "left") {
+                    name = feud.leftTeam.name || "Red";
+                    border = RED_TEAM;
+                    ink = RED_TEAM_INK;
+                    tint = "rgba(220, 38, 38, 0.12)";
+                  } else if (side === "right") {
+                    name = feud.rightTeam.name || "Blue";
+                    border = BLUE_TEAM;
+                    ink = BLUE_TEAM_INK;
+                    tint = "rgba(37, 99, 235, 0.12)";
+                  }
                   return (
                     <button
                       key={side}
                       type="button"
+                      aria-pressed={selected}
                       onClick={() =>
                         updateFeud((prev) => ({ ...prev, awardTeam: side }))
                       }
@@ -599,23 +622,12 @@ export function FeudHostPanel() {
                         height: 32,
                         padding: "0 10px",
                         borderRadius: 8,
-                        border: selected
-                          ? side === "left"
-                            ? "1px solid #fb7185"
-                            : side === "right"
-                              ? "1px solid #60a5fa"
-                              : "1px solid #a3a3a3"
-                          : "1px solid var(--color-neutral-700)",
-                        background: selected
-                          ? side === "left"
-                            ? "#fb7185"
-                            : side === "right"
-                              ? "#60a5fa"
-                              : "#737373"
-                          : "var(--color-neutral-800)",
-                        color: selected ? "#fff" : "var(--color-neutral-400)",
+                        border: `2px solid ${border}`,
+                        background: selected ? tint : "transparent",
+                        color: ink,
                         fontSize: 12,
-                        fontWeight: 600,
+                        fontWeight: selected ? 700 : 600,
+                        boxShadow: selected ? `inset 0 0 0 1px ${border}` : undefined,
                         cursor: "pointer",
                         maxWidth: 140,
                         overflow: "hidden",
@@ -663,9 +675,9 @@ export function FeudHostPanel() {
                       borderLeft: a.revealed
                         ? `3px solid ${
                             a.awardedTo === "right"
-                              ? "#60a5fa"
+                              ? BLUE_TEAM
                               : a.awardedTo === "left"
-                                ? "#fb7185"
+                                ? RED_TEAM
                                 : "#a3a3a3"
                           }`
                         : "3px solid transparent",
@@ -722,9 +734,9 @@ export function FeudHostPanel() {
                           lineHeight: 1,
                           color: a.revealed
                             ? a.awardedTo === "right"
-                              ? "#2563eb"
+                              ? BLUE_TEAM_INK
                               : a.awardedTo === "left"
-                                ? "#e11d48"
+                                ? RED_TEAM_INK
                                 : "var(--color-neutral-300)"
                             : "var(--color-neutral-400)",
                           textAlign: "center",
@@ -794,9 +806,9 @@ export function FeudHostPanel() {
                           fontWeight: 600,
                           flexShrink: 0,
                           boxSizing: "border-box",
-                          border: "1px solid var(--color-amber-500)",
-                          background: "#d97706",
-                          color: "var(--color-white)",
+                          border: "1px solid #52525b",
+                          background: "#3f3f46",
+                          color: "#fafafa",
                         }}
                       />
                     )}
