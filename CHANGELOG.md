@@ -1,7 +1,14 @@
 # Updates
 
-## October 21, 2026
+## October 25, 2026
 
+1. **Elimination Trivia** — If nobody survives a question, **Try this round again** puts those players back in. Enter a different question (or use **Add saved**), then open voting.
+1. **Elimination Trivia** — Next to the current question, **Add saved** opens saved questions. **Use now** puts one straight into the current question (while on standby).
+1. **O69 Club Poll** — While the big screen is on standby, use **Show QR code** / **Hide QR code** to put up the player scan code before voting goes live. **Show** is outline; **Hide** is solid.
+1. **O69 Club Poll** — Answer text (and percentages) on the big screen are centered in each choice.
+1. **Friendly Feud** — **Reveal** is a green outline and **Hide** is solid amber so you can tell at a glance which answers are already on screen.
+1. **Friendly Feud** — **Show question** / **Hide question** is a larger labeled button next to the question picker. **Show** is outline; **Hide** is solid.
+1. **Message Board** — **Show player QR** / **Hide player QR** replaces the message with a large player scan code under the logo (no blur). **Show** is outline; **Hide** is solid.
 1. **Word Up** — **Strikes** toggle (next to Letter legend) turns the big-screen X on or off for wrong letters. Letters still mark as guessed either way.
 1. **Word Up** — **Save to bank** / **Update in bank** puts the current phrase, topic, and board zoom into Phrases and topics. A toast confirms the save. Each saved phrase shows its zoom in that list.
 1. **Live Drawer** — On narrower operator screens, the color count **+** / **−** buttons stay fully visible instead of getting cut off.

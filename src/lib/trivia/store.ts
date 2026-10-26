@@ -10,6 +10,7 @@ import {
   mergeTriviaBank,
   normalizeTriviaOptions,
   pauseTriviaTimer,
+  resetTriviaTimer,
   syncTriviaOptionsFields,
   TRIVIA_CHOICE_IDS,
   withTriviaHistoryAppended,
@@ -328,6 +329,7 @@ export async function triviaOpen(input: {
         choiceACount: 0,
         choiceBCount: 0,
         survivingChoiceId: null,
+        replacingRound: false,
       },
     };
   });
@@ -426,6 +428,69 @@ export async function triviaReveal(
       winnerCodes: [],
     },
   }));
+}
+
+export async function triviaRetryRound(): Promise<EventSnapshot> {
+  const event = await ensureEvent();
+  const trivia = event.trivia ?? createDefaultTriviaState();
+  if (trivia.status !== "revealed") {
+    throw new Error("Reveal a question before trying it again");
+  }
+  if (!trivia.roundId) throw new Error("No active round");
+
+  const db = await getDb();
+  const stillIn = await playersCol(db).then((c) =>
+    c.countDocuments({ eventId: EVENT_ID, status: "active" }),
+  );
+  if (stillIn > 0) {
+    throw new Error("Players are still in");
+  }
+
+  if (trivia.roundIndex <= 1) {
+    await playersCol(db).then((c) => c.deleteMany({ eventId: EVENT_ID }));
+  } else {
+    await playersCol(db).then((c) =>
+      c.updateMany(
+        { eventId: EVENT_ID, eliminatedRound: trivia.roundIndex },
+        { $set: { status: "active", eliminatedRound: null } },
+      ),
+    );
+  }
+  await votesCol(db).then((c) =>
+    c.deleteMany({ eventId: EVENT_ID, roundId: trivia.roundId }),
+  );
+  const remainingCount =
+    trivia.roundIndex <= 1
+      ? 0
+      : await playersCol(db).then((c) =>
+          c.countDocuments({ eventId: EVENT_ID, status: "active" }),
+        );
+  const fresh = createDefaultTriviaState();
+
+  return updateEventSuite((prev) => {
+    const t = prev.trivia ?? createDefaultTriviaState();
+    return {
+      ...prev,
+      trivia: {
+        ...resetTriviaTimer(t),
+        status: "idle",
+        roundId: "",
+        question: "",
+        options: fresh.options,
+        optionA: fresh.optionA,
+        optionB: fresh.optionB,
+        survivingChoiceId: null,
+        answeredCount: 0,
+        choiceCounts: emptyTriviaChoiceCounts(fresh.options.length),
+        choiceACount: 0,
+        choiceBCount: 0,
+        remainingCount,
+        fieldSize: t.roundIndex <= 1 ? 0 : t.fieldSize,
+        winnerCodes: [],
+        replacingRound: true,
+      },
+    };
+  });
 }
 
 export async function triviaUndoReveal(): Promise<EventSnapshot> {
@@ -539,6 +604,7 @@ export async function triviaNextQuestion(): Promise<EventSnapshot> {
         winnerCodes: [],
         queue,
         history,
+        replacingRound: false,
       },
     };
   });

@@ -540,6 +540,24 @@ export function MessageBoardHostPanel() {
               >
                 Clear
               </button>
+              <button
+                type="button"
+                onClick={() =>
+                  updateMessageBoard((prev) => ({
+                    ...prev,
+                    showJoinQr: !prev.showJoinQr,
+                  }))
+                }
+                className={`inline-flex h-11 items-center rounded-md border px-5 text-base font-semibold ${
+                  state.messageBoard?.showJoinQr
+                    ? "border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
+                    : "border-sky-500 bg-transparent text-sky-300 hover:bg-sky-500/10"
+                }`}
+              >
+                {state.messageBoard?.showJoinQr
+                  ? "Hide player QR"
+                  : "Show player QR"}
+              </button>
             </div>
           </div>
         </div>

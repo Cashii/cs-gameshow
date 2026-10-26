@@ -76,6 +76,8 @@ export type TriviaGameState = TriviaTimerState & {
   queue: TriviaQueuedQuestion[];
   history: TriviaRoundHistory[];
   library: TriviaBankQuestion[];
+  /** The last reveal eliminated everyone; this question number is open for a replacement. */
+  replacingRound: boolean;
 };
 
 export const TRIVIA_DURATION_PRESETS_MS = [30_000, 45_000, 60_000] as const;
@@ -383,6 +385,7 @@ export function createDefaultTriviaState(): TriviaGameState {
     queue: [],
     history: [],
     library: [],
+    replacingRound: false,
     timerEnabled: false,
     timerDurationMs: DEFAULT_TRIVIA_DURATION_MS,
     timerRemainingMs: DEFAULT_TRIVIA_DURATION_MS,

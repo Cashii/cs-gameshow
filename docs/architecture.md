@@ -79,7 +79,7 @@ PINs stored as SHA-256 hashes on the event document. Session cookie: HMAC-signed
 - `POST /api/live-drawer/undo` — return last batch to pool
 - `POST /api/poll` — operator poll control
 - `POST /api/poll/vote` — player vote
-- `POST /api/trivia` — player vote (`action: vote`) or operator Elimination Trivia control (`setup`, `open`, `lock`, `reveal`, `undoReveal`, `nextQuestion`, `resetSeries`)
+- `POST /api/trivia` — player vote (`action: vote`) or operator Elimination Trivia control (`setup`, `open`, `lock`, `reveal`, `undoReveal`, `retryRound`, `nextQuestion`, `resetSeries`)
 - `GET /api/trivia/me` — player personal status (`?deviceId=`)
 - `POST /api/media` — operator image upload (Price is Tight / Price Order)
 - `GET /api/media/[id]` — serve an uploaded image

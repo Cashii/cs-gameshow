@@ -5,6 +5,7 @@ import {
   triviaNextQuestion,
   triviaOpen,
   triviaResetSeries,
+  triviaRetryRound,
   triviaReveal,
   triviaSaveQueue,
   triviaSetup,
@@ -86,6 +87,8 @@ export async function POST(request: Request) {
       }
       case "undoReveal":
         return json(await triviaUndoReveal());
+      case "retryRound":
+        return json(await triviaRetryRound());
       case "nextQuestion":
         return json(await triviaNextQuestion());
       case "declareWinners":

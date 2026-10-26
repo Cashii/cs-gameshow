@@ -80,6 +80,7 @@ export async function POST(request: Request) {
             correctChoiceId: null,
             correctAnswerRevealed: false,
             showPercentages: event.poll?.showPercentages !== false,
+            showJoinQr: Boolean(event.poll?.showJoinQr),
             scale: clampPollScale(event.poll?.scale),
             library: prev.poll?.library ?? [],
             ...pollTimerFields(prev.poll ?? event.poll ?? createEmptyPoll()),
@@ -120,6 +121,7 @@ export async function POST(request: Request) {
               correctChoiceId: null,
               correctAnswerRevealed: false,
               showPercentages: prev.poll?.showPercentages !== false,
+              showJoinQr: Boolean(prev.poll?.showJoinQr),
               scale: clampPollScale(prev.poll?.scale),
               library: prev.poll?.library ?? [],
               ...pollTimerFields(prev.poll),
@@ -206,6 +208,7 @@ export async function POST(request: Request) {
           poll: {
             ...createEmptyPoll(),
             showPercentages: prev.poll?.showPercentages !== false,
+            showJoinQr: false,
             scale: clampPollScale(prev.poll?.scale),
             library: prev.poll?.library ?? [],
             ...pollTimerFields(prev.poll),

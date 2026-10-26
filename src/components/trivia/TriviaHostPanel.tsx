@@ -125,8 +125,12 @@ export function TriviaHostPanel() {
 
   const questionNumber = trivia.roundIndex > 0 ? trivia.roundIndex : 1;
   const settingUpNext = trivia.status === "idle" && trivia.roundIndex > 1;
+  const replacingRound =
+    trivia.status === "idle" && trivia.replacingRound === true;
   const questionClosed =
     trivia.status === "revealed" && trivia.remainingCount > 1;
+  const nobodySurvived =
+    trivia.status === "revealed" && trivia.remainingCount === 0;
 
   useEffect(() => {
     setQuestion(trivia.question || "");
@@ -279,6 +283,24 @@ export function TriviaHostPanel() {
     );
   };
 
+  const applyEntryToCurrent = (entry: {
+    question: string;
+    options: string[];
+  }) => {
+    if (trivia.status !== "idle") return;
+    const synced = syncTriviaOptionsFields({ options: entry.options });
+    const nextQuestion = entry.question;
+    const nextOptions = synced.options;
+    setQuestion(nextQuestion);
+    setOptions(nextOptions);
+    draftRef.current = { question: nextQuestion, options: nextOptions };
+    void runAction({
+      action: "setup",
+      question: nextQuestion,
+      options: nextOptions,
+    });
+  };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
@@ -348,6 +370,7 @@ export function TriviaHostPanel() {
               questions={trivia.library ?? []}
               canSaveCurrent={Boolean(question.trim())}
               canSaveUpcoming={queue.some((item) => item.question.trim())}
+              canLoadToCurrent={trivia.status === "idle"}
               onSaveCurrent={() => saveBankEntry({ question, options })}
               onSaveUpcoming={() => {
                 const incoming = queue
@@ -389,6 +412,14 @@ export function TriviaHostPanel() {
                   }),
                 ]);
               }}
+              onLoadToCurrent={(id) => {
+                const entry = (trivia.library ?? []).find(
+                  (item) => item.id === id,
+                );
+                if (!entry) return;
+                applyEntryToCurrent(entry);
+              }}
+              onUseAsCurrent={applyEntryToCurrent}
               onDelete={(id) =>
                 setState((prev) => ({
                   ...prev,
@@ -414,7 +445,7 @@ export function TriviaHostPanel() {
         </SpectatorScreenNotice>
       )}
       <div className="min-h-0 flex-1 overflow-auto px-6 py-6">
-      {!settingUpNext && !questionClosed ? (
+      {!settingUpNext && !questionClosed && !replacingRound && !nobodySurvived ? (
         <div className="mb-4">
           <p
             className={`text-sm font-semibold ${triviaStatusClass(
@@ -428,7 +459,18 @@ export function TriviaHostPanel() {
         </div>
       ) : null}
 
-      {settingUpNext ? (
+      {replacingRound ? (
+        <OperatorNotice
+          className="mb-6"
+          tone="info"
+          title={`Question ${questionNumber} again`}
+        >
+          {trivia.roundIndex <= 1
+            ? "The last question is cleared. Enter a different question, or use Add saved, then open voting."
+            : `${trivia.remainingCount} players are back in. Enter a different question, or use Add saved, then open voting.`}
+        </OperatorNotice>
+      ) : null}
+      {settingUpNext && !replacingRound ? (
         <OperatorNotice
           className="mb-6"
           tone="info"
@@ -438,6 +480,16 @@ export function TriviaHostPanel() {
           {queue[0]?.question.trim()
             ? " The next queued question is loaded — open voting when ready."
             : " Enter the next question, then open voting."}
+        </OperatorNotice>
+      ) : null}
+
+      {nobodySurvived ? (
+        <OperatorNotice
+          className="mb-6"
+          title={`Nobody survived question ${trivia.roundIndex}`}
+        >
+          Try this round again to put those players back in and ask a different
+          question. Undo reveal to keep this question and pick the other side.
         </OperatorNotice>
       ) : null}
 
@@ -456,19 +508,31 @@ export function TriviaHostPanel() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(16rem,0.9fr)]">
         <div className="space-y-4">
           <div className="space-y-2">
-          <label className="block">
+          <div className="flex flex-wrap items-end justify-between gap-2">
             <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
               Question {questionNumber}
             </span>
+            <button
+              type="button"
+              disabled={loading || trivia.status !== "idle"}
+              onClick={() => setBankOpenRequest((current) => current + 1)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500 bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-40"
+            >
+              <FolderOpen size={14} />
+              Add saved
+            </button>
+          </div>
+          <label className="block">
+            <span className="sr-only">Question {questionNumber}</span>
             <input
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onBlur={persistQuestionDraft}
               placeholder="True or false: …"
-              autoFocus={settingUpNext}
+              autoFocus={settingUpNext || replacingRound}
               disabled={trivia.status === "open" || trivia.status === "locked"}
-              className={`mt-1 w-full rounded-lg border bg-neutral-800 px-3 py-2 text-sm text-white disabled:opacity-60 ${
-                settingUpNext
+              className={`w-full rounded-lg border bg-neutral-800 px-3 py-2 text-sm text-white disabled:opacity-60 ${
+                settingUpNext || replacingRound
                   ? "border-sky-400 ring-2 ring-sky-400/40"
                   : "border-neutral-700"
               }`}
@@ -558,6 +622,16 @@ export function TriviaHostPanel() {
                   );
                 })}
               </>
+            )}
+            {nobodySurvived && (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => void runAction({ action: "retryRound" })}
+                className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-40"
+              >
+                Try this round again
+              </button>
             )}
             {(trivia.status === "revealed" || trivia.status === "finished") && (
               <button
@@ -838,9 +912,10 @@ export function TriviaHostPanel() {
                 </p>
               </div>
             ) : null}
-            {trivia.status === "revealed" && trivia.remainingCount === 0 ? (
+            {nobodySurvived ? (
               <p className="mt-3 text-sm text-amber-400">
-                Nobody survived this side. Undo and pick the other side.
+                Nobody survived. Try this round again for a different question,
+                or undo the reveal and pick the other side.
               </p>
             ) : null}
           </div>

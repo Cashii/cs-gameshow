@@ -15,7 +15,7 @@ You can stage several upcoming questions in a queue. Starting the next question 
 3. Type the live question and its answer labels. In the bar under the title, **Open voting**.
 4. Watch **answers in**. Operator can see the A/B split; the projector does not until you reveal.
 5. **Lock voting**, then tap **Survive A** or **Survive B**. Remaining count updates. Phones flip to still-in or out.
-6. If remaining hits **0**, **Undo reveal** and pick the other side.
+6. If remaining hits **0**, **Undo reveal** and pick the other side. **Try this round again** puts those players back in and clears the question so you can ask a different one for the same round.
 7. If remaining is still above your cut, **Start question N** (pulls the next queued question when one exists) and repeat from step 3.
 8. When remaining is the size you want, click **Declare remaining as winners**. Those phones get the winner screen. If you play until **1**, declare that one player the same way.
 9. Review past rounds under **History**. **Undo winners** takes you back to the last reveal if you called it too soon. **Reset series**, in the bar under the title, clears votes, the player list, the queue, and history.

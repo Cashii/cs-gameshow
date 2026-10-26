@@ -5,7 +5,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { FolderOpen, Plus, Trash2, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { bankSaveClass } from "@/components/operator/BankPanel";
+import { bankLoadClass, bankSaveClass } from "@/components/operator/BankPanel";
 import {
   DEFAULT_TRIVIA_OPTIONS,
   MAX_TRIVIA_OPTIONS,
@@ -26,22 +26,28 @@ export function TriviaQuestionBank({
   questions,
   canSaveCurrent,
   canSaveUpcoming,
+  canLoadToCurrent,
   onSaveCurrent,
   onSaveUpcoming,
   onAdd,
   onAddToUpcoming,
   onLoad,
+  onLoadToCurrent,
+  onUseAsCurrent,
   onDelete,
   openRequest = 0,
 }: {
   questions: TriviaBankQuestion[];
   canSaveCurrent: boolean;
   canSaveUpcoming: boolean;
+  canLoadToCurrent: boolean;
   onSaveCurrent: () => void;
   onSaveUpcoming: () => void;
   onAdd: (entry: { question: string; options: string[] }) => void;
   onAddToUpcoming: (entry: { question: string; options: string[] }) => void;
   onLoad: (id: string) => void;
+  onLoadToCurrent: (id: string) => void;
+  onUseAsCurrent: (entry: { question: string; options: string[] }) => void;
   onDelete: (id: string) => void;
   openRequest?: number;
 }) {
@@ -117,8 +123,8 @@ export function TriviaQuestionBank({
                   Saved questions
                 </Dialog.Title>
                 <Dialog.Description className="mt-1 text-sm text-neutral-400">
-                  Each saved question keeps its answers. Add one to the upcoming
-                  list, or set up a new question here.
+                  Each saved question keeps its answers. Use now puts it on the
+                  current question. Add to upcoming stages it for later.
                 </Dialog.Description>
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -265,6 +271,23 @@ export function TriviaQuestionBank({
                     Save question
                   </button>
                   <button
+                    type="button"
+                    disabled={!draftReady || !canLoadToCurrent}
+                    onClick={() => {
+                      if (!draftReady || !canLoadToCurrent) return;
+                      onUseAsCurrent(draftEntry());
+                      resetDraft();
+                      setOpen(false);
+                    }}
+                    className={`rounded-lg px-3 py-2 text-sm font-medium ${
+                      draftReady && canLoadToCurrent
+                        ? "border border-sky-500 bg-transparent text-sky-300 hover:bg-sky-500/10"
+                        : "cursor-not-allowed border border-neutral-700 bg-neutral-800 text-neutral-500"
+                    }`}
+                  >
+                    Use now
+                  </button>
+                  <button
                     type="submit"
                     disabled={!draftReady}
                     className={`rounded-lg px-3 py-2 text-sm font-medium text-white ${
@@ -315,11 +338,22 @@ export function TriviaQuestionBank({
                         })}
                       </ul>
                     </div>
-                    <div className="flex shrink-0 items-center gap-1.5">
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                      <button
+                        type="button"
+                        disabled={!canLoadToCurrent}
+                        onClick={() => {
+                          onLoadToCurrent(entry.id);
+                          setOpen(false);
+                        }}
+                        className={bankLoadClass}
+                      >
+                        Use now
+                      </button>
                       <button
                         type="button"
                         onClick={() => onLoad(entry.id)}
-                        className="h-7 shrink-0 rounded-md border border-teal-500 bg-teal-600 px-2.5 text-xs font-semibold text-white hover:bg-teal-500"
+                        className="h-7 shrink-0 rounded-md border border-neutral-600 bg-neutral-800 px-2.5 text-xs font-semibold text-neutral-200 hover:bg-neutral-700"
                       >
                         Add to upcoming
                       </button>

@@ -103,11 +103,34 @@
   padding-top: clamp(0.6rem, 2vh, 1.4rem);
 }
 
+.mb-stage--qr .mb-brand {
+  position: relative;
+  flex-shrink: 0;
+}
+
 .mb-logo {
   height: clamp(8.5rem, 26vh, 16rem);
   width: auto;
   aspect-ratio: 699 / 463;
   overflow: visible;
+}
+
+.mb-join-qr {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4vw 4vh;
+}
+
+.mb-join-qr-frame {
+  width: min(36rem, 72vmin, 100%);
+  height: min(36rem, 72vmin, 100%);
+  aspect-ratio: 1;
+  max-height: 100%;
 }
 
 .mb-body {
@@ -146,3 +169,4 @@
   text-transform: uppercase;
   color: var(--jack-muted);
 }
+

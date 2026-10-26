@@ -63,8 +63,29 @@ export function PollSpectatorOverlay({
   const showCorrect =
     poll.correctAnswerRevealed && Boolean(poll.correctChoiceId);
   // Keep standby while the operator drafts; Voting Live reveals the question.
+  // ShowJoinQr lets them put up the player QR before the question is live.
   if (poll.status === "idle") {
-    return <StandbyScreen />;
+    if (!poll.showJoinQr) return <StandbyScreen />;
+    return (
+      <div className="relative h-full w-full overflow-hidden">
+        <StandbyScreen />
+        <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <div
+            className="pointer-events-none absolute inset-0 backdrop-blur-sm"
+            style={{
+              background:
+                "linear-gradient(to bottom, transparent 0%, rgba(10,10,10,0.35) 32%, rgba(10,10,10,0.55) 100%)",
+            }}
+            aria-hidden
+          />
+          <div className="relative flex flex-col items-center gap-4 rounded-3xl bg-neutral-950/20 px-6 py-5">
+            <div className="size-[min(32rem,62vmin)]">
+              <PlayerVoteQr label="Scan to vote" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const showPercentages = poll.showPercentages !== false;
@@ -152,12 +173,12 @@ export function PollSpectatorOverlay({
                   style={{ containerType: "size" }}
                 >
                   <div
-                    className={`flex items-center justify-between gap-4 text-white ${
+                    className={`flex flex-col items-center text-center text-white ${
                       showPercentages ? "mb-[max(0.2rem,2cqh)]" : ""
                     }`}
                   >
                     <span
-                      className="min-w-0 font-semibold line-clamp-2"
+                      className="min-w-0 w-full font-semibold line-clamp-2"
                       style={{
                         fontSize: `min(calc(clamp(1.5rem, 7.5vw, 6.75rem) * ${scale}), ${answerCap})`,
                         lineHeight: 1.1,
@@ -169,7 +190,7 @@ export function PollSpectatorOverlay({
                     </span>
                     {showPercentages ? (
                       <span
-                        className={`shrink-0 font-bold tabular-nums ${
+                        className={`mt-[max(0.15rem,1.5cqh)] shrink-0 font-bold tabular-nums ${
                           isCorrect ? "text-emerald-300" : "text-amber-300"
                         }`}
                         style={{

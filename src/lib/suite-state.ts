@@ -463,6 +463,7 @@ function normalizePollState(raw: Partial<PollState> | undefined): PollState {
     correctChoiceId,
     correctAnswerRevealed: Boolean(raw.correctAnswerRevealed) && !!correctChoiceId,
     showPercentages: raw.showPercentages !== false,
+    showJoinQr: Boolean(raw.showJoinQr),
     scale: clampPollScale(raw.scale),
     library: normalizePollLibrary(raw.library),
     ...pollTimerFields(raw),
@@ -523,6 +524,7 @@ function normalizeMessageBoardState(
     groups,
     presets,
     activePresetId,
+    showJoinQr: Boolean(raw.showJoinQr),
   };
 }
 
@@ -654,6 +656,7 @@ function normalizeTriviaState(
           .filter((item): item is TriviaRoundHistory => item != null)
       : [],
     library: normalizeTriviaLibrary(raw.library),
+    replacingRound: raw.replacingRound === true,
     ...triviaTimerFields(raw),
   };
 }

@@ -773,9 +773,12 @@ export function FeudHostPanel() {
                           width: 80,
                           minWidth: 80,
                           padding: 0,
-                          fontWeight: 400,
+                          fontWeight: 600,
                           flexShrink: 0,
                           boxSizing: "border-box",
+                          border: "1px solid var(--color-emerald-500)",
+                          background: "transparent",
+                          color: "var(--color-emerald-400)",
                         }}
                       />
                     ) : (
@@ -788,9 +791,12 @@ export function FeudHostPanel() {
                           width: 80,
                           minWidth: 80,
                           padding: 0,
-                          fontWeight: 400,
+                          fontWeight: 600,
                           flexShrink: 0,
                           boxSizing: "border-box",
+                          border: "1px solid var(--color-amber-500)",
+                          background: "#d97706",
+                          color: "var(--color-white)",
                         }}
                       />
                     )}
@@ -874,14 +880,31 @@ export function FeudHostPanel() {
                     : "Shows the question on the audience display"
                 }
               >
-                <IconButton
-                  className="hover:bg-neutral-800 hover:text-white"
-                  label={feud.showHeader ? <Eye size={18} /> : <EyeOff size={18} />}
-                  onClick={() =>
-                    updateFeud((prev) => ({ ...prev, showHeader: !prev.showHeader }))
+                <button
+                  type="button"
+                  aria-label={
+                    feud.showHeader ? "Hide question" : "Show question"
                   }
-                  style={ghostIconButtonStyle}
-                />
+                  aria-pressed={feud.showHeader}
+                  onClick={() =>
+                    updateFeud((prev) => ({
+                      ...prev,
+                      showHeader: !prev.showHeader,
+                    }))
+                  }
+                  className={`inline-flex h-11 items-center gap-2 rounded-lg border px-4 text-sm font-semibold ${
+                    feud.showHeader
+                      ? "border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
+                      : "border-sky-500 bg-transparent text-sky-300 hover:bg-sky-500/10"
+                  }`}
+                >
+                  {feud.showHeader ? (
+                    <Eye size={20} aria-hidden />
+                  ) : (
+                    <EyeOff size={20} aria-hidden />
+                  )}
+                  {feud.showHeader ? "Hide question" : "Show question"}
+                </button>
               </Tooltip>
             </div>
           </div>

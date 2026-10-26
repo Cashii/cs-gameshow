@@ -58,6 +58,8 @@ export type PollState = PollTimerState & {
   correctAnswerRevealed: boolean;
   /** When false, hide percentage bars on spectator and player screens. */
   showPercentages: boolean;
+  /** When true, show the player join QR on the big screen (idle standby). */
+  showJoinQr: boolean;
   /** Spectator question/answer text size multiplier. */
   scale: number;
   library: PollBankQuestion[];
@@ -88,6 +90,7 @@ export function mergePollLive(remote: PollState, local: PollState): PollState {
     choices,
     correctChoiceId: samePoll ? local.correctChoiceId : remote.correctChoiceId,
     showPercentages: samePoll ? local.showPercentages : remote.showPercentages,
+    showJoinQr: samePoll ? local.showJoinQr : remote.showJoinQr,
     scale: samePoll ? local.scale : remote.scale,
     library: (local.library?.length ? local.library : remote.library) ?? [],
     timerEnabled: Boolean(local.timerEnabled),
@@ -271,6 +274,7 @@ export function createDefaultPollState(): PollState {
     correctChoiceId: null,
     correctAnswerRevealed: false,
     showPercentages: true,
+    showJoinQr: false,
     scale: DEFAULT_POLL_SCALE,
     library: [],
     timerEnabled: false,

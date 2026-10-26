@@ -19,6 +19,8 @@ export type MessageBoardState = {
   presets: MessageBoardPreset[];
   /** Preset currently copied onto the screen, if any. */
   activePresetId: string | null;
+  /** When true, show the player join QR on the big screen. */
+  showJoinQr: boolean;
 };
 
 export const MAX_MESSAGE_BOARD_PRESETS = 40;
@@ -46,6 +48,7 @@ export function createDefaultMessageBoardState(): MessageBoardState {
     groups: [],
     presets: [],
     activePresetId: null,
+    showJoinQr: false,
   };
 }
 
