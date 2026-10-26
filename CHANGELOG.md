@@ -1,7 +1,8 @@
 # Updates
 
-## October 25, 2026
+## October 26, 2026
 
+1. **Elimination Trivia** — On the current question, **Mark correct** sets which answer should survive. The correct **Survive** button is green. Saved questions can mark the same answer, and editing that mark updates the button. Questions with no mark stay unmarked.
 1. **Price Order** — **On display** is one row of cards with the photo, zoom, name, price, delete, curtain, price switch, and arrows to rearrange. The last card is **Add item** and **Load saved item**. Cards slide into place on the desk and the big screen, and photos stay square. **Reveal order** sorts cheapest to most expensive without changing prices or curtains, then turns off until the order is wrong again.
 1. **Elimination Trivia** — If nobody survives a question, **Try this round again** puts those players back in. Enter a different question (or use **Load saved question**), then open voting.
 1. **Elimination Trivia** — Next to the current question, **Load saved question** opens saved questions. **Use now** puts one straight into the current question (while on standby).

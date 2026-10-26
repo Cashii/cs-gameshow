@@ -7,11 +7,17 @@ import {
   MAX_TRIVIA_OPTIONS,
   mergeTriviaBank,
   MIN_TRIVIA_OPTIONS,
+  normalizeTriviaCorrectChoice,
+  optionTextForChoice,
   pauseTriviaTimer,
+  resolveTriviaCorrectChoice,
   syncTriviaOptionsFields,
+  triviaBankKey,
   triviaChoiceIdAt,
   triviaChoiceIndex,
   triviaChoiceLetter,
+  triviaCorrectChoiceAfterRemoval,
+  upsertTriviaBankEntry,
   type TriviaBankQuestion,
   type TriviaChoiceId,
   type TriviaQueuedQuestion,
@@ -60,6 +66,14 @@ function triviaStatusClass(
   return "text-white";
 }
 
+function CorrectChoiceBadge() {
+  return (
+    <span className="rounded bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-neutral-950 uppercase">
+      Correct
+    </span>
+  );
+}
+
 export function TriviaHostPanel() {
   const { state, refreshSnapshot, setState, updateTrivia } = useSuite();
   const trivia = state.trivia;
@@ -70,6 +84,9 @@ export function TriviaHostPanel() {
       ? trivia.options
       : [trivia.optionA || "True", trivia.optionB || "False"],
   );
+  const [correctChoiceId, setCorrectChoiceId] = useState<TriviaChoiceId | null>(
+    trivia.correctChoiceId ?? null,
+  );
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [roster, setRoster] = useState<string[]>([]);
@@ -77,9 +94,12 @@ export function TriviaHostPanel() {
     () => trivia.queue ?? [],
   );
   const [bankOpenRequest, setBankOpenRequest] = useState(0);
-  const draftRef = useRef({ question, options });
+  const draftRef = useRef({
+    question,
+    options,
+    correctChoiceId: trivia.correctChoiceId ?? null,
+  });
   const setupSeqRef = useRef(0);
-  draftRef.current = { question, options };
 
   const runAction = async (body: Record<string, unknown>) => {
     setLoading(true);
@@ -142,6 +162,7 @@ export function TriviaHostPanel() {
         ? trivia.options
         : [trivia.optionA || "True", trivia.optionB || "False"],
     );
+    setCorrectChoiceId(trivia.correctChoiceId ?? null);
   }, [trivia.roundIndex, trivia.status]);
 
   const statusLabel = triviaStatusLabel(
@@ -157,6 +178,20 @@ export function TriviaHostPanel() {
     trivia.options?.length >= MIN_TRIVIA_OPTIONS
       ? trivia.options
       : options;
+  const markedQuestion =
+    trivia.status === "idle" ? question : trivia.question || question;
+  const markedOptions = trivia.status === "idle" ? options : liveOptions;
+  const markedCorrectId = resolveTriviaCorrectChoice(
+    trivia.library ?? [],
+    markedQuestion,
+    markedOptions,
+    trivia.status === "idle" ? correctChoiceId : trivia.correctChoiceId,
+  );
+  draftRef.current = {
+    question,
+    options,
+    correctChoiceId: markedCorrectId,
+  };
 
   const survive = (survivingChoiceId: TriviaChoiceId) => {
     void runAction({ action: "reveal", survivingChoiceId });
@@ -170,6 +205,33 @@ export function TriviaHostPanel() {
   const removeOption = (index: number) => {
     if (options.length <= MIN_TRIVIA_OPTIONS) return;
     setOptions((prev) => prev.filter((_, i) => i !== index));
+    setCorrectChoiceId((prev) => triviaCorrectChoiceAfterRemoval(prev, index));
+  };
+
+  const markCurrentAnswer = (choiceId: TriviaChoiceId) => {
+    const next = markedCorrectId === choiceId ? null : choiceId;
+    const questionText =
+      trivia.status === "idle" ? question : trivia.question || question;
+    const optionList = trivia.status === "idle" ? options : liveOptions;
+    setCorrectChoiceId(next);
+    draftRef.current = {
+      question,
+      options,
+      correctChoiceId: next,
+    };
+    const key = triviaBankKey({ question: questionText, options: optionList });
+    setState((prev) => ({
+      ...prev,
+      trivia: {
+        ...prev.trivia,
+        correctChoiceId: next,
+        library: (prev.trivia.library ?? []).map((entry) =>
+          triviaBankKey(entry) === key
+            ? { ...entry, correctChoiceId: next }
+            : entry,
+        ),
+      },
+    }));
   };
 
   const updateQueuedOptions = (
@@ -216,7 +278,11 @@ export function TriviaHostPanel() {
   const persistQuestionDraft = () => {
     if (trivia.status !== "idle") return;
     const seq = ++setupSeqRef.current;
-    const { question: draftQuestion, options: draftOptions } = draftRef.current;
+    const {
+      question: draftQuestion,
+      options: draftOptions,
+      correctChoiceId: draftCorrectChoiceId,
+    } = draftRef.current;
     void (async () => {
       setLoading(true);
       setMessage("");
@@ -228,6 +294,7 @@ export function TriviaHostPanel() {
             action: "setup",
             question: draftQuestion,
             options: draftOptions,
+            correctChoiceId: draftCorrectChoiceId,
           }),
         });
         const data = (await res.json()) as { error?: string };
@@ -248,23 +315,32 @@ export function TriviaHostPanel() {
   const queue = queueDraft;
   const history = trivia.history ?? [];
 
-  const toBankEntry = (entry: {
-    question: string;
-    options: string[];
-  }): TriviaBankQuestion => {
+  const toBankEntry = (
+    entry: {
+      question: string;
+      options: string[];
+      correctChoiceId?: TriviaChoiceId | null;
+    },
+    id = uid(),
+  ): TriviaBankQuestion => {
     const synced = syncTriviaOptionsFields({ options: entry.options });
     return {
-      id: uid(),
-      question: entry.question,
+      id,
+      question: entry.question.trim(),
       options: synced.options,
       optionA: synced.optionA,
       optionB: synced.optionB,
+      correctChoiceId: normalizeTriviaCorrectChoice(
+        entry.correctChoiceId,
+        synced.options.length,
+      ),
     };
   };
 
   const saveBankEntry = (entry: {
     question: string;
     options: string[];
+    correctChoiceId?: TriviaChoiceId | null;
   }) => {
     const saved = toBankEntry(entry);
     setState((prev) => ({
@@ -279,29 +355,50 @@ export function TriviaHostPanel() {
   const addBankEntryToUpcoming = (entry: {
     question: string;
     options: string[];
+    correctChoiceId?: TriviaChoiceId | null;
+    id?: string;
   }) => {
-    const saved = toBankEntry(entry);
+    const saved = toBankEntry(entry, entry.id);
     saveQueue(
       [...queue, createTriviaQueuedQuestion({ ...saved, id: uid() })],
       saved,
     );
   };
 
-  const applyEntryToCurrent = (entry: {
-    question: string;
-    options: string[];
-  }) => {
+  const applyEntryToCurrent = (
+    entry: {
+      question: string;
+      options: string[];
+      correctChoiceId?: TriviaChoiceId | null;
+      id?: string;
+    },
+    saveToBank = false,
+  ) => {
     if (trivia.status !== "idle") return;
     const synced = syncTriviaOptionsFields({ options: entry.options });
     const nextQuestion = entry.question;
     const nextOptions = synced.options;
+    const nextCorrect = normalizeTriviaCorrectChoice(
+      entry.correctChoiceId,
+      nextOptions.length,
+    );
     setQuestion(nextQuestion);
     setOptions(nextOptions);
-    draftRef.current = { question: nextQuestion, options: nextOptions };
+    setCorrectChoiceId(nextCorrect);
+    const saved = saveToBank
+      ? toBankEntry({ ...entry, correctChoiceId: nextCorrect }, entry.id)
+      : null;
+    draftRef.current = {
+      question: nextQuestion,
+      options: nextOptions,
+      correctChoiceId: nextCorrect,
+    };
     void runAction({
       action: "setup",
       question: nextQuestion,
       options: nextOptions,
+      correctChoiceId: nextCorrect,
+      ...(saved ? { libraryEntry: saved } : {}),
     });
   };
 
@@ -334,6 +431,7 @@ export function TriviaHostPanel() {
                     action: "open",
                     question,
                     options,
+                    correctChoiceId: draftRef.current.correctChoiceId,
                   });
                 }}
                 className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-40 ${
@@ -375,20 +473,32 @@ export function TriviaHostPanel() {
               canSaveCurrent={Boolean(question.trim())}
               canSaveUpcoming={queue.some((item) => item.question.trim())}
               canLoadToCurrent={trivia.status === "idle"}
-              onSaveCurrent={() => saveBankEntry({ question, options })}
+              onSaveCurrent={() =>
+                saveBankEntry({
+                  question,
+                  options,
+                  correctChoiceId: markedCorrectId,
+                })
+              }
               onSaveUpcoming={() => {
                 const incoming = queue
                   .filter((item) => item.question.trim())
-                  .map((item) => {
-                    const synced = syncTriviaOptionsFields(item);
-                    return {
-                      id: uid(),
+                  .map((item) =>
+                    toBankEntry({
                       question: item.question,
-                      options: synced.options,
-                      optionA: synced.optionA,
-                      optionB: synced.optionB,
-                    };
-                  });
+                      options: item.options?.length
+                        ? item.options
+                        : [item.optionA, item.optionB],
+                      correctChoiceId: resolveTriviaCorrectChoice(
+                        trivia.library ?? [],
+                        item.question,
+                        item.options?.length
+                          ? item.options
+                          : [item.optionA, item.optionB],
+                        item.correctChoiceId,
+                      ),
+                    }),
+                  );
                 setState((prev) => ({
                   ...prev,
                   trivia: {
@@ -423,7 +533,20 @@ export function TriviaHostPanel() {
                 if (!entry) return;
                 applyEntryToCurrent(entry);
               }}
-              onUseAsCurrent={applyEntryToCurrent}
+              onUseAsCurrent={(entry) => applyEntryToCurrent(entry, true)}
+              onUpdate={(id, entry) => {
+                const saved = toBankEntry(entry, id);
+                setState((prev) => ({
+                  ...prev,
+                  trivia: {
+                    ...prev.trivia,
+                    library: upsertTriviaBankEntry(
+                      prev.trivia.library ?? [],
+                      saved,
+                    ),
+                  },
+                }));
+              }}
               onDelete={(id) =>
                 setState((prev) => ({
                   ...prev,
@@ -537,7 +660,10 @@ export function TriviaHostPanel() {
             <span className="sr-only">Question {questionNumber}</span>
             <input
               value={question}
-              onChange={(e) => setQuestion(e.target.value)}
+              onChange={(e) => {
+                setQuestion(e.target.value);
+                setCorrectChoiceId(null);
+              }}
               onBlur={persistQuestionDraft}
               placeholder="True or false: …"
               autoFocus={settingUpNext || replacingRound}
@@ -551,23 +677,43 @@ export function TriviaHostPanel() {
           </label>
           <div className="space-y-2">
             {options.map((option, index) => {
-              const letter = triviaChoiceLetter(
-                triviaChoiceIdAt(index) ?? "a",
-              );
+              const choiceId = triviaChoiceIdAt(index);
+              const letter = triviaChoiceLetter(choiceId ?? "a");
+              const isCorrect = choiceId != null && markedCorrectId === choiceId;
               return (
-                <label key={`${index}-${letter}`} className="block">
+                <div key={`${index}-${letter}`}>
                   <span className="flex items-center justify-between gap-2 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                    Answer {letter}
-                    {options.length > MIN_TRIVIA_OPTIONS && !answersLocked ? (
-                      <button
-                        type="button"
-                        onClick={() => removeOption(index)}
-                        className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-red-300"
-                        aria-label={`Remove answer ${letter}`}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    ) : null}
+                    <span className="flex items-center gap-2">
+                      Answer {letter}
+                      {isCorrect ? <CorrectChoiceBadge /> : null}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      {choiceId ? (
+                        <button
+                          type="button"
+                          aria-pressed={isCorrect}
+                          disabled={loading}
+                          onClick={() => markCurrentAnswer(choiceId)}
+                          className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase disabled:opacity-40 ${
+                            isCorrect
+                              ? "bg-emerald-500 text-neutral-950"
+                              : "bg-neutral-900 text-neutral-400 hover:text-emerald-300"
+                          }`}
+                        >
+                          {isCorrect ? "Correct" : "Mark correct"}
+                        </button>
+                      ) : null}
+                      {options.length > MIN_TRIVIA_OPTIONS && !answersLocked ? (
+                        <button
+                          type="button"
+                          onClick={() => removeOption(index)}
+                          className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-red-300"
+                          aria-label={`Remove answer ${letter}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      ) : null}
+                    </span>
                   </span>
                   <input
                     value={option}
@@ -580,9 +726,12 @@ export function TriviaHostPanel() {
                     }
                     onBlur={persistQuestionDraft}
                     disabled={answersLocked}
-                    className="mt-1 w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-white disabled:opacity-60"
+                    aria-label={`Answer ${letter}`}
+                    className={`mt-1 w-full rounded-lg border bg-neutral-800 px-3 py-2 text-sm text-white disabled:opacity-60 ${
+                      isCorrect ? "border-emerald-500" : "border-neutral-700"
+                    }`}
                   />
-                </label>
+                </div>
               );
             })}
             {options.length < MAX_TRIVIA_OPTIONS && !answersLocked ? (
@@ -617,17 +766,29 @@ export function TriviaHostPanel() {
           <div className="flex flex-wrap gap-2">
             {trivia.status === "locked" && (
               <>
+                {markedCorrectId ? (
+                  <p className="w-full rounded-lg border border-emerald-500/70 bg-emerald-500/15 px-3 py-2 text-sm font-semibold text-emerald-200">
+                    Correct answer: {triviaChoiceLetter(markedCorrectId)} —{" "}
+                    {optionTextForChoice(liveOptions, markedCorrectId)}
+                  </p>
+                ) : null}
                 {liveOptions.map((option, index) => {
                   const choiceId = triviaChoiceIdAt(index);
                   if (!choiceId) return null;
+                  const isCorrect = markedCorrectId === choiceId;
                   return (
                     <button
                       key={choiceId}
                       type="button"
                       disabled={loading}
                       onClick={() => survive(choiceId)}
-                      className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-600 disabled:opacity-40"
+                      className={`rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-40 ${
+                        isCorrect
+                          ? "bg-emerald-500 text-neutral-950 ring-2 ring-emerald-200 hover:bg-emerald-400"
+                          : "bg-teal-700 text-white hover:bg-teal-600"
+                      }`}
                     >
+                      {isCorrect ? "Correct · " : ""}
                       Survive {triviaChoiceLetter(choiceId)} — {option}
                     </button>
                   );
@@ -732,7 +893,17 @@ export function TriviaHostPanel() {
                 <p className="text-sm text-neutral-500">
                   Use the arrows to reorder. Top question plays next.
                 </p>
-                {queue.map((item, index) => (
+                {queue.map((item, index) => {
+                  const queuedOptions = item.options?.length
+                    ? item.options
+                    : [item.optionA, item.optionB];
+                  const queuedCorrectId = resolveTriviaCorrectChoice(
+                    trivia.library ?? [],
+                    item.question,
+                    queuedOptions,
+                    item.correctChoiceId,
+                  );
+                  return (
                   <article
                     key={item.id}
                     className="flex items-start gap-3 rounded-xl border border-neutral-700 bg-neutral-800 p-3"
@@ -790,7 +961,11 @@ export function TriviaHostPanel() {
                           setQueueDraft((prev) =>
                             prev.map((entry) =>
                               entry.id === item.id
-                                ? { ...entry, question: e.target.value }
+                                ? {
+                                    ...entry,
+                                    question: e.target.value,
+                                    correctChoiceId: null,
+                                  }
                                 : entry,
                             ),
                           );
@@ -800,11 +975,18 @@ export function TriviaHostPanel() {
                         className="mb-2 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
                       />
                       <div className="space-y-2">
-                        {(item.options?.length
-                          ? item.options
-                          : [item.optionA, item.optionB]
-                        ).map((option, optionIndex) => (
+                        {queuedOptions.map((option, optionIndex) => {
+                          const choiceId = triviaChoiceIdAt(optionIndex);
+                          const isCorrect =
+                            choiceId != null && queuedCorrectId === choiceId;
+                          return (
                           <div key={`${item.id}-${optionIndex}`} className="flex gap-2">
+                            <div className="min-w-0 flex-1">
+                              {isCorrect ? (
+                                <p className="mb-1">
+                                  <CorrectChoiceBadge />
+                                </p>
+                              ) : null}
                             <input
                               value={option}
                               onChange={(e) => {
@@ -816,17 +998,41 @@ export function TriviaHostPanel() {
                               }}
                               onBlur={persistQueueDraft}
                               placeholder={`Answer ${triviaChoiceLetter(
-                                triviaChoiceIdAt(optionIndex) ?? "a",
+                                choiceId ?? "a",
                               )}`}
-                              className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
+                              className={`w-full rounded-lg border bg-neutral-900 px-3 py-2 text-sm text-white ${
+                                isCorrect
+                                  ? "border-emerald-500"
+                                  : "border-neutral-700"
+                              }`}
                             />
-                            {(item.options?.length ?? 2) > MIN_TRIVIA_OPTIONS ? (
+                            </div>
+                            {queuedOptions.length > MIN_TRIVIA_OPTIONS ? (
                               <button
                                 type="button"
                                 disabled={loading}
                                 onClick={() => {
-                                  updateQueuedOptions(item.id, (current) =>
-                                    current.filter((_, i) => i !== optionIndex),
+                                  setQueueDraft((prev) =>
+                                    prev.map((entry) => {
+                                      if (entry.id !== item.id) return entry;
+                                      const current = entry.options?.length
+                                        ? entry.options
+                                        : [entry.optionA, entry.optionB];
+                                      const nextOptions = current.filter(
+                                        (_, i) => i !== optionIndex,
+                                      );
+                                      return {
+                                        ...entry,
+                                        options: nextOptions,
+                                        optionA: nextOptions[0] ?? entry.optionA,
+                                        optionB: nextOptions[1] ?? entry.optionB,
+                                        correctChoiceId:
+                                          triviaCorrectChoiceAfterRemoval(
+                                            entry.correctChoiceId,
+                                            optionIndex,
+                                          ),
+                                      };
+                                    }),
                                   );
                                   persistQueueDraft();
                                 }}
@@ -837,8 +1043,9 @@ export function TriviaHostPanel() {
                               </button>
                             ) : null}
                           </div>
-                        ))}
-                        {(item.options?.length ?? 2) < MAX_TRIVIA_OPTIONS ? (
+                          );
+                        })}
+                        {queuedOptions.length < MAX_TRIVIA_OPTIONS ? (
                           <button
                             type="button"
                             disabled={loading}
@@ -858,7 +1065,8 @@ export function TriviaHostPanel() {
                       </div>
                     </div>
                   </article>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>

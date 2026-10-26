@@ -69,6 +69,7 @@ import {
   createTriviaQueuedQuestion,
   isTriviaChoiceId,
   normalizeTriviaChoiceCounts,
+  normalizeTriviaCorrectChoice,
   normalizeTriviaOptions,
   normalizeTriviaLibrary,
   syncTriviaOptionsFields,
@@ -551,6 +552,7 @@ function normalizeTriviaQueuedQuestion(
     options: raw.options,
     optionA: raw.optionA,
     optionB: raw.optionB,
+    correctChoiceId: raw.correctChoiceId,
   });
 }
 
@@ -630,6 +632,10 @@ function normalizeTriviaState(
         choiceCounts,
         choiceACount: choiceCounts[0] ?? 0,
         choiceBCount: choiceCounts[1] ?? 0,
+        correctChoiceId: normalizeTriviaCorrectChoice(
+          raw.correctChoiceId,
+          options.length,
+        ),
       };
     })(),
     survivingChoiceId: isTriviaChoiceId(raw.survivingChoiceId)

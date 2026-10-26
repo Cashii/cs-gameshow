@@ -2,23 +2,35 @@
 
 import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { FolderOpen, Plus, Trash2, X } from "lucide-react";
+import { FolderOpen, Pencil, Plus, Trash2, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { bankLoadClass, bankSaveClass } from "@/components/operator/BankPanel";
+
+const bankNeutralClass =
+  "h-9 rounded-md border border-neutral-600 bg-neutral-800 px-3 text-sm font-semibold text-neutral-200 hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-40";
 import {
   DEFAULT_TRIVIA_OPTIONS,
   MAX_TRIVIA_OPTIONS,
   MIN_TRIVIA_OPTIONS,
   triviaChoiceIdAt,
   triviaChoiceLetter,
+  triviaCorrectChoiceAfterRemoval,
   type TriviaBankQuestion,
+  type TriviaChoiceId,
 } from "@/lib/trivia/types";
 
-function emptyDraft() {
+type TriviaBankDraft = {
+  question: string;
+  options: string[];
+  correctChoiceId: TriviaChoiceId | null;
+};
+
+function emptyDraft(): TriviaBankDraft {
   return {
     question: "",
     options: [...DEFAULT_TRIVIA_OPTIONS],
+    correctChoiceId: null,
   };
 }
 
@@ -34,6 +46,7 @@ export function TriviaQuestionBank({
   onLoad,
   onLoadToCurrent,
   onUseAsCurrent,
+  onUpdate,
   onDelete,
   openRequest = 0,
 }: {
@@ -43,16 +56,18 @@ export function TriviaQuestionBank({
   canLoadToCurrent: boolean;
   onSaveCurrent: () => void;
   onSaveUpcoming: () => void;
-  onAdd: (entry: { question: string; options: string[] }) => void;
-  onAddToUpcoming: (entry: { question: string; options: string[] }) => void;
+  onAdd: (entry: TriviaBankDraft) => void;
+  onAddToUpcoming: (entry: TriviaBankDraft & { id?: string }) => void;
   onLoad: (id: string) => void;
   onLoadToCurrent: (id: string) => void;
-  onUseAsCurrent: (entry: { question: string; options: string[] }) => void;
+  onUseAsCurrent: (entry: TriviaBankDraft & { id?: string }) => void;
+  onUpdate: (id: string, entry: TriviaBankDraft) => void;
   onDelete: (id: string) => void;
   openRequest?: number;
 }) {
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState(emptyDraft);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
@@ -67,13 +82,25 @@ export function TriviaQuestionBank({
 
   const resetDraft = () => {
     setAdding(false);
+    setEditingId(null);
     setDraft(emptyDraft());
   };
 
-  const draftEntry = () => ({
+  const draftEntry = (): TriviaBankDraft => ({
     question: draft.question.trim(),
     options: draft.options.map((option) => option.trim()),
+    correctChoiceId: draft.correctChoiceId,
   });
+
+  const startEdit = (entry: TriviaBankQuestion) => {
+    setEditingId(entry.id);
+    setAdding(true);
+    setDraft({
+      question: entry.question,
+      options: [...entry.options],
+      correctChoiceId: entry.correctChoiceId,
+    });
+  };
 
   const submitDraft = () => {
     if (!draftReady) return;
@@ -123,14 +150,17 @@ export function TriviaQuestionBank({
                   Saved questions
                 </Dialog.Title>
                 <Dialog.Description className="mt-1 text-sm text-neutral-400">
-                  Each saved question keeps its answers. Use now puts it on the
-                  current question. Add to upcoming stages it for later.
+                  Each saved question keeps its answers. Mark the correct one
+                  so Survive shows which side to keep. Leave it blank if you
+                  do not know yet. Use now puts it on the current question.
+                  Add to upcoming stages it for later.
                 </Dialog.Description>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
+                    setEditingId(null);
                     setDraft(emptyDraft());
                     setAdding(true);
                   }}
@@ -173,9 +203,19 @@ export function TriviaQuestionBank({
                 className="mx-6 mb-3 space-y-2 rounded-lg border border-neutral-700 bg-neutral-800/60 p-3"
                 onSubmit={(event) => {
                   event.preventDefault();
+                  if (!draftReady) return;
+                  const entry = draftEntry();
+                  if (editingId) {
+                    onAddToUpcoming({ ...entry, id: editingId });
+                    resetDraft();
+                    return;
+                  }
                   addDraftToUpcoming();
                 }}
               >
+                <p className="text-xs font-semibold tracking-wide text-neutral-300 uppercase">
+                  {editingId ? "Edit question" : "New question"}
+                </p>
                 <label className="block">
                   <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                     Question
@@ -194,31 +234,60 @@ export function TriviaQuestionBank({
                     className="mt-1.5 w-full rounded-lg border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-500 focus:ring-2 focus:ring-sky-500 focus:outline-none"
                   />
                 </label>
+                <p className="text-xs text-neutral-500">
+                  Mark the correct answer, or leave them all unmarked.
+                </p>
                 {draft.options.map((option, index) => {
-                  const letter = triviaChoiceLetter(
-                    triviaChoiceIdAt(index) ?? "a",
-                  );
+                  const choiceId = triviaChoiceIdAt(index) ?? "a";
+                  const letter = triviaChoiceLetter(choiceId);
+                  const isCorrect = draft.correctChoiceId === choiceId;
                   return (
-                    <label key={`draft-${index}`} className="block">
+                    <div key={`draft-${index}`} className="block">
                       <span className="flex items-center justify-between gap-2 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                         Answer {letter}
-                        {draft.options.length > MIN_TRIVIA_OPTIONS ? (
+                        <span className="flex items-center gap-1">
                           <button
                             type="button"
+                            aria-pressed={isCorrect}
                             onClick={() =>
                               setDraft((current) => ({
                                 ...current,
-                                options: current.options.filter(
-                                  (_, optionIndex) => optionIndex !== index,
-                                ),
+                                correctChoiceId:
+                                  current.correctChoiceId === choiceId
+                                    ? null
+                                    : choiceId,
                               }))
                             }
-                            className="rounded-md p-1 text-neutral-500 hover:bg-neutral-900 hover:text-red-300"
-                            aria-label={`Remove answer ${letter}`}
+                            className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase ${
+                              isCorrect
+                                ? "bg-emerald-500 text-neutral-950"
+                                : "bg-neutral-900 text-neutral-400 hover:text-emerald-300"
+                            }`}
                           >
-                            <Trash2 size={14} />
+                            {isCorrect ? "Correct" : "Mark correct"}
                           </button>
-                        ) : null}
+                          {draft.options.length > MIN_TRIVIA_OPTIONS ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setDraft((current) => ({
+                                  ...current,
+                                  options: current.options.filter(
+                                    (_, optionIndex) => optionIndex !== index,
+                                  ),
+                                  correctChoiceId: triviaCorrectChoiceAfterRemoval(
+                                    current.correctChoiceId,
+                                    index,
+                                  ),
+                                }))
+                              }
+                              className="rounded-md p-1 text-neutral-500 hover:bg-neutral-900 hover:text-red-300"
+                              aria-label={`Remove answer ${letter}`}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          ) : null}
+                        </span>
                       </span>
                       <input
                         value={option}
@@ -231,9 +300,11 @@ export function TriviaQuestionBank({
                           }))
                         }
                         aria-label={`Answer ${letter}`}
-                        className="mt-1.5 w-full rounded-lg border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                        className={`mt-1.5 w-full rounded-lg border bg-neutral-800 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-sky-500 focus:outline-none ${
+                          isCorrect ? "border-emerald-500" : "border-neutral-600"
+                        }`}
                       />
-                    </label>
+                    </div>
                   );
                 })}
                 {draft.options.length < MAX_TRIVIA_OPTIONS ? (
@@ -254,47 +325,50 @@ export function TriviaQuestionBank({
                     Add answer
                   </button>
                 ) : null}
-                <div className="flex justify-end gap-2 pt-1">
+                <div className="flex flex-wrap justify-end gap-2 pt-1">
                   <button
                     type="button"
                     onClick={resetDraft}
-                    className="rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm font-medium text-neutral-200"
+                    className={bankNeutralClass}
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     disabled={!draftReady}
-                    onClick={submitDraft}
+                    onClick={() => {
+                      if (!draftReady) return;
+                      if (editingId) {
+                        onUpdate(editingId, draftEntry());
+                        resetDraft();
+                        return;
+                      }
+                      submitDraft();
+                    }}
                     className={bankSaveClass}
                   >
-                    Save question
+                    {editingId ? "Save changes" : "Save question"}
                   </button>
                   <button
                     type="button"
                     disabled={!draftReady || !canLoadToCurrent}
                     onClick={() => {
                       if (!draftReady || !canLoadToCurrent) return;
-                      onUseAsCurrent(draftEntry());
+                      const entry = draftEntry();
+                      onUseAsCurrent(
+                        editingId ? { ...entry, id: editingId } : entry,
+                      );
                       resetDraft();
                       setOpen(false);
                     }}
-                    className={`rounded-lg px-3 py-2 text-sm font-medium ${
-                      draftReady && canLoadToCurrent
-                        ? "border border-sky-500 bg-transparent text-sky-300 hover:bg-sky-500/10"
-                        : "cursor-not-allowed border border-neutral-700 bg-neutral-800 text-neutral-500"
-                    }`}
+                    className={bankSaveClass}
                   >
                     Use now
                   </button>
                   <button
                     type="submit"
                     disabled={!draftReady}
-                    className={`rounded-lg px-3 py-2 text-sm font-medium text-white ${
-                      draftReady
-                        ? "bg-blue-600 hover:bg-blue-500"
-                        : "cursor-not-allowed bg-neutral-700 text-neutral-500"
-                    }`}
+                    className={bankNeutralClass}
                   >
                     Add to upcoming
                   </button>
@@ -333,6 +407,12 @@ export function TriviaQuestionBank({
                               </span>
                               {" · "}
                               {option.trim() || "(blank)"}
+                              {entry.correctChoiceId === choiceId ? (
+                                <span className="font-semibold text-emerald-300">
+                                  {" "}
+                                  · Correct
+                                </span>
+                              ) : null}
                             </li>
                           );
                         })}
@@ -356,6 +436,14 @@ export function TriviaQuestionBank({
                         className="h-7 shrink-0 rounded-md border border-neutral-600 bg-neutral-800 px-2.5 text-xs font-semibold text-neutral-200 hover:bg-neutral-700"
                       >
                         Add to upcoming
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(entry)}
+                        className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-neutral-600 bg-neutral-800 px-2.5 text-xs font-semibold text-neutral-200 hover:bg-neutral-700"
+                      >
+                        <Pencil size={12} />
+                        Edit
                       </button>
                       <button
                         type="button"

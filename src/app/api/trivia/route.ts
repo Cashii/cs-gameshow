@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     options?: string[];
     optionA?: string;
     optionB?: string;
+    correctChoiceId?: string | null;
     survivingChoiceId?: string;
     queue?: unknown;
     libraryEntry?: {
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
       options?: string[];
       optionA?: string;
       optionB?: string;
+      correctChoiceId?: string | null;
     };
   };
 
@@ -67,6 +69,22 @@ export async function POST(request: Request) {
             options: body.options,
             optionA: body.optionA ?? "",
             optionB: body.optionB ?? "",
+            correctChoiceId: isTriviaChoiceId(body.correctChoiceId)
+              ? body.correctChoiceId
+              : body.correctChoiceId === null
+                ? null
+                : undefined,
+            libraryEntry:
+              body.libraryEntry && typeof body.libraryEntry === "object"
+                ? {
+                    ...body.libraryEntry,
+                    correctChoiceId: isTriviaChoiceId(
+                      body.libraryEntry.correctChoiceId,
+                    )
+                      ? body.libraryEntry.correctChoiceId
+                      : null,
+                  }
+                : undefined,
           }),
         );
       case "open":
@@ -76,6 +94,11 @@ export async function POST(request: Request) {
             options: body.options,
             optionA: body.optionA ?? "",
             optionB: body.optionB ?? "",
+            correctChoiceId: isTriviaChoiceId(body.correctChoiceId)
+              ? body.correctChoiceId
+              : body.correctChoiceId === null
+                ? null
+                : undefined,
           }),
         );
       case "lock":
@@ -102,7 +125,14 @@ export async function POST(request: Request) {
           await triviaSaveQueue(
             body.queue,
             body.libraryEntry && typeof body.libraryEntry === "object"
-              ? body.libraryEntry
+              ? {
+                  ...body.libraryEntry,
+                  correctChoiceId: isTriviaChoiceId(
+                    body.libraryEntry.correctChoiceId,
+                  )
+                    ? body.libraryEntry.correctChoiceId
+                    : null,
+                }
               : undefined,
           ),
         );

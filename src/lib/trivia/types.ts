@@ -31,6 +31,8 @@ export type TriviaQueuedQuestion = {
   options: string[];
   optionA: string;
   optionB: string;
+  /** Which answer should survive. Null when nobody marked one. */
+  correctChoiceId: TriviaChoiceId | null;
 };
 
 export type TriviaRoundHistory = {
@@ -66,6 +68,8 @@ export type TriviaGameState = TriviaTimerState & {
   optionA: string;
   optionB: string;
   survivingChoiceId: TriviaChoiceId | null;
+  /** Correct answer for this question, copied from the bank. Null if unmarked. */
+  correctChoiceId: TriviaChoiceId | null;
   answeredCount: number;
   choiceCounts: number[];
   choiceACount: number;
@@ -220,6 +224,8 @@ export type TriviaBankQuestion = {
   options: string[];
   optionA: string;
   optionB: string;
+  /** Null for questions saved before a correct answer was marked. */
+  correctChoiceId: TriviaChoiceId | null;
 };
 
 export function isTriviaChoiceId(value: unknown): value is TriviaChoiceId {
@@ -239,6 +245,58 @@ export function triviaChoiceIdAt(index: number): TriviaChoiceId | null {
 
 export function triviaChoiceLetter(id: TriviaChoiceId): string {
   return id.toUpperCase();
+}
+
+/** Missing or out-of-range values stay unmarked so older saves keep working. */
+export function normalizeTriviaCorrectChoice(
+  value: unknown,
+  optionCount: number,
+): TriviaChoiceId | null {
+  if (!isTriviaChoiceId(value)) return null;
+  if (triviaChoiceIndex(value) >= optionCount) return null;
+  return value;
+}
+
+export function triviaCorrectChoiceAfterRemoval(
+  correctChoiceId: TriviaChoiceId | null,
+  removedIndex: number,
+): TriviaChoiceId | null {
+  if (!correctChoiceId) return null;
+  const index = triviaChoiceIndex(correctChoiceId);
+  if (index === removedIndex) return null;
+  if (index > removedIndex) return triviaChoiceIdAt(index - 1);
+  return correctChoiceId;
+}
+
+/** Bank match wins, including an explicit blank. Otherwise keep a copied mark. */
+export function resolveTriviaCorrectChoice(
+  library: readonly TriviaBankQuestion[],
+  question: string,
+  options: readonly string[],
+  stored?: TriviaChoiceId | null,
+): TriviaChoiceId | null {
+  const list = [...options];
+  const key = triviaBankKey({ question, options: list });
+  const match = library.find((entry) => triviaBankKey(entry) === key);
+  if (match) {
+    return normalizeTriviaCorrectChoice(match.correctChoiceId, list.length);
+  }
+  return normalizeTriviaCorrectChoice(stored, list.length);
+}
+
+export function upsertTriviaBankEntry(
+  library: readonly TriviaBankQuestion[],
+  saved: TriviaBankQuestion,
+): TriviaBankQuestion[] {
+  const key = triviaBankKey(saved);
+  const withoutSameQuestion = library.filter(
+    (item) => item.id === saved.id || triviaBankKey(item) !== key,
+  );
+  const index = withoutSameQuestion.findIndex((item) => item.id === saved.id);
+  if (index === -1) return [...withoutSameQuestion, saved];
+  return withoutSameQuestion.map((item) =>
+    item.id === saved.id ? saved : item,
+  );
 }
 
 export function normalizeTriviaOptions(
@@ -375,6 +433,7 @@ export function createDefaultTriviaState(): TriviaGameState {
     optionA: options[0],
     optionB: options[1],
     survivingChoiceId: null,
+    correctChoiceId: null,
     answeredCount: 0,
     choiceCounts,
     choiceACount: 0,
@@ -428,6 +487,10 @@ function readTriviaBankQuestion(
     options,
     optionA: options[0] ?? "",
     optionB: options[1] ?? "",
+    correctChoiceId: normalizeTriviaCorrectChoice(
+      record.correctChoiceId,
+      options.length,
+    ),
   };
 }
 
@@ -488,6 +551,10 @@ export function createTriviaQueuedQuestion(
     options: synced.options,
     optionA: synced.optionA,
     optionB: synced.optionB,
+    correctChoiceId: normalizeTriviaCorrectChoice(
+      partial?.correctChoiceId,
+      synced.options.length,
+    ),
   };
 }
 

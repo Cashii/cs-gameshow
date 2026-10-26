@@ -8,7 +8,9 @@ import {
   emptyTriviaChoiceCounts,
   isTriviaChoiceOpen,
   mergeTriviaBank,
+  normalizeTriviaCorrectChoice,
   normalizeTriviaOptions,
+  upsertTriviaBankEntry,
   pauseTriviaTimer,
   resetTriviaTimer,
   syncTriviaOptionsFields,
@@ -252,11 +254,61 @@ export async function castTriviaVote(
   return updateEventSuite((prev) => prev);
 }
 
+function triviaLibraryWithEntry(
+  library: TriviaGameState["library"],
+  libraryEntry?: {
+    id?: string;
+    question?: string;
+    options?: string[];
+    optionA?: string;
+    optionB?: string;
+    correctChoiceId?: TriviaChoiceId | null;
+  },
+) {
+  const question =
+    typeof libraryEntry?.question === "string"
+      ? libraryEntry.question.trim()
+      : "";
+  if (!question) return library;
+  const syncedEntry = syncTriviaOptionsFields({
+    options: libraryEntry?.options,
+    optionA: libraryEntry?.optionA,
+    optionB: libraryEntry?.optionB,
+  });
+  const saved = {
+    id:
+      typeof libraryEntry?.id === "string" && libraryEntry.id.trim()
+        ? libraryEntry.id
+        : `bank-${Date.now()}`,
+    question,
+    options: syncedEntry.options,
+    optionA: syncedEntry.optionA,
+    optionB: syncedEntry.optionB,
+    correctChoiceId: normalizeTriviaCorrectChoice(
+      libraryEntry?.correctChoiceId,
+      syncedEntry.options.length,
+    ),
+  };
+  if (library.some((item) => item.id === saved.id)) {
+    return upsertTriviaBankEntry(library, saved);
+  }
+  return mergeTriviaBank(library, [saved]);
+}
+
 export async function triviaSetup(input: {
   question: string;
   options?: string[];
   optionA?: string;
   optionB?: string;
+  correctChoiceId?: TriviaChoiceId | null;
+  libraryEntry?: {
+    id?: string;
+    question?: string;
+    options?: string[];
+    optionA?: string;
+    optionB?: string;
+    correctChoiceId?: TriviaChoiceId | null;
+  };
 }): Promise<EventSnapshot> {
   return updateEventSuite((prev) => {
     const t = prev.trivia ?? createDefaultTriviaState();
@@ -272,6 +324,7 @@ export async function triviaSetup(input: {
       optionB: input.optionB ?? t.optionB,
       choiceCounts: emptyTriviaChoiceCounts(2),
     });
+    const library = triviaLibraryWithEntry(t.library ?? [], input.libraryEntry);
     return {
       ...prev,
       trivia: {
@@ -286,6 +339,17 @@ export async function triviaSetup(input: {
         choiceACount: synced.choiceACount,
         choiceBCount: synced.choiceBCount,
         survivingChoiceId: null,
+        correctChoiceId:
+          input.correctChoiceId === undefined
+            ? normalizeTriviaCorrectChoice(
+                t.correctChoiceId,
+                synced.options.length,
+              )
+            : normalizeTriviaCorrectChoice(
+                input.correctChoiceId,
+                synced.options.length,
+              ),
+        library,
       },
     };
   });
@@ -296,6 +360,7 @@ export async function triviaOpen(input: {
   options?: string[];
   optionA?: string;
   optionB?: string;
+  correctChoiceId?: TriviaChoiceId | null;
 }): Promise<EventSnapshot> {
   return updateEventSuite((prev) => {
     const t = prev.trivia ?? createDefaultTriviaState();
@@ -329,6 +394,16 @@ export async function triviaOpen(input: {
         choiceACount: 0,
         choiceBCount: 0,
         survivingChoiceId: null,
+        correctChoiceId:
+          input.correctChoiceId === undefined
+            ? normalizeTriviaCorrectChoice(
+                t.correctChoiceId,
+                synced.options.length,
+              )
+            : normalizeTriviaCorrectChoice(
+                input.correctChoiceId,
+                synced.options.length,
+              ),
         replacingRound: false,
       },
     };
@@ -480,6 +555,7 @@ export async function triviaRetryRound(): Promise<EventSnapshot> {
         optionA: fresh.optionA,
         optionB: fresh.optionB,
         survivingChoiceId: null,
+        correctChoiceId: null,
         answeredCount: 0,
         choiceCounts: emptyTriviaChoiceCounts(fresh.options.length),
         choiceACount: 0,
@@ -627,6 +703,12 @@ export async function triviaNextQuestion(): Promise<EventSnapshot> {
         optionA: nextOptions.optionA,
         optionB: nextOptions.optionB,
         survivingChoiceId: null,
+        correctChoiceId: next
+          ? normalizeTriviaCorrectChoice(
+              next.correctChoiceId,
+              nextOptions.options.length,
+            )
+          : null,
         answeredCount: 0,
         choiceCounts: emptyTriviaChoiceCounts(nextOptions.options.length),
         choiceACount: 0,
@@ -647,6 +729,7 @@ export async function triviaSaveQueue(
     options?: string[];
     optionA?: string;
     optionB?: string;
+    correctChoiceId?: TriviaChoiceId | null;
   }>,
   libraryEntry?: {
     id?: string;
@@ -654,6 +737,7 @@ export async function triviaSaveQueue(
     options?: string[];
     optionA?: string;
     optionB?: string;
+    correctChoiceId?: TriviaChoiceId | null;
   },
 ): Promise<EventSnapshot> {
   return updateEventSuite((prev) => {
@@ -670,34 +754,10 @@ export async function triviaSaveQueue(
           options: item.options,
           optionA: item.optionA,
           optionB: item.optionB,
+          correctChoiceId: item.correctChoiceId,
         }),
       );
-    const question =
-      typeof libraryEntry?.question === "string"
-        ? libraryEntry.question.trim()
-        : "";
-    const syncedEntry = question
-      ? syncTriviaOptionsFields({
-          options: libraryEntry?.options,
-          optionA: libraryEntry?.optionA,
-          optionB: libraryEntry?.optionB,
-        })
-      : null;
-    const library =
-      question && syncedEntry
-        ? mergeTriviaBank(t.library ?? [], [
-            {
-              id:
-                typeof libraryEntry?.id === "string" && libraryEntry.id.trim()
-                  ? libraryEntry.id
-                  : `bank-${Date.now()}`,
-              question,
-              options: syncedEntry.options,
-              optionA: syncedEntry.optionA,
-              optionB: syncedEntry.optionB,
-            },
-          ])
-        : (t.library ?? []);
+    const library = triviaLibraryWithEntry(t.library ?? [], libraryEntry);
     return {
       ...prev,
       trivia: {
