@@ -79,7 +79,27 @@ export function TriviaAudienceView({
   }
 
   if (waiting) {
-    return <StandbyScreen />;
+    if (!trivia.showJoinQr) return <StandbyScreen />;
+    return (
+      <div className="relative h-full w-full overflow-hidden">
+        <StandbyScreen />
+        <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <div
+            className="pointer-events-none absolute inset-0 backdrop-blur-sm"
+            style={{
+              background:
+                "linear-gradient(to bottom, transparent 0%, rgba(10,10,10,0.35) 32%, rgba(10,10,10,0.55) 100%)",
+            }}
+            aria-hidden
+          />
+          <div className="relative flex flex-col items-center gap-4 rounded-3xl bg-neutral-950/20 px-6 py-5">
+            <div className="size-[min(32rem,62vmin)]">
+              <PlayerVoteQr label="Scan to play" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

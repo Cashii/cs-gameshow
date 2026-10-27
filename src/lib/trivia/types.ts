@@ -89,6 +89,8 @@ export type TriviaGameState = TriviaTimerState & {
   library: TriviaBankQuestion[];
   /** The last reveal eliminated everyone; this question number is open for a replacement. */
   replacingRound: boolean;
+  /** Big-screen player QR while the round is on standby. */
+  showJoinQr: boolean;
 };
 
 export const TRIVIA_DURATION_PRESETS_MS = [30_000, 45_000, 60_000] as const;
@@ -455,6 +457,7 @@ export function createDefaultTriviaState(): TriviaGameState {
     groups: [],
     library: [],
     replacingRound: false,
+    showJoinQr: false,
     timerEnabled: false,
     timerDurationMs: DEFAULT_TRIVIA_DURATION_MS,
     timerRemainingMs: DEFAULT_TRIVIA_DURATION_MS,

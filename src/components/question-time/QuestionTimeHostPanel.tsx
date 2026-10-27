@@ -203,7 +203,9 @@ export function QuestionTimeHostPanel() {
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
             Game actions
           </span>
-          <ResetButton onClick={resetScores}>Reset Scores</ResetButton>
+          <ResetButton tone="orange" onClick={resetScores}>
+            Reset Scores
+          </ResetButton>
           <ResetButton onClick={() => setConfirmReset(true)}>
             Reset Game
           </ResetButton>

@@ -289,7 +289,11 @@ export function SuiteProvider({
         calledTokens: next.calledTokens ?? [],
         drawHistory: next.drawHistory ?? [],
         poll: mergePollLive(next.poll, base.poll),
-        trivia: withTriviaTimer(next.trivia, base.trivia),
+        trivia: {
+          ...withTriviaTimer(next.trivia, base.trivia),
+          // A standby QR toggle is broadcast before the server copy catches up.
+          showJoinQr: Boolean(base.trivia.showJoinQr),
+        },
         derby: mergeDerbyVotes(base.derby, next.derby),
         takeIt: mergeTakeItPicks(base.takeIt, next.takeIt),
         liveDrawer: withLiveDrawerTimer(

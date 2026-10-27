@@ -683,6 +683,7 @@ function normalizeTriviaState(
       normalizeContentGroups(raw.groups),
     ),
     replacingRound: raw.replacingRound === true,
+    showJoinQr: raw.showJoinQr === true,
     ...triviaTimerFields(raw),
   };
 }

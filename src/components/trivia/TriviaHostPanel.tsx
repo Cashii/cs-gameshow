@@ -474,6 +474,25 @@ export function TriviaHostPanel() {
               </span>
             </>
           )}
+          {trivia.status === "idle" ? (
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() =>
+                updateTrivia((prev) => ({
+                  ...prev,
+                  showJoinQr: !prev.showJoinQr,
+                }))
+              }
+              className={`inline-flex h-10 items-center rounded-md border px-4 text-sm font-semibold disabled:opacity-50 ${
+                trivia.showJoinQr
+                  ? "border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
+                  : "border-sky-500 bg-transparent text-sky-300 hover:bg-sky-500/10"
+              }`}
+            >
+              {trivia.showJoinQr ? "Hide QR code" : "Show QR code"}
+            </button>
+          ) : null}
           <ResetButton
             disabled={loading}
             onClick={() => void runAction({ action: "resetSeries" })}
