@@ -38,7 +38,7 @@ export function PriceGuesserHostPanel() {
   const catalogGroups = state.priceCatalogGroups ?? [];
   const queue = game.queue ?? [];
   const queueOrderKey = queue.map((item) => item.id).join(",");
-  const queueListRef = usePriceItemLayoutAnimation(queueOrderKey);
+  const queueListRef = usePriceItemLayoutAnimation<HTMLUListElement>(queueOrderKey);
   const { toastMessage, toastTone, showToast } = useToast();
   const spectatorLive = state.spectatorGame === "priceGuesser";
   const [confirmReset, setConfirmReset] = useState(false);

@@ -78,10 +78,10 @@ function playMoveAnimation(
   void animation.finished.finally(clearMoving);
 }
 
-export function usePriceItemLayoutAnimation(
+export function usePriceItemLayoutAnimation<T extends HTMLElement = HTMLDivElement>(
   layoutKey: string,
-): RefObject<HTMLDivElement | null> {
-  const rootRef = useRef<HTMLDivElement>(null);
+): RefObject<T | null> {
+  const rootRef = useRef<T>(null);
   const prevRects = useRef(new Map<string, DOMRect>());
   const primed = useRef(false);
 
