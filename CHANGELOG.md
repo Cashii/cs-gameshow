@@ -2,6 +2,13 @@
 
 ## October 26, 2026
 
+1. **Word Up** — **Topic on display** and **Phrase on display** sit on the page, with **Board zoom** beside the topic and a divider before **Letter Controls**. Phrase letters are large, outlined, and wrap when the phrase is long. Unselected letters are a light gray and fade to green when you select them. **Letter Controls** use the same letter size.
+1. **Word Up** — **Edit Display** is the first Game actions button, beside the phrases folder. **Reset phrase** clears the selected letters and strikes and leaves the phrase up.
+1. **Friendly Feud** — **Reset Round** is orange. **Add Strike** is green, **Remove Strike** is red, and **Single Strike** is blue. An X pops in when you add a strike and shrinks away when you remove one.
+1. **Friendly Feud** — Award buttons span the row: outline when off, filled when on. The question picker matches **Show question**. Deleting an answer asks first.
+1. **Price Order** — Left and right arrows are larger. **Curtain open** / **Price showing** switches are bigger for touch. Removing an item asks first.
+1. **Price is Tight** — **Upcoming items** sits to the right of the item name and price.
+1. **Message Board** — **Save**, **Clear**, and **Show player QR** / **Hide player QR** stack in a column beside the message.
 1. **All games** — Saved questions and items can be categorized with groups.
 1. **Elimination Trivia** — On the current question, **Mark correct** sets which answer should survive. The correct **Survive** button is green. Saved questions can mark the same answer, and editing that mark updates the button. Questions with no mark stay unmarked.
 1. **Price Order** — **On display** is one row of cards with the photo, zoom, name, price, delete, curtain, price switch, and arrows to rearrange. The last card is **Add item** and **Load saved item**. Cards slide into place on the desk and the big screen, and photos stay square. **Reveal order** sorts cheapest to most expensive without changing prices or curtains, then turns off until the order is wrong again.

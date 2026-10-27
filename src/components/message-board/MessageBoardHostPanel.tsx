@@ -522,12 +522,12 @@ export function MessageBoardHostPanel() {
                 }
               />
             </label>
-            <div className="flex shrink-0 gap-2">
+            <div className="flex w-44 shrink-0 flex-col gap-2">
               <button
                 type="button"
                 disabled={!trimmed || alreadySaved || atLimit}
                 onClick={savePreset}
-                className="inline-flex h-11 items-center rounded-md border border-blue-500 bg-blue-600 px-5 text-base font-semibold text-white hover:bg-blue-500 disabled:opacity-40"
+                className="inline-flex h-11 w-full items-center justify-center rounded-md border border-blue-500 bg-blue-600 px-3 text-base font-semibold whitespace-nowrap text-white hover:bg-blue-500 disabled:opacity-40"
               >
                 {alreadySaved ? "Saved" : "Save"}
               </button>
@@ -541,7 +541,7 @@ export function MessageBoardHostPanel() {
                     activePresetId: null,
                   }))
                 }
-                className="inline-flex h-11 items-center rounded-md border border-neutral-600 bg-neutral-800 px-5 text-base font-semibold text-white hover:bg-neutral-700 disabled:opacity-40"
+                className="inline-flex h-11 w-full items-center justify-center rounded-md border border-neutral-600 bg-neutral-800 px-3 text-base font-semibold whitespace-nowrap text-white hover:bg-neutral-700 disabled:opacity-40"
               >
                 Clear
               </button>
@@ -553,7 +553,7 @@ export function MessageBoardHostPanel() {
                     showJoinQr: !prev.showJoinQr,
                   }))
                 }
-                className={`inline-flex h-11 items-center rounded-md border px-5 text-base font-semibold ${
+                className={`inline-flex h-11 w-full items-center justify-center rounded-md border px-3 text-base font-semibold whitespace-nowrap ${
                   state.messageBoard?.showJoinQr
                     ? "border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
                     : "border-sky-500 bg-transparent text-sky-300 hover:bg-sky-500/10"

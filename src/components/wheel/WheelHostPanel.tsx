@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Check, FolderOpen, Minus, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, FolderOpen, Minus, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ResetButton } from "@/components/ui/ResetButton";
@@ -41,57 +41,43 @@ type PhraseForm =
   | { mode: "add"; topic: string; phrase: string }
   | { mode: "edit"; id: string; topic: string; phrase: string };
 
-function formatSpacedPhrase(
-  phrase: string,
-  mapLetter: (upper: string) => string,
-): string {
-  const tokens: string[] = [];
+type PhraseChar =
+  | { kind: "letter"; char: string }
+  | { kind: "mark"; char: string };
+
+function phraseWords(phrase: string): PhraseChar[][] {
+  const words: PhraseChar[][] = [];
+  let current: PhraseChar[] = [];
+
+  const pushWord = () => {
+    if (current.length === 0) return;
+    words.push(current);
+    current = [];
+  };
 
   for (const char of phrase) {
     if (char === " ") {
-      tokens.push("·");
+      pushWord();
       continue;
     }
-
     if (/[a-zA-Z]/.test(char)) {
-      tokens.push(mapLetter(char.toUpperCase()));
+      current.push({ kind: "letter", char: char.toUpperCase() });
       continue;
     }
-
-    // Match audience board: skip common punctuation tiles
     if ("-'’—–".includes(char)) continue;
-
-    tokens.push(char);
+    current.push({ kind: "mark", char });
   }
 
-  return tokens.join(" ").replace(/ · /g, " ").replace(/·/g, "").trim();
+  pushWord();
+  return words;
 }
 
-function formatBoardSummary(
-  phrase: string,
-  revealedLetters: string[],
-  revealedAll: boolean,
-): string {
-  const revealed = new Set(revealedLetters.map((l) => l.toUpperCase()));
-  return formatSpacedPhrase(phrase, (upper) =>
-    revealedAll || revealed.has(upper) ? upper : "_",
-  );
-}
-
-const PHRASE_ROW_CLASS =
-  "grid w-full grid-cols-[repeat(auto-fill,1.2em)] justify-start gap-y-1";
-const PHRASE_CELL_CLASS =
-  "flex h-[1.35em] w-[1.2em] items-center justify-center font-mono text-xl leading-none font-semibold select-none sm:text-2xl";
-
-function letterTextClass(matchHover: boolean, alreadyRevealed: boolean): string {
-  if (matchHover) return "text-amber-600";
-  if (alreadyRevealed) return "text-green-600";
-  return "text-white";
-}
+const PHRASE_BOX_CLASS =
+  "inline-flex h-16 w-14 shrink-0 items-center justify-center rounded-lg font-mono text-4xl leading-none font-bold select-none";
 
 function letterControlClass(disabled: boolean): string {
   const base =
-    "flex h-16 w-16 items-center justify-center rounded-lg text-2xl font-bold transition-colors sm:h-20 sm:w-20 sm:text-3xl";
+    "flex h-16 w-16 items-center justify-center rounded-lg font-mono text-4xl leading-none font-bold transition-colors sm:h-20 sm:w-20";
   if (disabled) {
     return `${base} cursor-not-allowed border border-neutral-600 bg-neutral-700 text-neutral-500`;
   }
@@ -111,72 +97,62 @@ function PhraseRevealRow({
 }) {
   const [hoveredLetter, setHoveredLetter] = useState<string | null>(null);
   const revealed = new Set(revealedLetters.map((l) => l.toUpperCase()));
-  const displayChars = [...formatSpacedPhrase(phrase, (upper) => upper)];
-  const summaryChars = [
-    ...formatBoardSummary(phrase, revealedLetters, revealedAll),
-  ];
+  const words = phraseWords(phrase);
 
   return (
     <>
-      <p
-        className={PHRASE_ROW_CLASS}
+      <div
+        className="flex flex-wrap items-center gap-x-8 gap-y-3"
         onMouseLeave={() => setHoveredLetter(null)}
       >
-        {displayChars.map((char, index) => {
-          if (char === " ") {
-            return (
-              <span key={`s-${index}`} className={PHRASE_CELL_CLASS} aria-hidden>
-                {"\u00a0"}
-              </span>
-            );
-          }
-
-          if (!/[A-Z]/.test(char)) {
-            return (
-              <span
-                key={`p-${index}`}
-                className={`${PHRASE_CELL_CLASS} text-white`}
-              >
-                {char}
-              </span>
-            );
-          }
-
-          const alreadyRevealed = revealedAll || revealed.has(char);
-          const matchHover = hoveredLetter === char;
-          return (
-            <button
-              key={`l-${index}`}
-              type="button"
-              onMouseEnter={() => setHoveredLetter(char)}
-              onFocus={() => setHoveredLetter(char)}
-              onClick={() => {
-                if (!alreadyRevealed) onRevealLetter(char);
-              }}
-              aria-label={
-                alreadyRevealed
-                  ? `${char}, already revealed`
-                  : `Reveal all ${char}s`
+        {words.map((word, wordIndex) => (
+          <span
+            key={`word-${wordIndex}`}
+            className="inline-flex max-w-full flex-wrap gap-2"
+          >
+            {word.map((token, index) => {
+              if (token.kind === "mark") {
+                return (
+                  <span
+                    key={`m-${wordIndex}-${index}`}
+                    className={`${PHRASE_BOX_CLASS} text-white`}
+                  >
+                    {token.char}
+                  </span>
+                );
               }
-              className={`${PHRASE_CELL_CLASS} appearance-none border-0 bg-transparent ${
-                alreadyRevealed ? "cursor-default" : "cursor-pointer"
-              } ${letterTextClass(matchHover, alreadyRevealed)}`}
-            >
-              {char}
-            </button>
-          );
-        })}
-      </p>
-      <p className="mt-4 mb-2 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-        Board summary
-      </p>
-      <p className={`${PHRASE_ROW_CLASS} text-green-600`} aria-live="polite">
-        {summaryChars.map((char, index) => (
-          <span key={`b-${index}`} className={`${PHRASE_CELL_CLASS} text-green-600`}>
-            {char === " " ? "\u00a0" : char}
+
+              const alreadyRevealed = revealedAll || revealed.has(token.char);
+              const matchHover = hoveredLetter === token.char;
+              return (
+                <button
+                  key={`l-${wordIndex}-${index}`}
+                  type="button"
+                  onMouseEnter={() => setHoveredLetter(token.char)}
+                  onFocus={() => setHoveredLetter(token.char)}
+                  onClick={() => {
+                    if (!alreadyRevealed) onRevealLetter(token.char);
+                  }}
+                  aria-label={
+                    alreadyRevealed
+                      ? `${token.char}, already revealed`
+                      : `Reveal all ${token.char}s`
+                  }
+                  className={`${PHRASE_BOX_CLASS} border-2 bg-transparent transition-colors duration-300 ease-out ${
+                    alreadyRevealed
+                      ? "cursor-default border-green-500 text-green-500"
+                      : matchHover
+                        ? "cursor-pointer border-amber-400 text-neutral-300/55"
+                        : "cursor-pointer border-neutral-500 text-neutral-400/45 hover:border-amber-400"
+                  }`}
+                >
+                  {token.char}
+                </button>
+              );
+            })}
           </span>
         ))}
-      </p>
+      </div>
     </>
   );
 }
@@ -396,6 +372,15 @@ export function WheelHostPanel() {
             <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
               Game actions
             </span>
+            {locked && (
+              <button
+                type="button"
+                onClick={handleStartChange}
+                className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
+              >
+                Edit Display
+              </button>
+            )}
             <button
               type="button"
               onClick={() =>
@@ -410,9 +395,36 @@ export function WheelHostPanel() {
             >
               Reveal All
             </button>
+            <button
+              type="button"
+              disabled={!boardHasProgress}
+              onClick={() =>
+                updateWheel((prev) => ({
+                  ...prev,
+                  revealedLetters: [],
+                  revealedAll: false,
+                  wrongCount: 0,
+                }))
+              }
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-amber-500 bg-amber-600 px-4 text-sm font-semibold text-white hover:bg-amber-500 disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500"
+            >
+              <RotateCcw size={16} />
+              Reset phrase
+            </button>
             <ResetButton onClick={() => setResetConfirmOpen(true)}>
               Reset Game
             </ResetButton>
+            <Tooltip content="Phrases and topics">
+              <button
+                type="button"
+                aria-label="Phrases and topics"
+                aria-haspopup="dialog"
+                onClick={() => setBankOpen(true)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
+              >
+                <FolderOpen size={18} />
+              </button>
+            </Tooltip>
           </div>
 
           <div className="ml-auto flex flex-wrap items-center gap-4">
@@ -484,80 +496,59 @@ export function WheelHostPanel() {
       )}
 
       <div className="min-h-0 flex-1 overflow-auto">
-        <div className="w-full p-6">
-          <div className="space-y-6">
-            <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-white">Current phrase</h2>
-                  <Tooltip content="Phrases and topics">
-                    <button
-                      type="button"
-                      aria-label="Phrases and topics"
-                      aria-haspopup="dialog"
-                      onClick={() => setBankOpen(true)}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
-                    >
-                      <FolderOpen size={18} />
-                    </button>
-                  </Tooltip>
-                  {locked && (
-                    <button
-                      type="button"
-                      onClick={handleStartChange}
-                      className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
-                    >
-                      Edit
-                    </button>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                    Board zoom
-                  </span>
-                  <span className="min-w-12 text-right text-sm font-semibold tabular-nums text-neutral-300">
-                    {Math.round(clampWheelZoom(wheel.zoom) * 100)}%
-                  </span>
-                  <div className="inline-flex items-center gap-3">
-                    <button
-                      type="button"
-                      aria-label="Zoom out"
-                      disabled={clampWheelZoom(wheel.zoom) <= MIN_WHEEL_ZOOM}
-                      onClick={() =>
-                        applyBoardZoom(
-                          clampWheelZoom(wheel.zoom) - WHEEL_ZOOM_STEP,
-                        )
-                      }
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
-                    >
-                      <Minus size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Zoom in"
-                      disabled={clampWheelZoom(wheel.zoom) >= MAX_WHEEL_ZOOM}
-                      onClick={() =>
-                        applyBoardZoom(
-                          clampWheelZoom(wheel.zoom) + WHEEL_ZOOM_STEP,
-                        )
-                      }
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
-                    >
-                      <Plus size={18} />
-                    </button>
-                  </div>
-                </div>
-              </div>
+        <div className="w-full px-6 py-6">
+          <div>
+            <section>
               {locked ? (
                 <>
-                  <p className="mb-1.5 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                    Topic
-                  </p>
-                  <p className="mb-4 text-lg font-semibold text-white">
-                    {wheel.topic.trim() || "None"}
-                  </p>
+                  <div className="mb-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+                    <div className="min-w-0">
+                      <p className="mb-1.5 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                        Topic on display
+                      </p>
+                      <p className="text-lg font-semibold text-white">
+                        {wheel.topic.trim() || "None"}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                        Board zoom
+                      </span>
+                      <span className="min-w-12 text-right text-sm font-semibold tabular-nums text-neutral-300">
+                        {Math.round(clampWheelZoom(wheel.zoom) * 100)}%
+                      </span>
+                      <div className="inline-flex items-center gap-3">
+                        <button
+                          type="button"
+                          aria-label="Zoom out"
+                          disabled={clampWheelZoom(wheel.zoom) <= MIN_WHEEL_ZOOM}
+                          onClick={() =>
+                            applyBoardZoom(
+                              clampWheelZoom(wheel.zoom) - WHEEL_ZOOM_STEP,
+                            )
+                          }
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+                        >
+                          <Minus size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Zoom in"
+                          disabled={clampWheelZoom(wheel.zoom) >= MAX_WHEEL_ZOOM}
+                          onClick={() =>
+                            applyBoardZoom(
+                              clampWheelZoom(wheel.zoom) + WHEEL_ZOOM_STEP,
+                            )
+                          }
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+                        >
+                          <Plus size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                   <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                    Phrase
+                    Phrase on display
                   </p>
                   <PhraseRevealRow
                     phrase={wheel.phrase}
@@ -568,21 +559,59 @@ export function WheelHostPanel() {
                 </>
               ) : (
                 <>
-                  <label className="mb-3 block">
-                    <span className="mb-1.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                      Topic
-                    </span>
-                    <input
-                      type="text"
-                      value={topicInput}
-                      onChange={(e) => setTopicInput(e.target.value)}
-                      placeholder="Shown on the spectator banner"
-                      className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                    />
-                  </label>
+                  <div className="mb-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+                    <label className="min-w-0 flex-1">
+                      <span className="mb-1.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                        Topic on display
+                      </span>
+                      <input
+                        type="text"
+                        value={topicInput}
+                        onChange={(e) => setTopicInput(e.target.value)}
+                        placeholder="Shown on the spectator banner"
+                        className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      />
+                    </label>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                        Board zoom
+                      </span>
+                      <span className="min-w-12 text-right text-sm font-semibold tabular-nums text-neutral-300">
+                        {Math.round(clampWheelZoom(wheel.zoom) * 100)}%
+                      </span>
+                      <div className="inline-flex items-center gap-3">
+                        <button
+                          type="button"
+                          aria-label="Zoom out"
+                          disabled={clampWheelZoom(wheel.zoom) <= MIN_WHEEL_ZOOM}
+                          onClick={() =>
+                            applyBoardZoom(
+                              clampWheelZoom(wheel.zoom) - WHEEL_ZOOM_STEP,
+                            )
+                          }
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+                        >
+                          <Minus size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Zoom in"
+                          disabled={clampWheelZoom(wheel.zoom) >= MAX_WHEEL_ZOOM}
+                          onClick={() =>
+                            applyBoardZoom(
+                              clampWheelZoom(wheel.zoom) + WHEEL_ZOOM_STEP,
+                            )
+                          }
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+                        >
+                          <Plus size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                   <label className="mb-4 block">
                     <span className="mb-1.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                      Phrase
+                      Phrase on display
                     </span>
                     <input
                       type="text"
@@ -616,11 +645,13 @@ export function WheelHostPanel() {
                   </div>
                 </>
               )}
-            </div>
+            </section>
 
-            <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-6 shadow-lg">
-              <h2 className="mb-4 text-xl font-bold text-white">Letter Controls</h2>
-              <div className="flex flex-wrap gap-3">
+            <section className="mt-6 border-t border-neutral-700 pt-6">
+              <h2 className="mb-4 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                Letter Controls
+              </h2>
+              <div className="flex flex-wrap justify-center gap-3">
                 {ALPHABET.map((letter) => {
                   const disabled = isLetterRevealed(letter) || !wheel.phrase;
                   return (
@@ -636,8 +667,7 @@ export function WheelHostPanel() {
                   );
                 })}
               </div>
-            </div>
-
+            </section>
           </div>
         </div>
       </div>

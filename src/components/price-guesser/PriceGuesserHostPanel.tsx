@@ -26,6 +26,7 @@ import { DEFAULT_PHOTO_FIT, photoFitStyle } from "@/lib/price/photo-fit";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { QueueMoveControls } from "@/components/ui/QueueMoveControls";
+import { usePriceItemLayoutAnimation } from "@/components/price-order/usePriceItemLayoutAnimation";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { StatusSwitch } from "@/components/operator/StatusSwitch";
 import { useEffect, useState } from "react";
@@ -36,6 +37,8 @@ export function PriceGuesserHostPanel() {
   const catalog = state.priceCatalog ?? [];
   const catalogGroups = state.priceCatalogGroups ?? [];
   const queue = game.queue ?? [];
+  const queueOrderKey = queue.map((item) => item.id).join(",");
+  const queueListRef = usePriceItemLayoutAnimation(queueOrderKey);
   const { toastMessage, toastTone, showToast } = useToast();
   const spectatorLive = state.spectatorGame === "priceGuesser";
   const [confirmReset, setConfirmReset] = useState(false);
@@ -428,67 +431,67 @@ export function PriceGuesserHostPanel() {
                 Load saved item
               </button>
             </div>
-          </div>
 
-          <section className="border-t border-neutral-800 pt-5">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                Upcoming items ({queue.length})
-              </h3>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setBankOpenRequest((current) => current + 1)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500 bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-500"
-                >
-                  <FolderOpen size={14} />
-                  Add saved
-                </button>
-                <button
-                  type="button"
-                  disabled={!canQueueCurrent}
-                  onClick={() => void queueCurrentDesk()}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Queue current
-                </button>
+            <section className="min-w-80 flex-1">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                  Upcoming items ({queue.length})
+                </h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBankOpenRequest((current) => current + 1)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500 bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-500"
+                  >
+                    <FolderOpen size={14} />
+                    Add saved
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!canQueueCurrent}
+                    onClick={() => void queueCurrentDesk()}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Queue current
+                  </button>
+                </div>
               </div>
-            </div>
-            {queue.length === 0 ? (
-              <p className="text-sm text-neutral-500">
-                Stage items here from the bank, or queue the current desk item.
-                {" "}
-                <span className="font-semibold text-neutral-400">Next item</span>
-                {" "}
-                loads the first one onto the desk with the curtain closed.
-              </p>
-            ) : (
-              <div className="space-y-2">
+              {queue.length === 0 ? (
                 <p className="text-sm text-neutral-500">
-                  Use the arrows to reorder. Top item plays next.
+                  Stage items here from the bank, or queue the current desk item.
+                  {" "}
+                  <span className="font-semibold text-neutral-400">Next item</span>
+                  {" "}
+                  loads the first one onto the desk with the curtain closed.
                 </p>
-                <ul className="flex max-w-2xl flex-col gap-2">
-                  {queue.map((item, index) => (
-                    <QueueRow
-                      key={item.id}
-                      item={item}
-                      index={index}
-                      canMoveUp={index > 0}
-                      canMoveDown={index < queue.length - 1}
-                      onMoveUp={() => moveQueueItem(index, -1)}
-                      onMoveDown={() => moveQueueItem(index, 1)}
-                      onRemove={() => {
-                        setQueue(
-                          queue.filter((entry) => entry.id !== item.id),
-                          [item.imageUrl],
-                        );
-                      }}
-                    />
-                  ))}
-                </ul>
-              </div>
-            )}
-          </section>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-neutral-500">
+                    Use the arrows to reorder. Top item plays next.
+                  </p>
+                  <ul ref={queueListRef} className="flex flex-col gap-2">
+                    {queue.map((item, index) => (
+                      <QueueRow
+                        key={item.id}
+                        item={item}
+                        index={index}
+                        canMoveUp={index > 0}
+                        canMoveDown={index < queue.length - 1}
+                        onMoveUp={() => moveQueueItem(index, -1)}
+                        onMoveDown={() => moveQueueItem(index, 1)}
+                        onRemove={() => {
+                          setQueue(
+                            queue.filter((entry) => entry.id !== item.id),
+                            [item.imageUrl],
+                          );
+                        }}
+                      />
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
+          </div>
         </div>
       </div>
       <Toast message={toastMessage} tone={toastTone} />
@@ -525,7 +528,10 @@ function QueueRow({
   const name = item.label.trim() || "Untitled item";
 
   return (
-    <li className="flex items-stretch gap-2 rounded-xl border border-neutral-700 bg-neutral-800/70 p-2">
+    <li
+      data-price-move={item.id}
+      className="relative flex items-stretch gap-2 rounded-xl border border-neutral-700 bg-neutral-800/70 p-2"
+    >
       <QueueMoveControls
         canMoveUp={canMoveUp}
         canMoveDown={canMoveDown}

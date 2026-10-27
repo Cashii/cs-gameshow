@@ -48,6 +48,7 @@ export function PriceOrderHostPanel() {
   const { toastMessage, toastTone, showToast } = useToast();
   const spectatorLive = state.spectatorGame === "priceOrder";
   const [confirmReset, setConfirmReset] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [bankOpenRequest, setBankOpenRequest] = useState(0);
   const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
 
@@ -379,7 +380,7 @@ export function PriceOrderHostPanel() {
               <article
                 key={item.id}
                 data-price-move={item.id}
-                className="relative flex w-64 shrink-0 flex-col gap-2 rounded-xl border border-neutral-800 bg-neutral-900 p-3"
+                className="relative flex w-72 shrink-0 flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-3"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-bold text-amber-300">
@@ -390,27 +391,27 @@ export function PriceOrderHostPanel() {
                       type="button"
                       disabled={index === 0}
                       onClick={() => moveOrdered(index, -1)}
-                      className="rounded-md p-1.5 text-neutral-300 hover:bg-neutral-800 disabled:opacity-30"
+                      className="inline-flex h-12 w-12 items-center justify-center rounded-lg text-neutral-200 hover:bg-neutral-800 disabled:opacity-30"
                       aria-label="Move left"
                     >
-                      <ChevronLeft size={16} />
+                      <ChevronLeft size={28} />
                     </button>
                     <button
                       type="button"
                       disabled={index === board.length - 1}
                       onClick={() => moveOrdered(index, 1)}
-                      className="rounded-md p-1.5 text-neutral-300 hover:bg-neutral-800 disabled:opacity-30"
+                      className="inline-flex h-12 w-12 items-center justify-center rounded-lg text-neutral-200 hover:bg-neutral-800 disabled:opacity-30"
                       aria-label="Move right"
                     >
-                      <ChevronRight size={16} />
+                      <ChevronRight size={28} />
                     </button>
                     <button
                       type="button"
-                      onClick={() => removeItem(item.id)}
-                      className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-800 hover:text-red-300"
+                      onClick={() => setPendingDeleteId(item.id)}
+                      className="inline-flex h-12 w-12 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-red-300"
                       aria-label={`Remove item ${index + 1}`}
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={22} />
                     </button>
                   </div>
                 </div>
@@ -471,7 +472,7 @@ export function PriceOrderHostPanel() {
                   className="h-8 rounded-lg border border-neutral-700 bg-neutral-950 px-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
                 />
                 <StatusSwitch
-                  size="sm"
+                  size="lg"
                   checked={item.itemRevealed}
                   disabled={!item.imageUrl}
                   labelOn="Curtain open"
@@ -485,7 +486,7 @@ export function PriceOrderHostPanel() {
                   }
                 />
                 <StatusSwitch
-                  size="sm"
+                  size="lg"
                   checked={item.priceRevealed}
                   disabled={item.price == null}
                   labelOn="Price showing"
@@ -496,7 +497,7 @@ export function PriceOrderHostPanel() {
               </article>
             ))}
             {canAdd ? (
-              <div className="flex min-h-72 w-64 shrink-0 flex-col items-center justify-center gap-4 self-stretch rounded-xl border border-dashed border-neutral-600 bg-neutral-950 px-4 py-8">
+              <div className="flex min-h-72 w-72 shrink-0 flex-col items-center justify-center gap-4 self-stretch rounded-xl border border-dashed border-neutral-600 bg-neutral-950 px-4 py-8">
                 <button
                   type="button"
                   onClick={addItem}
@@ -529,6 +530,26 @@ export function PriceOrderHostPanel() {
         confirmLabel="Reset"
         variant="danger"
         onConfirm={reset}
+      />
+      <ConfirmDialog
+        open={pendingDeleteId != null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteId(null);
+        }}
+        title="Remove this item?"
+        message={
+          pendingDeleteId
+            ? `Remove ${
+                game.items.find((item) => item.id === pendingDeleteId)?.label.trim() ||
+                "this item"
+              } from the desk?`
+            : "Remove this item from the desk?"
+        }
+        confirmLabel="Remove"
+        variant="danger"
+        onConfirm={() => {
+          if (pendingDeleteId) removeItem(pendingDeleteId);
+        }}
       />
     </div>
   );

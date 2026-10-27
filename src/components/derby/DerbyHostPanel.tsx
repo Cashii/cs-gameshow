@@ -4,11 +4,14 @@ import { useEffect, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import {
+  clampDerbyDurationMs,
   clampDerbyRacerScale,
   emptyDerbyVoteTallies,
   createDefaultDerbyState,
   DERBY_DURATION_MS,
+  MAX_DERBY_DURATION_MS,
   MAX_DERBY_RACER_SCALE,
+  MIN_DERBY_DURATION_MS,
   MIN_DERBY_RACER_SCALE,
   getDerbyRacer,
   getDerbyRacers,
@@ -45,10 +48,34 @@ export function DerbyHostPanel() {
   const nameOverrides = getDerbyRacerNameOverrides(game, theme);
   const racers = getDerbyRacers(theme, nameOverrides);
   const [now, setNow] = useState(() => Date.now());
+  const durationSeconds = Math.round(game.durationMs / 1000);
+  const [secondsDraft, setSecondsDraft] = useState(String(durationSeconds));
   const racing = game.phase === "racing";
   const finished = game.phase === "finished";
   const canPickWinner = game.phase === "idle";
   const spectatorShowingDerby = state.spectatorGame === "derby";
+
+  useEffect(() => {
+    setSecondsDraft(String(durationSeconds));
+  }, [durationSeconds]);
+
+  const commitDurationSeconds = (raw: string) => {
+    if (racing) {
+      setSecondsDraft(String(durationSeconds));
+      return;
+    }
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isFinite(parsed)) {
+      setSecondsDraft(String(durationSeconds));
+      return;
+    }
+    const nextMs = clampDerbyDurationMs(parsed * 1000);
+    setSecondsDraft(String(Math.round(nextMs / 1000)));
+    updateDerby((prev) => ({
+      ...prev,
+      durationMs: nextMs,
+    }));
+  };
 
   useEffect(() => {
     if (game.phase !== "racing" || game.startedAt == null) return;
@@ -262,6 +289,27 @@ export function DerbyHostPanel() {
             </div>
           ) : null}
           <div className="ml-auto flex items-center gap-3">
+            <label className="flex h-10 items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-3 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+              <span>Race length</span>
+              <input
+                type="number"
+                min={Math.round(MIN_DERBY_DURATION_MS / 1000)}
+                max={Math.round(MAX_DERBY_DURATION_MS / 1000)}
+                step={1}
+                disabled={racing}
+                aria-label="Race length in seconds"
+                value={secondsDraft}
+                onChange={(event) => setSecondsDraft(event.target.value)}
+                onBlur={() => commitDurationSeconds(secondsDraft)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                }}
+                className="w-14 bg-transparent text-center text-sm font-semibold text-white tabular-nums focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+              <span className="text-neutral-500 normal-case">sec</span>
+            </label>
             <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
               Zoom
             </span>

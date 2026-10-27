@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   Trash2,
@@ -38,6 +38,57 @@ const RED_TEAM = "#dc2626";
 const BLUE_TEAM = "#2563eb";
 const RED_TEAM_INK = "#b91c1c";
 const BLUE_TEAM_INK = "#1d4ed8";
+
+function StrikeMarks({
+  count,
+  roundId,
+}: Readonly<{ count: number; roundId: string }>) {
+  const prevRef = useRef({ count, roundId });
+  const [motion, setMotion] = useState<Record<number, "in" | "out">>({});
+
+  useEffect(() => {
+    const prev = prevRef.current;
+    prevRef.current = { count, roundId };
+    if (prev.roundId !== roundId || prev.count === count) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const next: Record<number, "in" | "out"> = {};
+    if (count > prev.count) {
+      for (let index = prev.count; index < count; index += 1) next[index] = "in";
+    } else {
+      for (let index = count; index < prev.count; index += 1) next[index] = "out";
+    }
+    setMotion(next);
+    const timer = window.setTimeout(() => setMotion({}), 280);
+    return () => window.clearTimeout(timer);
+  }, [count, roundId]);
+
+  return (
+    <div style={{ display: "flex", gap: 4, fontSize: 24, fontWeight: 700 }}>
+      {[0, 1, 2].map((index) => {
+        const on = index < count;
+        const dir = motion[index];
+        return (
+          <span
+            key={index}
+            className={
+              dir === "in"
+                ? "feud-strike-mark feud-strike-mark-in"
+                : dir === "out"
+                  ? "feud-strike-mark feud-strike-mark-out"
+                  : "feud-strike-mark"
+            }
+            style={{
+              color: on || dir === "out" ? "#ef4444" : "var(--color-neutral-600)",
+            }}
+          >
+            X
+          </span>
+        );
+      })}
+    </div>
+  );
+}
 
 const ghostIconButtonStyle: CSSProperties = {
   marginRight: 0,
@@ -122,6 +173,17 @@ export function FeudHostPanel() {
     setRound((r) => {
       r.answers = r.answers.filter((a) => a.id !== id);
     });
+
+  const requestDeleteAnswer = (answer: FeudAnswer, index: number) => {
+    const name = answer.text.trim() || `Answer ${index + 1}`;
+    setConfirm({
+      open: true,
+      title: "Delete answer",
+      message: `Delete "${name}"?`,
+      variant: "danger",
+      onConfirm: () => removeAnswer(answer.id),
+    });
+  };
 
   const reorderAnswer = (fromId: string, toId: string) => {
     if (fromId === toId) return;
@@ -363,7 +425,9 @@ export function FeudHostPanel() {
           <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
             Game actions
           </span>
-          <ResetButton onClick={resetRound}>Reset Round</ResetButton>
+          <ResetButton tone="orange" onClick={resetRound}>
+            Reset Round
+          </ResetButton>
           <ResetButton onClick={resetGame}>Reset Game</ResetButton>
         </div>
       </div>
@@ -547,39 +611,73 @@ export function FeudHostPanel() {
               borderBottom: "1px solid var(--color-neutral-700)",
             }}
           >
-            <div style={{ fontWeight: 600, fontSize: 16, color: "var(--color-white)", marginBottom: 8 }}>
-              Strikes
-            </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", gap: 4, fontSize: 24, fontWeight: 700 }}>
-                {[0, 1, 2].map((index) => (
-                  <span
-                    key={index}
-                    style={{
-                      color: index < (round.strikes || 0) ? "#ef4444" : "var(--color-neutral-600)",
-                    }}
-                  >
-                    X
-                  </span>
-                ))}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  alignSelf: "stretch",
+                  gap: 8,
+                }}
+              >
+                <div style={{ fontWeight: 600, fontSize: 16, color: "var(--color-white)" }}>
+                  Strikes
+                </div>
+                <StrikeMarks count={round.strikes || 0} roundId={round.id} />
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+              {(
+                [
+                  {
+                    label: "Add\nStrike",
+                    onClick: addStrike,
+                    disabled: false,
+                    color: "#4ade80",
+                  },
+                  {
+                    label: "Remove\nStrike",
+                    onClick: removeStrike,
+                    disabled: !round.strikes,
+                    color: "#f87171",
+                  },
+                  {
+                    label: "Single\nStrike",
+                    onClick: flashSoloStrike,
+                    disabled: false,
+                    color: "#60a5fa",
+                  },
+                ] as const
+              ).map((action) => (
                 <IconButton
-                  label="Add Strike"
-                  onClick={addStrike}
-                  style={{ marginRight: 0 }}
+                  key={action.label}
+                  label={action.label}
+                  onClick={action.onClick}
+                  disabled={action.disabled}
+                  style={{
+                    width: 64,
+                    height: 64,
+                    marginRight: 0,
+                    padding: "4px",
+                    boxSizing: "border-box",
+                    fontSize: 13,
+                    fontWeight: 400,
+                    lineHeight: 1.15,
+                    textAlign: "center",
+                    whiteSpace: "pre-line",
+                    background: "transparent",
+                    color: action.disabled ? "var(--color-neutral-600)" : action.color,
+                    border: `2px solid ${action.disabled ? "var(--color-neutral-700)" : action.color}`,
+                  }}
                 />
-                <IconButton
-                  label="Remove Strike"
-                  onClick={removeStrike}
-                  disabled={!round.strikes}
-                  style={{ marginRight: 0 }}
-                />
-                <IconButton
-                  label="Single Strike"
-                  onClick={flashSoloStrike}
-                  style={{ marginRight: 0 }}
-                />
+              ))}
               </div>
             </div>
           </div>
@@ -615,65 +713,65 @@ export function FeudHostPanel() {
                   />
                 </Tooltip>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span
+              <div>
+                <div
                   style={{
+                    marginBottom: 8,
                     fontSize: 11,
                     fontWeight: 600,
                     letterSpacing: "0.04em",
                     textTransform: "uppercase",
                     color: "var(--color-neutral-400)",
-                    whiteSpace: "nowrap",
                   }}
                 >
                   Award to
-                </span>
-                {(["left", "right", "none"] as const).map((side) => {
-                  const selected = (feud.awardTeam ?? "left") === side;
-                  let name = "No one";
-                  let border = "#737373";
-                  let ink = "#525252";
-                  let tint = "rgba(82, 82, 82, 0.1)";
-                  if (side === "left") {
-                    name = feud.leftTeam.name || "Red";
-                    border = RED_TEAM;
-                    ink = RED_TEAM_INK;
-                    tint = "rgba(220, 38, 38, 0.12)";
-                  } else if (side === "right") {
-                    name = feud.rightTeam.name || "Blue";
-                    border = BLUE_TEAM;
-                    ink = BLUE_TEAM_INK;
-                    tint = "rgba(37, 99, 235, 0.12)";
-                  }
-                  return (
-                    <button
-                      key={side}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() =>
-                        updateFeud((prev) => ({ ...prev, awardTeam: side }))
-                      }
-                      style={{
-                        height: 32,
-                        padding: "0 10px",
-                        borderRadius: 8,
-                        border: `2px solid ${border}`,
-                        background: selected ? tint : "transparent",
-                        color: ink,
-                        fontSize: 12,
-                        fontWeight: selected ? 700 : 600,
-                        boxShadow: selected ? `inset 0 0 0 1px ${border}` : undefined,
-                        cursor: "pointer",
-                        maxWidth: 140,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {name}
-                    </button>
-                  );
-                })}
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {(["left", "right", "none"] as const).map((side) => {
+                    const selected = (feud.awardTeam ?? "left") === side;
+                    let name = "No one";
+                    let color = "#a3a3a3";
+                    let fill = "#404040";
+                    if (side === "left") {
+                      name = feud.leftTeam.name || "Red";
+                      color = "#f87171";
+                      fill = RED_TEAM;
+                    } else if (side === "right") {
+                      name = feud.rightTeam.name || "Blue";
+                      color = "#60a5fa";
+                      fill = BLUE_TEAM;
+                    }
+                    return (
+                      <button
+                        key={side}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() =>
+                          updateFeud((prev) => ({ ...prev, awardTeam: side }))
+                        }
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          height: 44,
+                          padding: "0 10px",
+                          borderRadius: 8,
+                          border: `2px solid ${selected ? fill : color}`,
+                          background: selected ? fill : "transparent",
+                          color: selected ? "#fff" : color,
+                          fontSize: 14,
+                          fontWeight: 700,
+                          textTransform: "uppercase",
+                          cursor: "pointer",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {name}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
             <div
@@ -850,7 +948,7 @@ export function FeudHostPanel() {
                     <Tooltip content="Delete Answer">
                       <IconButton
                         label={<Trash2 size={16} />}
-                        onClick={() => removeAnswer(a.id)}
+                        onClick={() => requestDeleteAnswer(a, index)}
                         style={{
                           marginRight: 0,
                           height: 36,
@@ -894,7 +992,7 @@ export function FeudHostPanel() {
                 aria-label="Question"
                 aria-haspopup="dialog"
                 onClick={() => setQuestionPickerOpen(true)}
-                className="inline-flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-neutral-700 bg-neutral-800 py-0 pr-3 pl-3 text-left text-base font-normal text-white hover:bg-neutral-700"
+                className="inline-flex h-11 w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-neutral-700 bg-neutral-800 py-0 pr-3 pl-3 text-left text-base font-normal text-white hover:bg-neutral-700"
               >
                 <span className="min-w-0 flex-1 truncate">
                   {`${feud.currentRoundIndex + 1}. ${round.question?.trim() || "(untitled)"}`}

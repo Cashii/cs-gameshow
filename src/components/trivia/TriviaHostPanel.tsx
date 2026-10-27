@@ -33,6 +33,7 @@ import {
 import { uid } from "@/lib/utils";
 import { FolderOpen, Plus, Trash2 } from "lucide-react";
 import { QueueMoveControls } from "@/components/ui/QueueMoveControls";
+import { usePriceItemLayoutAnimation } from "@/components/price-order/usePriceItemLayoutAnimation";
 
 function triviaStatusLabel(
   status: TriviaStatus,
@@ -94,6 +95,8 @@ export function TriviaHostPanel() {
   const [queueDraft, setQueueDraft] = useState<TriviaQueuedQuestion[]>(
     () => trivia.queue ?? [],
   );
+  const queueOrderKey = queueDraft.map((item) => item.id).join(",");
+  const queueListRef = usePriceItemLayoutAnimation(queueOrderKey);
   const [bankOpenRequest, setBankOpenRequest] = useState(0);
   const draftRef = useRef({
     question,
@@ -930,6 +933,7 @@ export function TriviaHostPanel() {
                 <p className="text-sm text-neutral-500">
                   Use the arrows to reorder. Top question plays next.
                 </p>
+                <div ref={queueListRef} className="flex flex-col gap-3">
                 {queue.map((item, index) => {
                   const queuedOptions = item.options?.length
                     ? item.options
@@ -943,7 +947,8 @@ export function TriviaHostPanel() {
                   return (
                   <article
                     key={item.id}
-                    className="flex items-start gap-3 rounded-xl border border-neutral-700 bg-neutral-800 p-3"
+                    data-price-move={item.id}
+                    className="relative flex items-start gap-3 rounded-xl border border-neutral-700 bg-neutral-800 p-3"
                   >
                     <QueueMoveControls
                       canMoveUp={index > 0}
@@ -1104,6 +1109,7 @@ export function TriviaHostPanel() {
                   </article>
                   );
                 })}
+                </div>
               </div>
             )}
           </section>
