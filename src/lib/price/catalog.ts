@@ -1,4 +1,10 @@
-import { appendUnique, claimBankId, legacyNamedPayload } from "@/lib/content-bank";
+import {
+  appendUnique,
+  claimBankId,
+  groupIdOf,
+  legacyNamedPayload,
+  type ContentGroup,
+} from "@/lib/content-bank";
 import { normalizePhotoFit, type PhotoFit } from "@/lib/price/photo-fit";
 
 export type PriceCatalogItem = {
@@ -7,6 +13,8 @@ export type PriceCatalogItem = {
   label: string;
   price: number | null;
   photoFit: PhotoFit;
+  /** Null means this item is ungrouped. */
+  groupId: string | null;
 };
 
 function finitePrice(value: unknown): number | null {
@@ -16,7 +24,7 @@ function finitePrice(value: unknown): number | null {
 function readCatalogItem(
   raw: unknown,
   fallbackLabel: string,
-): Omit<PriceCatalogItem, "id"> | null {
+): Omit<PriceCatalogItem, "id" | "groupId"> | null {
   if (!raw || typeof raw !== "object") return null;
   const record = raw as Partial<PriceCatalogItem>;
   const imageUrl = typeof record.imageUrl === "string" ? record.imageUrl : "";
@@ -62,7 +70,10 @@ export function priceImageStillUsed(
   return catalog.some((item) => item.id !== exceptId && item.imageUrl === url);
 }
 
-export function normalizePriceCatalog(raw: unknown): PriceCatalogItem[] {
+export function normalizePriceCatalog(
+  raw: unknown,
+  groups: readonly ContentGroup[] = [],
+): PriceCatalogItem[] {
   if (!Array.isArray(raw)) return [];
   const items: PriceCatalogItem[] = [];
   const seen = new Set<string>();
@@ -81,6 +92,7 @@ export function normalizePriceCatalog(raw: unknown): PriceCatalogItem[] {
             seen,
             `item-${index}-${chunkIndex}`,
           ),
+          groupId: groupIdOf(chunk, groups),
           ...item,
         });
       });
@@ -96,6 +108,7 @@ export function normalizePriceCatalog(raw: unknown): PriceCatalogItem[] {
         : "";
     items.push({
       id: claimBankId(id, seen, `item-${index}`),
+      groupId: groupIdOf(entry, groups),
       ...item,
     });
   });

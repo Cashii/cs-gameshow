@@ -5,13 +5,24 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { FolderOpen, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { bankSaveClass } from "@/components/operator/BankPanel";
+import { bankHeaderSaveClass } from "@/components/operator/BankPanel";
+import {
+  bankDialogClass,
+  BankListHeader,
+  BankGroupColumn,
+  BankGroupPicker,
+  BankGroupSplit,
+  ChangeBankGroupButton,
+  useBankGroups,
+} from "@/components/operator/BankGroups";
+import type { ContentGroup } from "@/lib/content-bank";
 import type { PriceCatalogItem } from "@/lib/price/catalog";
 import { formatPrice } from "@/lib/price/format";
 import { photoFitStyle } from "@/lib/price/photo-fit";
 
 export function PriceItemLibrary({
   items,
+  groups,
   saveLabel,
   saveDisabled,
   loadDisabled,
@@ -20,25 +31,32 @@ export function PriceItemLibrary({
   onLoad,
   onDelete,
   onQueue,
+  onGroupsApply,
   openRequest = 0,
   closeOnLoad = false,
 }: {
   items: PriceCatalogItem[];
+  groups: ContentGroup[];
   saveLabel: string;
   saveDisabled?: boolean;
   loadDisabled?: boolean;
   pickHint: string;
-  onSave: () => void | Promise<void>;
+  onSave: (groupId: string | null) => void | Promise<void>;
   onLoad: (id: string) => void | Promise<void>;
   onDelete: (id: string) => void | Promise<void>;
   /** When set, each saved item also gets Add to upcoming. */
   onQueue?: (id: string) => void | Promise<void>;
+  onGroupsApply: (next: {
+    groups: ContentGroup[];
+    items: PriceCatalogItem[];
+  }) => void;
   openRequest?: number;
   closeOnLoad?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const bankGroups = useBankGroups(groups, items, onGroupsApply);
 
   useEffect(() => {
     if (openRequest > 0) setOpen(true);
@@ -69,25 +87,15 @@ export function PriceItemLibrary({
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[1000] bg-black/70" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 z-[1001] flex max-h-[min(86vh,820px)] w-[min(960px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 shadow-2xl">
-            <div className="flex items-start justify-between gap-3 px-6 pt-6 pr-14 pb-3">
-              <div>
-                <Dialog.Title className="text-lg font-semibold text-white">
-                  Saved items
-                </Dialog.Title>
-                <Dialog.Description className="mt-1 text-sm text-neutral-400">
-                  Photos and names saved here work in Price is Tight and Price
-                  Order. {pickHint}
-                </Dialog.Description>
-              </div>
-              <button
-                type="button"
-                disabled={saveDisabled || busy}
-                onClick={() => void run(onSave)}
-                className={`${bankSaveClass} shrink-0 whitespace-nowrap`}
-              >
-                {saveLabel}
-              </button>
+          <Dialog.Content className={bankDialogClass}>
+            <div className="px-6 pt-6 pr-14 pb-4">
+              <Dialog.Title className="text-lg font-semibold text-white">
+                Saved items
+              </Dialog.Title>
+              <Dialog.Description className="mt-1 text-sm text-neutral-400">
+                Photos and names saved here work in Price is Tight and Price
+                Order. {pickHint}
+              </Dialog.Description>
             </div>
             <Dialog.Close asChild>
               <button
@@ -104,13 +112,39 @@ export function PriceItemLibrary({
                 another.
               </p>
             ) : null}
+            <BankGroupSplit
+              sidebar={
+                <BankGroupColumn
+                  groups={groups}
+                  filter={bankGroups.filter}
+                  onFilter={bankGroups.setFilter}
+                  onAdd={bankGroups.addGroup}
+                  onRename={bankGroups.renameGroup}
+                  onDelete={bankGroups.deleteGroup}
+                />
+              }
+            >
+            <BankListHeader title="Items">
+              <button
+                type="button"
+                disabled={saveDisabled || busy}
+                onClick={() => void run(() => onSave(bankGroups.selectedGroupId))}
+                className={bankHeaderSaveClass}
+              >
+                {saveLabel}
+              </button>
+            </BankListHeader>
             {items.length === 0 ? (
-              <p className="px-6 pb-6 text-sm text-neutral-500">
+              <p className="px-6 py-6 text-sm text-neutral-500">
                 No saved items yet. Save the photo and name from the board.
               </p>
+            ) : bankGroups.visible.length === 0 ? (
+              <p className="px-6 py-6 text-sm text-neutral-500">
+                No items in this group.
+              </p>
             ) : (
-              <ul className="grid min-h-0 flex-1 grid-cols-2 gap-3 overflow-y-auto px-6 pb-6 sm:grid-cols-3 lg:grid-cols-4">
-                {items.map((item) => {
+              <ul className="grid min-h-0 flex-1 content-start grid-cols-2 gap-3 overflow-y-auto px-4 py-3 pb-6 sm:grid-cols-3">
+                {bankGroups.visible.map((item) => {
                   const name = item.label.trim() || "Untitled item";
                   return (
                     <li key={item.id} className="relative">
@@ -123,7 +157,7 @@ export function PriceItemLibrary({
                             if (closeOnLoad) setOpen(false);
                           })
                         }
-                        className="flex h-full w-full flex-col gap-2 rounded-xl border border-neutral-700 bg-neutral-800/70 p-2 text-left hover:border-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex w-full flex-col gap-2 rounded-xl border border-neutral-700 bg-neutral-800/70 p-2 text-left hover:border-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <span className="relative block aspect-square overflow-hidden rounded-lg bg-neutral-950">
                           {item.imageUrl ? (
@@ -148,6 +182,11 @@ export function PriceItemLibrary({
                         </span>
                       </button>
                       <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
+                        <ChangeBankGroupButton
+                          label={name}
+                          onClick={() => bankGroups.openPicker(item.id)}
+                          className="bg-neutral-950/80 text-neutral-200 hover:bg-neutral-900"
+                        />
                         {onQueue ? (
                           <button
                             type="button"
@@ -156,7 +195,7 @@ export function PriceItemLibrary({
                               event.stopPropagation();
                               void run(() => onQueue(item.id));
                             }}
-                            className="rounded-md bg-teal-700/90 px-2 py-1 text-xs font-semibold text-white hover:bg-teal-600 disabled:opacity-40"
+                            className="inline-flex h-11 items-center rounded-md bg-teal-700/90 px-3 text-sm font-semibold text-white hover:bg-teal-600 disabled:opacity-40"
                           >
                             Queue
                           </button>
@@ -165,7 +204,7 @@ export function PriceItemLibrary({
                           type="button"
                           disabled={busy}
                           onClick={() => setPendingDeleteId(item.id)}
-                          className="rounded-md bg-neutral-950/80 px-2 py-1 text-xs font-semibold text-neutral-200 hover:text-red-300 disabled:opacity-40"
+                          className="inline-flex h-11 items-center rounded-md bg-neutral-950/80 px-3 text-sm font-semibold text-neutral-200 hover:text-red-300 disabled:opacity-40"
                         >
                           Delete
                         </button>
@@ -175,6 +214,7 @@ export function PriceItemLibrary({
                 })}
               </ul>
             )}
+            </BankGroupSplit>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
@@ -191,6 +231,19 @@ export function PriceItemLibrary({
           const id = pendingDeleteId;
           if (!id) return;
           void run(() => onDelete(id));
+        }}
+      />
+      <BankGroupPicker
+        open={bankGroups.pickerItem != null}
+        onOpenChange={(next) => {
+          if (!next) bankGroups.closePicker();
+        }}
+        description={bankGroups.pickerItem?.label.trim() || "Saved item"}
+        groups={groups}
+        groupId={bankGroups.pickerItem?.groupId ?? null}
+        onChoose={(groupId) => {
+          if (!bankGroups.pickerItem) return;
+          bankGroups.moveItem(bankGroups.pickerItem.id, groupId);
         }}
       />
     </>

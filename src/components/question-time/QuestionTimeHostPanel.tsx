@@ -139,14 +139,16 @@ export function QuestionTimeHostPanel() {
       timerDurationMs: prev.timerDurationMs,
       timerRemainingMs: prev.timerDurationMs,
       library: prev.library ?? [],
+      groups: prev.groups ?? [],
     }));
   };
 
   const questionRepository = (
     <QuestionRepository
       entries={game.library ?? []}
+      groups={game.groups ?? []}
       canSave={Boolean(game.question.trim())}
-      onSave={() =>
+      onSave={(groupId) =>
         updateQuestionTime((prev) => ({
           ...prev,
           library: mergeQuestionTimeBank(prev.library ?? [], [
@@ -154,6 +156,7 @@ export function QuestionTimeHostPanel() {
               id: uid(),
               title: prev.title,
               question: prev.question,
+              groupId,
             },
           ]),
         }))
@@ -181,6 +184,13 @@ export function QuestionTimeHostPanel() {
           library: (prev.library ?? []).map((item) =>
             item.id === id ? { ...item, ...patch } : item,
           ),
+        }))
+      }
+      onGroupsApply={(next) =>
+        updateQuestionTime((prev) => ({
+          ...prev,
+          groups: next.groups,
+          library: next.items,
         }))
       }
     />

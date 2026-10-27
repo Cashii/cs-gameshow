@@ -5,7 +5,24 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { FolderOpen, Pencil, Plus, Trash2, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { bankLoadClass, bankSaveClass } from "@/components/operator/BankPanel";
+import {
+  bankHeaderNeutralClass,
+  bankHeaderSaveClass,
+  bankIconButtonClass,
+  bankIconDeleteClass,
+  bankLoadClass,
+  bankSaveClass,
+} from "@/components/operator/BankPanel";
+import {
+  bankDialogClass,
+  BankListHeader,
+  BankGroupColumn,
+  BankGroupPicker,
+  BankGroupSplit,
+  ChangeBankGroupButton,
+  useBankGroups,
+} from "@/components/operator/BankGroups";
+import type { ContentGroup } from "@/lib/content-bank";
 
 const bankNeutralClass =
   "h-9 rounded-md border border-neutral-600 bg-neutral-800 px-3 text-sm font-semibold text-neutral-200 hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-40";
@@ -36,6 +53,7 @@ function emptyDraft(): TriviaBankDraft {
 
 export function TriviaQuestionBank({
   questions,
+  groups,
   canSaveCurrent,
   canSaveUpcoming,
   canLoadToCurrent,
@@ -48,21 +66,31 @@ export function TriviaQuestionBank({
   onUseAsCurrent,
   onUpdate,
   onDelete,
+  onGroupsApply,
   openRequest = 0,
 }: {
   questions: TriviaBankQuestion[];
+  groups: ContentGroup[];
   canSaveCurrent: boolean;
   canSaveUpcoming: boolean;
   canLoadToCurrent: boolean;
-  onSaveCurrent: () => void;
-  onSaveUpcoming: () => void;
-  onAdd: (entry: TriviaBankDraft) => void;
-  onAddToUpcoming: (entry: TriviaBankDraft & { id?: string }) => void;
+  onSaveCurrent: (groupId: string | null) => void;
+  onSaveUpcoming: (groupId: string | null) => void;
+  onAdd: (entry: TriviaBankDraft, groupId: string | null) => void;
+  onAddToUpcoming: (
+    entry: TriviaBankDraft & { id?: string; groupId?: string | null },
+  ) => void;
   onLoad: (id: string) => void;
   onLoadToCurrent: (id: string) => void;
-  onUseAsCurrent: (entry: TriviaBankDraft & { id?: string }) => void;
+  onUseAsCurrent: (
+    entry: TriviaBankDraft & { id?: string; groupId?: string | null },
+  ) => void;
   onUpdate: (id: string, entry: TriviaBankDraft) => void;
   onDelete: (id: string) => void;
+  onGroupsApply: (next: {
+    groups: ContentGroup[];
+    items: TriviaBankQuestion[];
+  }) => void;
   openRequest?: number;
 }) {
   const [open, setOpen] = useState(false);
@@ -70,6 +98,8 @@ export function TriviaQuestionBank({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState(emptyDraft);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const bankGroups = useBankGroups(groups, questions, onGroupsApply);
+  const { selectedGroupId, visible } = bankGroups;
 
   useEffect(() => {
     if (openRequest > 0) setOpen(true);
@@ -104,13 +134,13 @@ export function TriviaQuestionBank({
 
   const submitDraft = () => {
     if (!draftReady) return;
-    onAdd(draftEntry());
+    onAdd(draftEntry(), selectedGroupId);
     resetDraft();
   };
 
   const addDraftToUpcoming = () => {
     if (!draftReady) return;
-    onAddToUpcoming(draftEntry());
+    onAddToUpcoming({ ...draftEntry(), groupId: selectedGroupId });
     resetDraft();
   };
 
@@ -137,66 +167,32 @@ export function TriviaQuestionBank({
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[1000] bg-black/70" />
           <Dialog.Content
-            className="fixed top-1/2 left-1/2 z-[1001] flex max-h-[min(80vh,720px)] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 shadow-2xl"
+            className={bankDialogClass}
             onEscapeKeyDown={(event) => {
               if (!adding) return;
               event.preventDefault();
               resetDraft();
             }}
           >
-            <div className="flex items-start justify-between gap-3 px-6 pt-6 pb-4">
-              <div>
-                <Dialog.Title className="text-lg font-semibold text-white">
-                  Saved questions
-                </Dialog.Title>
-                <Dialog.Description className="mt-1 text-sm text-neutral-400">
-                  Each saved question keeps its answers. Mark the correct one
-                  so Survive shows which side to keep. Leave it blank if you
-                  do not know yet. Use now puts it on the current question.
-                  Add to upcoming stages it for later.
-                </Dialog.Description>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingId(null);
-                    setDraft(emptyDraft());
-                    setAdding(true);
-                  }}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-neutral-700 bg-neutral-800 px-3 text-sm font-medium text-white hover:bg-neutral-700"
-                >
-                  <Plus size={16} />
-                  Add question
-                </button>
-                <Dialog.Close asChild>
-                  <button
-                    type="button"
-                    className="rounded p-1 text-neutral-400 hover:bg-neutral-800"
-                    aria-label="Close"
-                  >
-                    <X size={18} />
-                  </button>
-                </Dialog.Close>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2 px-6 pb-4">
+            <Dialog.Close asChild>
               <button
                 type="button"
-                disabled={!canSaveCurrent}
-                onClick={onSaveCurrent}
-                className={bankSaveClass}
+                className="absolute top-4 right-4 rounded p-1 text-neutral-400 hover:bg-neutral-800"
+                aria-label="Close"
               >
-                Save current question
+                <X size={18} />
               </button>
-              <button
-                type="button"
-                disabled={!canSaveUpcoming}
-                onClick={onSaveUpcoming}
-                className={bankSaveClass}
-              >
-                Save upcoming
-              </button>
+            </Dialog.Close>
+            <div className="px-6 pt-6 pr-14 pb-4">
+              <Dialog.Title className="text-lg font-semibold text-white">
+                Saved questions
+              </Dialog.Title>
+              <Dialog.Description className="mt-1 text-sm text-neutral-400">
+                Each saved question keeps its answers. Mark the correct one so
+                Survive shows which side to keep. Leave it blank if you do not
+                know yet. Use now puts it on the current question. Add to
+                upcoming stages it for later.
+              </Dialog.Description>
             </div>
             {adding ? (
               <form
@@ -206,7 +202,13 @@ export function TriviaQuestionBank({
                   if (!draftReady) return;
                   const entry = draftEntry();
                   if (editingId) {
-                    onAddToUpcoming({ ...entry, id: editingId });
+                    onAddToUpcoming({
+                      ...entry,
+                      id: editingId,
+                      groupId:
+                        questions.find((item) => item.id === editingId)
+                          ?.groupId ?? selectedGroupId,
+                    });
                     resetDraft();
                     return;
                   }
@@ -356,7 +358,15 @@ export function TriviaQuestionBank({
                       if (!draftReady || !canLoadToCurrent) return;
                       const entry = draftEntry();
                       onUseAsCurrent(
-                        editingId ? { ...entry, id: editingId } : entry,
+                        editingId
+                          ? {
+                              ...entry,
+                              id: editingId,
+                              groupId:
+                                questions.find((item) => item.id === editingId)
+                                  ?.groupId ?? selectedGroupId,
+                            }
+                          : { ...entry, groupId: selectedGroupId },
                       );
                       resetDraft();
                       setOpen(false);
@@ -375,13 +385,59 @@ export function TriviaQuestionBank({
                 </div>
               </form>
             ) : null}
+            <BankGroupSplit
+              sidebar={
+                <BankGroupColumn
+                  groups={groups}
+                  filter={bankGroups.filter}
+                  onFilter={bankGroups.setFilter}
+                  onAdd={bankGroups.addGroup}
+                  onRename={bankGroups.renameGroup}
+                  onDelete={bankGroups.deleteGroup}
+                />
+              }
+            >
+            <BankListHeader title="Questions">
+              <button
+                type="button"
+                disabled={!canSaveCurrent}
+                onClick={() => onSaveCurrent(selectedGroupId)}
+                className={bankHeaderSaveClass}
+              >
+                Save current question
+              </button>
+              <button
+                type="button"
+                disabled={!canSaveUpcoming}
+                onClick={() => onSaveUpcoming(selectedGroupId)}
+                className={bankHeaderSaveClass}
+              >
+                Save upcoming
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingId(null);
+                  setDraft(emptyDraft());
+                  setAdding(true);
+                }}
+                className={bankHeaderNeutralClass}
+              >
+                <Plus size={14} />
+                Add question
+              </button>
+            </BankListHeader>
             {questions.length === 0 ? (
-              <p className="px-6 pb-6 text-sm text-neutral-500">
+              <p className="px-6 py-6 text-sm text-neutral-500">
                 No saved questions yet. Add one here.
               </p>
+            ) : visible.length === 0 ? (
+              <p className="px-6 py-6 text-sm text-neutral-500">
+                No questions in this group.
+              </p>
             ) : (
-              <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-6 pb-6">
-                {questions.map((entry, index) => (
+              <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-6 py-3 pb-6">
+                {visible.map((entry, index) => (
                   <li
                     key={entry.id}
                     className="flex items-start gap-3 rounded-lg border border-neutral-700 bg-neutral-800/60 px-3 py-3"
@@ -437,27 +493,33 @@ export function TriviaQuestionBank({
                       >
                         Add to upcoming
                       </button>
+                      <ChangeBankGroupButton
+                        label={entry.question.trim() || `question ${index + 1}`}
+                        onClick={() => bankGroups.openPicker(entry.id)}
+                      />
                       <button
                         type="button"
+                        aria-label={`Edit question ${index + 1}`}
+                        title="Edit"
                         onClick={() => startEdit(entry)}
-                        className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-neutral-600 bg-neutral-800 px-2.5 text-xs font-semibold text-neutral-200 hover:bg-neutral-700"
+                        className={bankIconButtonClass}
                       >
-                        <Pencil size={12} />
-                        Edit
+                        <Pencil size={18} />
                       </button>
                       <button
                         type="button"
                         onClick={() => setPendingDeleteId(entry.id)}
-                        className="rounded-md p-2 text-neutral-400 hover:bg-neutral-800 hover:text-red-300"
+                        className={bankIconDeleteClass}
                         aria-label={`Delete question ${index + 1}`}
                       >
-                        <Trash2 size={15} />
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   </li>
                 ))}
               </ul>
             )}
+            </BankGroupSplit>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
@@ -472,6 +534,19 @@ export function TriviaQuestionBank({
         variant="danger"
         onConfirm={() => {
           if (pendingDeleteId) onDelete(pendingDeleteId);
+        }}
+      />
+      <BankGroupPicker
+        open={bankGroups.pickerItem != null}
+        onOpenChange={(next) => {
+          if (!next) bankGroups.closePicker();
+        }}
+        description={bankGroups.pickerItem?.question ?? ""}
+        groups={groups}
+        groupId={bankGroups.pickerItem?.groupId ?? null}
+        onChoose={(groupId) => {
+          if (!bankGroups.pickerItem) return;
+          bankGroups.moveItem(bankGroups.pickerItem.id, groupId);
         }}
       />
     </>

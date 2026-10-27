@@ -11,6 +11,8 @@ export type FeudRound = {
   question: string;
   strikes: number;
   answers: FeudAnswer[];
+  /** Null means the question is ungrouped. */
+  groupId: string | null;
 };
 
 export type FeudTeam = {
@@ -18,7 +20,13 @@ export type FeudTeam = {
   score: number;
 };
 
-import { appendUnique, claimBankId, legacyNamedPayload } from "@/lib/content-bank";
+import {
+  appendUnique,
+  claimBankId,
+  groupIdOf,
+  legacyNamedPayload,
+  type ContentGroup,
+} from "@/lib/content-bank";
 
 export type FeudSavedAnswer = {
   text: string;
@@ -49,6 +57,7 @@ export type FeudGameState = {
    * Bumped to flash a single X on the big screen without changing round strikes.
    */
   soloStrikeFlash: number;
+  groups: ContentGroup[];
   library: FeudBankQuestion[];
 };
 
@@ -133,6 +142,18 @@ export function normalizeFeudLibrary(raw: unknown): FeudBankQuestion[] {
   return questions;
 }
 
+export function normalizeFeudRounds(
+  raw: unknown,
+  groups: readonly ContentGroup[],
+): FeudRound[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const round = item as FeudRound;
+    return [{ ...round, groupId: groupIdOf(round, groups) }];
+  });
+}
+
 export function feudRoundsFromLibrary(
   rounds: FeudSavedRound[],
   nextId: () => string,
@@ -141,6 +162,7 @@ export function feudRoundsFromLibrary(
     id: nextId(),
     question: round.question,
     strikes: 0,
+    groupId: null,
     answers: round.answers.map((answer) => ({
       id: nextId(),
       text: answer.text,

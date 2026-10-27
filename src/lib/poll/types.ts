@@ -1,4 +1,10 @@
-import { appendUnique, claimBankId, legacyNamedPayload } from "@/lib/content-bank";
+import {
+  appendUnique,
+  claimBankId,
+  groupIdOf,
+  legacyNamedPayload,
+  type ContentGroup,
+} from "@/lib/content-bank";
 
 export type PollSavedChoice = {
   text: string;
@@ -9,6 +15,8 @@ export type PollBankQuestion = {
   question: string;
   choices: PollSavedChoice[];
   correctChoiceIndex: number | null;
+  /** Null means this question is ungrouped. */
+  groupId: string | null;
 };
 
 export type PollChoice = {
@@ -62,6 +70,7 @@ export type PollState = PollTimerState & {
   showJoinQr: boolean;
   /** Spectator question/answer text size multiplier. */
   scale: number;
+  groups: ContentGroup[];
   library: PollBankQuestion[];
 };
 
@@ -92,6 +101,7 @@ export function mergePollLive(remote: PollState, local: PollState): PollState {
     showPercentages: samePoll ? local.showPercentages : remote.showPercentages,
     showJoinQr: samePoll ? local.showJoinQr : remote.showJoinQr,
     scale: samePoll ? local.scale : remote.scale,
+    groups: (local.groups?.length ? local.groups : remote.groups) ?? [],
     library: (local.library?.length ? local.library : remote.library) ?? [],
     timerEnabled: Boolean(local.timerEnabled),
     timerDurationMs: local.timerDurationMs,
@@ -276,6 +286,7 @@ export function createDefaultPollState(): PollState {
     showPercentages: true,
     showJoinQr: false,
     scale: DEFAULT_POLL_SCALE,
+    groups: [],
     library: [],
     timerEnabled: false,
     timerDurationMs: DEFAULT_POLL_DURATION_MS,
@@ -307,7 +318,7 @@ export function mergePollBank(
 function readPollBankQuestion(
   raw: unknown,
   fallbackQuestion: string,
-): Omit<PollBankQuestion, "id"> | null {
+): Omit<PollBankQuestion, "id" | "groupId"> | null {
   if (!raw || typeof raw !== "object") return null;
   const record = raw as {
     question?: unknown;
@@ -341,16 +352,17 @@ function readPollBankQuestion(
   return { question, choices, correctChoiceIndex };
 }
 
-export function normalizePollLibrary(raw: unknown): PollBankQuestion[] {
+export function normalizePollLibrary(
+  raw: unknown,
+  groups: readonly ContentGroup[] = [],
+): PollBankQuestion[] {
   if (!Array.isArray(raw)) return [];
   const questions: PollBankQuestion[] = [];
   const seen = new Set<string>();
   raw.forEach((item, index) => {
     const legacy = legacyNamedPayload(item);
-    const saved = readPollBankQuestion(
-      legacy ? legacy.payload : item,
-      legacy?.name ?? "",
-    );
+    const source = legacy ? legacy.payload : item;
+    const saved = readPollBankQuestion(source, legacy?.name ?? "");
     if (!saved) return;
     const id =
       !legacy &&
@@ -361,6 +373,7 @@ export function normalizePollLibrary(raw: unknown): PollBankQuestion[] {
         : legacy?.id ?? "";
     questions.push({
       id: claimBankId(id, seen, `poll-${index}`),
+      groupId: groupIdOf(legacy ? source : item, groups),
       ...saved,
     });
   });

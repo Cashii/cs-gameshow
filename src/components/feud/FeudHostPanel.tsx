@@ -19,6 +19,16 @@ import { clamp, uid } from "@/lib/utils";
 import type { FeudAnswer, FeudGameState, FeudRound } from "@/lib/feud/types";
 import { IconButton, NumberInput, TextInput } from "@/components/ui/Primitives";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { bankHeaderNeutralClass, bankIconButtonClass, bankIconDeleteClass } from "@/components/operator/BankPanel";
+import {
+  bankDialogClass,
+  BankListHeader,
+  BankGroupColumn,
+  BankGroupPicker,
+  BankGroupSplit,
+  ChangeBankGroupButton,
+  useBankGroups,
+} from "@/components/operator/BankGroups";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ResetButton } from "@/components/ui/ResetButton";
@@ -69,6 +79,17 @@ export function FeudHostPanel() {
     message: "",
     onConfirm: () => {},
   });
+  const bankGroups = useBankGroups(
+    feud.groups ?? [],
+    feud.rounds,
+    ({ groups, items }) => {
+      updateFeud((prev) => ({
+        ...prev,
+        groups,
+        rounds: items,
+      }));
+    },
+  );
 
   if (!round) {
     return (
@@ -187,7 +208,13 @@ export function FeudHostPanel() {
         ...prev,
         rounds: [
           ...prev.rounds,
-          { id: uid(), question, strikes: 0, answers: [] },
+          {
+            id: uid(),
+            question,
+            strikes: 0,
+            answers: [],
+            groupId: bankGroups.selectedGroupId,
+          },
         ],
         currentRoundIndex: prev.rounds.length,
       }));
@@ -286,7 +313,9 @@ export function FeudHostPanel() {
     });
   };
 
-  const selectRound = (index: number) => {
+  const selectRound = (id: string) => {
+    const index = feud.rounds.findIndex((item) => item.id === id);
+    if (index < 0) return;
     if (index !== feud.currentRoundIndex) {
       updateFeud((prev) => ({
         ...prev,
@@ -305,7 +334,13 @@ export function FeudHostPanel() {
         ...prev,
         rounds: [
           ...prev.rounds,
-          { id: uid(), question, strikes: 0, answers: [] },
+          {
+            id: uid(),
+            question,
+            strikes: 0,
+            answers: [],
+            groupId: bankGroups.selectedGroupId,
+          },
         ],
         currentRoundIndex: prev.rounds.length,
       }));
@@ -948,41 +983,30 @@ export function FeudHostPanel() {
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[1000] bg-black/70" />
           <Dialog.Content
-            className="fixed top-1/2 left-1/2 z-[1001] flex max-h-[min(85vh,800px)] w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 shadow-2xl"
+            className={bankDialogClass}
             onEscapeKeyDown={(event) => {
               if (!pickerForm) return;
               event.preventDefault();
               setPickerForm(null);
             }}
           >
-            <div className="flex items-start justify-between gap-3 px-6 pt-6 pb-4">
-              <div>
-                <Dialog.Title className="text-lg font-semibold text-white">
-                  Questions
-                </Dialog.Title>
-                <Dialog.Description className="mt-1 text-sm text-neutral-400">
-                  Pick a question to show on the board. Add, edit, or delete questions here.
-                </Dialog.Description>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPickerForm({ mode: "add", draft: "" })}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-neutral-700 bg-neutral-800 px-3 text-sm font-medium text-white hover:bg-neutral-700"
-                >
-                  <Plus size={16} />
-                  Add question
-                </button>
-                <Dialog.Close asChild>
-                  <button
-                    type="button"
-                    className="rounded p-1 text-neutral-400 hover:bg-neutral-800"
-                    aria-label="Close"
-                  >
-                    <X size={18} />
-                  </button>
-                </Dialog.Close>
-              </div>
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                className="absolute top-4 right-4 rounded p-1 text-neutral-400 hover:bg-neutral-800"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </Dialog.Close>
+            <div className="px-6 pt-6 pr-14 pb-4">
+              <Dialog.Title className="text-lg font-semibold text-white">
+                Questions
+              </Dialog.Title>
+              <Dialog.Description className="mt-1 text-sm text-neutral-400">
+                Pick a question to show on the board. Add, edit, or delete
+                questions here.
+              </Dialog.Description>
             </div>
             {pickerForm?.mode === "add" ? (
               <form
@@ -1022,8 +1046,38 @@ export function FeudHostPanel() {
                 </button>
               </form>
             ) : null}
-            <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-6 pb-6">
-              {feud.rounds.map((item, index) => {
+            <BankGroupSplit
+              sidebar={
+                <BankGroupColumn
+                  groups={feud.groups ?? []}
+                  filter={bankGroups.filter}
+                  onFilter={bankGroups.setFilter}
+                  onAdd={bankGroups.addGroup}
+                  onRename={bankGroups.renameGroup}
+                  onDelete={bankGroups.deleteGroup}
+                />
+              }
+            >
+            <BankListHeader title="Questions">
+              <button
+                type="button"
+                onClick={() => setPickerForm({ mode: "add", draft: "" })}
+                className={bankHeaderNeutralClass}
+              >
+                <Plus size={14} />
+                Add question
+              </button>
+            </BankListHeader>
+            {bankGroups.visible.length === 0 ? (
+              <p className="px-6 py-6 text-sm text-neutral-500">
+                No questions in this group.
+              </p>
+            ) : (
+            <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-6 py-3 pb-6">
+              {bankGroups.visible.map((item) => {
+                const index = feud.rounds.findIndex(
+                  (round) => round.id === item.id,
+                );
                 const selected = index === feud.currentRoundIndex;
                 const editing =
                   pickerForm?.mode === "edit" && pickerForm.id === item.id;
@@ -1090,7 +1144,7 @@ export function FeudHostPanel() {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => selectRound(index)}
+                        onClick={() => selectRound(item.id)}
                         aria-current={selected ? "true" : undefined}
                         className="flex min-w-0 flex-1 items-start gap-3 px-3 py-3 text-left"
                       >
@@ -1098,20 +1152,28 @@ export function FeudHostPanel() {
                           {index + 1}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-semibold text-white">
+                          <span className="text-sm font-semibold text-white">
                             {item.question.trim() || "(untitled)"}
+                            {selected ? (
+                              <Check
+                                size={16}
+                                className="ml-1.5 inline-block align-[-2px] text-sky-400"
+                                aria-hidden
+                              />
+                            ) : null}
                           </span>
                           <span className="mt-1 block text-xs leading-relaxed text-neutral-400">
                             {summary}
                           </span>
                         </span>
-                        {selected ? (
-                          <Check size={16} className="mt-0.5 shrink-0 text-sky-400" aria-hidden />
-                        ) : null}
                       </button>
                     )}
                     {editing ? null : (
                       <div className="flex shrink-0 items-center gap-0.5 pt-2">
+                        <ChangeBankGroupButton
+                          label={item.question.trim() || `question ${index + 1}`}
+                          onClick={() => bankGroups.openPicker(item.id)}
+                        />
                         <button
                           type="button"
                           aria-label={`Edit question ${index + 1}`}
@@ -1122,22 +1184,18 @@ export function FeudHostPanel() {
                               draft: item.question ?? "",
                             })
                           }
-                          className="rounded-md p-2 text-neutral-400 hover:bg-neutral-800 hover:text-white"
+                          className={bankIconButtonClass}
                         >
-                          <Pencil size={15} />
+                          <Pencil size={18} />
                         </button>
                         <button
                           type="button"
                           aria-label={`Delete question ${index + 1}`}
                           disabled={feud.rounds.length <= 1}
                           onClick={() => requestDeleteRound(item.id)}
-                          className={`rounded-md p-2 ${
-                            feud.rounds.length <= 1
-                              ? "cursor-not-allowed text-neutral-600"
-                              : "text-neutral-400 hover:bg-neutral-800 hover:text-red-300"
-                          }`}
+                          className={bankIconDeleteClass}
                         >
-                          <Trash2 size={15} />
+                          <Trash2 size={18} />
                         </button>
                       </div>
                     )}
@@ -1145,9 +1203,24 @@ export function FeudHostPanel() {
                 );
               })}
             </ul>
+            )}
+            </BankGroupSplit>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+      <BankGroupPicker
+        open={bankGroups.pickerItem != null}
+        onOpenChange={(open) => {
+          if (!open) bankGroups.closePicker();
+        }}
+        description={bankGroups.pickerItem?.question.trim() || "Question"}
+        groups={feud.groups ?? []}
+        groupId={bankGroups.pickerItem?.groupId ?? null}
+        onChoose={(groupId) => {
+          if (!bankGroups.pickerItem) return;
+          bankGroups.moveItem(bankGroups.pickerItem.id, groupId);
+        }}
+      />
 
       <Dialog.Root
         open={questionDialogOpen}

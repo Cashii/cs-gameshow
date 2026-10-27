@@ -145,12 +145,13 @@ export function PictionaryHostPanel() {
                 </h2>
                 <PictionaryWordBank
                   words={game.library ?? []}
+                  groups={game.groups ?? []}
                   canSave={Boolean(game.word.trim())}
-                  onSave={() =>
+                  onSave={(groupId) =>
                     updatePictionary((prev) => ({
                       ...prev,
                       library: mergePictionaryBank(prev.library ?? [], [
-                        { id: uid(), word: prev.word },
+                        { id: uid(), word: prev.word, groupId },
                       ]),
                     }))
                   }
@@ -176,6 +177,13 @@ export function PictionaryHostPanel() {
                       library: (prev.library ?? []).filter(
                         (item) => item.id !== id,
                       ),
+                    }))
+                  }
+                  onGroupsApply={(next) =>
+                    updatePictionary((prev) => ({
+                      ...prev,
+                      groups: next.groups,
+                      library: next.items,
                     }))
                   }
                 />
@@ -427,6 +435,7 @@ export function PictionaryHostPanel() {
             timerDurationMs: prev.timerDurationMs,
             timerRemainingMs: prev.timerDurationMs,
             library: prev.library ?? [],
+            groups: prev.groups ?? [],
           }))
         }
       />

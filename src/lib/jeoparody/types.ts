@@ -1,4 +1,10 @@
-import { appendUnique, claimBankId, legacyNamedPayload } from "@/lib/content-bank";
+import {
+  appendUnique,
+  claimBankId,
+  groupIdOf,
+  legacyNamedPayload,
+  type ContentGroup,
+} from "@/lib/content-bank";
 
 export type JeoparodyPhase = "board" | "clue" | "answer";
 
@@ -15,6 +21,8 @@ export type JeoparodySavedCategory = {
 
 export type JeoparodyBankCategory = JeoparodySavedCategory & {
   id: string;
+  /** Null means this category is ungrouped. */
+  groupId: string | null;
 };
 
 export type JeoparodyClue = {
@@ -43,6 +51,7 @@ export type JeoparodyGameState = {
   selectedClueId: string | null;
   phase: JeoparodyPhase;
   showScores: boolean;
+  groups: ContentGroup[];
   library: JeoparodyBankCategory[];
 };
 
@@ -104,6 +113,7 @@ function readJeoparodyCategory(raw: unknown): JeoparodySavedCategory | null {
 
 export function normalizeJeoparodyLibrary(
   raw: unknown,
+  groups: readonly ContentGroup[] = [],
 ): JeoparodyBankCategory[] {
   if (!Array.isArray(raw)) return [];
   const categories: JeoparodyBankCategory[] = [];
@@ -120,6 +130,7 @@ export function normalizeJeoparodyLibrary(
             seen,
             `category-${index}-${categoryIndex}`,
           ),
+          groupId: groupIdOf(category, groups),
           ...saved,
         });
       });
@@ -135,6 +146,7 @@ export function normalizeJeoparodyLibrary(
         : "";
     categories.push({
       id: claimBankId(id, seen, `category-${index}`),
+      groupId: groupIdOf(item, groups),
       ...saved,
     });
   });

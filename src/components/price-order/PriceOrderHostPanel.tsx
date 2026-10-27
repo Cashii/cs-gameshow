@@ -41,10 +41,11 @@ import { usePriceItemLayoutAnimation } from "@/components/price-order/usePriceIt
 import { ResetButton } from "@/components/ui/ResetButton";
 
 export function PriceOrderHostPanel() {
-  const { state, updatePriceOrder, updatePriceCatalog } = useSuite();
+  const { state, setState, updatePriceOrder, updatePriceCatalog } = useSuite();
   const game = state.priceOrder ?? createDefaultPriceOrderState();
   const catalog = state.priceCatalog ?? [];
-  const { toastMessage, showToast } = useToast();
+  const catalogGroups = state.priceCatalogGroups ?? [];
+  const { toastMessage, toastTone, showToast } = useToast();
   const spectatorLive = state.spectatorGame === "priceOrder";
   const [confirmReset, setConfirmReset] = useState(false);
   const [bankOpenRequest, setBankOpenRequest] = useState(0);
@@ -258,6 +259,7 @@ export function PriceOrderHostPanel() {
           <div className="ml-auto">
             <PriceItemLibrary
               items={catalog}
+              groups={catalogGroups}
               openRequest={bankOpenRequest}
               saveLabel="Save all items"
               saveDisabled={
@@ -268,7 +270,7 @@ export function PriceOrderHostPanel() {
               }
               loadDisabled={game.items.length >= PRICE_ORDER_MAX_ITEMS}
               pickHint="Pick one to add it to the board, up to five."
-              onSave={async () => {
+              onSave={async (groupId) => {
                 const seen = new Set(catalog.map(priceCatalogKey));
                 const incoming: PriceCatalogItem[] = [];
                 for (const item of game.items) {
@@ -285,6 +287,7 @@ export function PriceOrderHostPanel() {
                     label: item.label,
                     price: item.price,
                     photoFit: item.photoFit,
+                    groupId,
                   };
                   const key = priceCatalogKey(draft);
                   if (seen.has(key)) continue;
@@ -346,6 +349,13 @@ export function PriceOrderHostPanel() {
                 }
                 void deleteMediaByUrl(url);
               }}
+              onGroupsApply={(next) =>
+                setState((prev) => ({
+                  ...prev,
+                  priceCatalog: next.items,
+                  priceCatalogGroups: next.groups,
+                }))
+              }
             />
           </div>
         </div>
@@ -423,7 +433,7 @@ export function PriceOrderHostPanel() {
                   onFitChange={(photoFit) =>
                     updateItem(item.id, (prev) => ({ ...prev, photoFit }))
                   }
-                  onError={showToast}
+                  onError={(message) => showToast(message, "error")}
                 />
                 <input
                   type="text"
@@ -510,7 +520,7 @@ export function PriceOrderHostPanel() {
           </div>
         </div>
       </div>
-      <Toast message={toastMessage} />
+      <Toast message={toastMessage} tone={toastTone} />
       <ConfirmDialog
         open={confirmReset}
         onOpenChange={setConfirmReset}

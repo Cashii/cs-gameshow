@@ -1,4 +1,10 @@
-import { appendUnique, claimBankId, legacyNamedPayload } from "@/lib/content-bank";
+import {
+  appendUnique,
+  claimBankId,
+  groupIdOf,
+  legacyNamedPayload,
+  type ContentGroup,
+} from "@/lib/content-bank";
 
 export type TriviaStatus =
   | "idle"
@@ -79,6 +85,7 @@ export type TriviaGameState = TriviaTimerState & {
   winnerCodes: string[];
   queue: TriviaQueuedQuestion[];
   history: TriviaRoundHistory[];
+  groups: ContentGroup[];
   library: TriviaBankQuestion[];
   /** The last reveal eliminated everyone; this question number is open for a replacement. */
   replacingRound: boolean;
@@ -226,6 +233,8 @@ export type TriviaBankQuestion = {
   optionB: string;
   /** Null for questions saved before a correct answer was marked. */
   correctChoiceId: TriviaChoiceId | null;
+  /** Null means this question is ungrouped. */
+  groupId: string | null;
 };
 
 export function isTriviaChoiceId(value: unknown): value is TriviaChoiceId {
@@ -443,6 +452,7 @@ export function createDefaultTriviaState(): TriviaGameState {
     winnerCodes: [],
     queue: [],
     history: [],
+    groups: [],
     library: [],
     replacingRound: false,
     timerEnabled: false,
@@ -472,7 +482,7 @@ export function mergeTriviaBank(
 
 function readTriviaBankQuestion(
   raw: unknown,
-): Omit<TriviaBankQuestion, "id"> | null {
+): Omit<TriviaBankQuestion, "id" | "groupId"> | null {
   if (!raw || typeof raw !== "object") return null;
   const record = raw as Partial<TriviaQueuedQuestion>;
   const question = typeof record.question === "string" ? record.question : "";
@@ -494,7 +504,10 @@ function readTriviaBankQuestion(
   };
 }
 
-export function normalizeTriviaLibrary(raw: unknown): TriviaBankQuestion[] {
+export function normalizeTriviaLibrary(
+  raw: unknown,
+  groups: readonly ContentGroup[] = [],
+): TriviaBankQuestion[] {
   if (!Array.isArray(raw)) return [];
   const questions: TriviaBankQuestion[] = [];
   const seen = new Set<string>();
@@ -516,6 +529,7 @@ export function normalizeTriviaLibrary(raw: unknown): TriviaBankQuestion[] {
             seen,
             `trivia-${index}-${questionIndex}`,
           ),
+          groupId: groupIdOf(question, groups),
           ...saved,
         });
       });
@@ -531,6 +545,7 @@ export function normalizeTriviaLibrary(raw: unknown): TriviaBankQuestion[] {
         : "";
     questions.push({
       id: claimBankId(id, seen, `trivia-${index}`),
+      groupId: groupIdOf(item, groups),
       ...saved,
     });
   });

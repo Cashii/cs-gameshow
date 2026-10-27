@@ -1,5 +1,13 @@
+import {
+  normalizeContentGroups,
+  type ContentGroup,
+} from "@/lib/content-bank";
 import { createSampleFeudGame } from "@/lib/feud/defaults";
-import { normalizeFeudLibrary, type FeudGameState } from "@/lib/feud/types";
+import {
+  normalizeFeudLibrary,
+  normalizeFeudRounds,
+  type FeudGameState,
+} from "@/lib/feud/types";
 import {
   clampWheelZoom,
   createDefaultWheelState,
@@ -162,6 +170,8 @@ export type SuiteState = {
   priceOrder: PriceOrderState;
   /** Photos and names shared by Price is Tight and Price Order. */
   priceCatalog: PriceCatalogItem[];
+  /** Groups for the shared price item list. */
+  priceCatalogGroups: ContentGroup[];
   priceWheel: PriceWheelState;
   questionTime: QuestionTimeState;
   pictionary: PictionaryState;
@@ -249,6 +259,7 @@ export function createDefaultSuiteState(): SuiteState {
     priceGuesser: createDefaultPriceGuesserState(),
     priceOrder: createDefaultPriceOrderState(),
     priceCatalog: [],
+    priceCatalogGroups: [],
     priceWheel: createDefaultPriceWheelState(),
     questionTime: createDefaultQuestionTimeState(),
     pictionary: createDefaultPictionaryState(),
@@ -467,7 +478,11 @@ function normalizePollState(raw: Partial<PollState> | undefined): PollState {
     showPercentages: raw.showPercentages !== false,
     showJoinQr: Boolean(raw.showJoinQr),
     scale: clampPollScale(raw.scale),
-    library: normalizePollLibrary(raw.library),
+    groups: normalizeContentGroups(raw.groups),
+    library: normalizePollLibrary(
+      raw.library,
+      normalizeContentGroups(raw.groups),
+    ),
     ...pollTimerFields(raw),
   };
 }
@@ -662,7 +677,11 @@ function normalizeTriviaState(
           .map((item) => normalizeTriviaHistoryEntry(item))
           .filter((item): item is TriviaRoundHistory => item != null)
       : [],
-    library: normalizeTriviaLibrary(raw.library),
+    groups: normalizeContentGroups(raw.groups),
+    library: normalizeTriviaLibrary(
+      raw.library,
+      normalizeContentGroups(raw.groups),
+    ),
     replacingRound: raw.replacingRound === true,
     ...triviaTimerFields(raw),
   };
@@ -891,7 +910,11 @@ function normalizeQuestionTimeState(
     timerRemainingMs,
     timerRunning: timerRunning && timerEndsAt != null,
     timerEndsAt: timerRunning ? timerEndsAt : null,
-    library: normalizeQuestionTimeLibrary(raw.library),
+    groups: normalizeContentGroups(raw.groups),
+    library: normalizeQuestionTimeLibrary(
+      raw.library,
+      normalizeContentGroups(raw.groups),
+    ),
   };
 }
 
@@ -942,9 +965,12 @@ function legacyPriceLibrary(raw: unknown): unknown {
 }
 
 /** Prefer the shared catalog. Older saves kept a separate list on each game. */
-function normalizeSharedPriceCatalog(raw: LegacySuiteState): PriceCatalogItem[] {
+function normalizeSharedPriceCatalog(
+  raw: LegacySuiteState,
+  groups: ContentGroup[],
+): PriceCatalogItem[] {
   if (Array.isArray(raw.priceCatalog)) {
-    return normalizePriceCatalog(raw.priceCatalog);
+    return normalizePriceCatalog(raw.priceCatalog, groups);
   }
   return mergePriceCatalog(
     normalizePriceCatalog(legacyPriceLibrary(raw.priceGuesser)),
@@ -1017,7 +1043,11 @@ function normalizeJeoparodyState(
     selectedClueId: hasSelected ? selectedClueId : null,
     phase,
     showScores: raw.showScores ?? true,
-    library: normalizeJeoparodyLibrary(raw.library),
+    groups: normalizeContentGroups(raw.groups),
+    library: normalizeJeoparodyLibrary(
+      raw.library,
+      normalizeContentGroups(raw.groups),
+    ),
   };
 }
 
@@ -1076,9 +1106,14 @@ export function normalizeSuiteState(
         Number.isFinite(raw.feud.soloStrikeFlash)
           ? Math.max(0, Math.floor(raw.feud.soloStrikeFlash))
           : 0,
-      rounds: raw.feud?.rounds?.length
-        ? raw.feud.rounds
-        : createSampleFeudGame().rounds,
+      ...(() => {
+        const groups = normalizeContentGroups(raw.feud?.groups);
+        const rounds = normalizeFeudRounds(raw.feud?.rounds, groups);
+        return {
+          groups,
+          rounds: rounds.length ? rounds : createSampleFeudGame().rounds,
+        };
+      })(),
       library: normalizeFeudLibrary(raw.feud?.library),
     },
     wheel: (() => {
@@ -1092,7 +1127,8 @@ export function normalizeSuiteState(
         history: _legacyHistory,
         ...wheelRest
       } = rawWheel;
-      const bank = normalizeWheelBank(rawWheel);
+      const groups = normalizeContentGroups(rawWheel.groups);
+      const bank = normalizeWheelBank(rawWheel, groups);
       return {
         ...createDefaultWheelState(),
         ...wheelRest,
@@ -1102,6 +1138,7 @@ export function normalizeSuiteState(
         topic: typeof rawWheel.topic === "string" ? rawWheel.topic : "",
         wrongCount:
           typeof rawWheel.wrongCount === "number" ? rawWheel.wrongCount : 0,
+        groups,
         bank,
         activeBankId:
           typeof rawWheel.activeBankId === "string" &&
@@ -1120,7 +1157,11 @@ export function normalizeSuiteState(
     trivia: normalizeTriviaState(raw.trivia),
     priceGuesser: normalizePriceGuesserState(raw.priceGuesser),
     priceOrder: normalizePriceOrderState(raw.priceOrder),
-    priceCatalog: normalizeSharedPriceCatalog(raw),
+    priceCatalogGroups: normalizeContentGroups(raw.priceCatalogGroups),
+    priceCatalog: normalizeSharedPriceCatalog(
+      raw,
+      normalizeContentGroups(raw.priceCatalogGroups),
+    ),
     priceWheel: normalizePriceWheelState(raw.priceWheel),
     questionTime: normalizeQuestionTimeState(raw.questionTime),
     pictionary: normalizePictionaryState(raw.pictionary),

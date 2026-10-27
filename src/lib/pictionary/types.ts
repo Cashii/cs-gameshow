@@ -5,7 +5,14 @@ import {
   formatQuestionTimeClock,
   formatQuestionTimePreset,
 } from "@/lib/question-time/types";
-import { appendUnique, claimBankId, legacyNamedPayload } from "@/lib/content-bank";
+import {
+  appendUnique,
+  claimBankId,
+  groupIdOf,
+  legacyNamedPayload,
+  normalizeContentGroups,
+  type ContentGroup,
+} from "@/lib/content-bank";
 
 type LegacyPictionaryReveal = "covered" | "word" | "hint";
 
@@ -21,12 +28,15 @@ export type PictionaryState = {
   timerRemainingMs: number;
   timerRunning: boolean;
   timerEndsAt: number | null;
+  groups: ContentGroup[];
   library: PictionaryBankWord[];
 };
 
 export type PictionaryBankWord = {
   id: string;
   word: string;
+  /** Null means this word is ungrouped. */
+  groupId: string | null;
 };
 
 export const PICTIONARY_DURATION_PRESETS_MS = QUESTION_TIME_DURATION_PRESETS_MS;
@@ -44,6 +54,7 @@ export function createDefaultPictionaryState(): PictionaryState {
     timerRemainingMs: DEFAULT_PICTIONARY_DURATION_MS,
     timerRunning: false,
     timerEndsAt: null,
+    groups: [],
     library: [],
   };
 }
@@ -67,7 +78,10 @@ function readPictionaryWord(raw: unknown, fallback: string): string {
   return fallback.trim();
 }
 
-export function normalizePictionaryLibrary(raw: unknown): PictionaryBankWord[] {
+export function normalizePictionaryLibrary(
+  raw: unknown,
+  groups: readonly ContentGroup[] = [],
+): PictionaryBankWord[] {
   if (!Array.isArray(raw)) return [];
   const words: PictionaryBankWord[] = [];
   const seen = new Set<string>();
@@ -88,6 +102,7 @@ export function normalizePictionaryLibrary(raw: unknown): PictionaryBankWord[] {
     words.push({
       id: claimBankId(id, seen, `word-${index}`),
       word,
+      groupId: groupIdOf(legacy ? legacy.payload : item, groups),
     });
   });
   return words;
@@ -245,6 +260,7 @@ export function normalizePictionaryState(
     ({ curtainCovered, hintEnabled } = flagsFromLegacyReveal(raw.reveal));
   }
 
+  const groups = normalizeContentGroups(raw.groups);
   return {
     word,
     hiddenIndexes: sanitizePictionaryHiddenIndexes(word, raw.hiddenIndexes),
@@ -254,6 +270,7 @@ export function normalizePictionaryState(
     timerRemainingMs,
     timerRunning: timerRunning && timerEndsAt != null,
     timerEndsAt: timerRunning ? timerEndsAt : null,
-    library: normalizePictionaryLibrary(raw.library),
+    groups,
+    library: normalizePictionaryLibrary(raw.library, groups),
   };
 }

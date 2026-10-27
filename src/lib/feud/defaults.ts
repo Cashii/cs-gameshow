@@ -12,12 +12,14 @@ export function createSampleFeudGame(): FeudGameState {
     showAnswerScores: true,
     awardTeam: "left",
     soloStrikeFlash: 0,
+    groups: [],
     library: [],
     rounds: [
       {
         id: uid(),
         question: "Name a fruit that keeps the doctor away",
         strikes: 0,
+        groupId: null,
         answers: [
           { id: uid(), text: "Apple", points: 30, revealed: false },
           { id: uid(), text: "Banana", points: 18, revealed: false },

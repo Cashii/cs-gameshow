@@ -10,6 +10,21 @@ import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { Tooltip } from "@/components/ui/Tooltip";
 import {
+  bankHeaderNeutralClass,
+  bankHeaderSaveClass,
+  bankIconButtonClass,
+  bankIconDeleteClass,
+} from "@/components/operator/BankPanel";
+import {
+  bankDialogClass,
+  BankListHeader,
+  BankGroupColumn,
+  BankGroupPicker,
+  BankGroupSplit,
+  ChangeBankGroupButton,
+  useBankGroups,
+} from "@/components/operator/BankGroups";
+import {
   MAX_WHEEL_ZOOM,
   MIN_WHEEL_ZOOM,
   WHEEL_ZOOM_STEP,
@@ -177,7 +192,7 @@ export function WheelHostPanel() {
   const [pendingLoadId, setPendingLoadId] = useState<string | null>(null);
   const [bankOpen, setBankOpen] = useState(false);
   const [phraseForm, setPhraseForm] = useState<PhraseForm | null>(null);
-  const { toastMessage, showToast } = useToast();
+  const { toastMessage, toastTone, showToast } = useToast();
 
   useEffect(() => {
     if (wheel.phrase) return;
@@ -188,6 +203,19 @@ export function WheelHostPanel() {
 
   const locked = Boolean(wheel.phrase) && !editing;
   const bank = wheel.bank ?? [];
+  const phraseGroups = wheel.groups ?? [];
+  const bankGroups = useBankGroups(phraseGroups, bank, (next) => {
+    updateWheel((prev) => ({
+      ...prev,
+      groups: next.groups,
+      bank: next.items,
+      activeBankId:
+        prev.activeBankId &&
+        next.items.some((item) => item.id === prev.activeBankId)
+          ? prev.activeBankId
+          : null,
+    }));
+  });
   const boardHasProgress =
     Boolean(wheel.phrase.trim()) &&
     (wheel.revealedLetters.length > 0 ||
@@ -251,7 +279,7 @@ export function WheelHostPanel() {
       return next;
     });
     if (!loaded) {
-      showToast("That bank item needs a phrase before you can load it.");
+      showToast("That bank item needs a phrase before you can load it.", "error");
       return;
     }
     setEditing(false);
@@ -262,7 +290,7 @@ export function WheelHostPanel() {
   const handleLoadBank = (bankId: string) => {
     const item = bank.find((entry) => entry.id === bankId);
     if (!item?.phrase.trim()) {
-      showToast("That bank item needs a phrase before you can load it.");
+      showToast("That bank item needs a phrase before you can load it.", "error");
       return;
     }
     if (boardHasProgress) {
@@ -278,20 +306,13 @@ export function WheelHostPanel() {
 
   const handleSaveCurrentToBank = () => {
     const phrase = wheel.phrase.trim();
-    if (!phrase) return;
-    const topic = wheel.topic.trim();
-    const zoom = clampWheelZoom(wheel.zoom);
-    if (currentInBank && wheel.activeBankId) {
-      const id = wheel.activeBankId;
-      saveBank(
-        bank.map((item) =>
-          item.id === id ? { ...item, phrase, topic, zoom } : item,
-        ),
-      );
-      showToast("Updated the bank entry for this phrase.");
-      return;
-    }
-    const entry = createWheelBankPuzzle({ phrase, topic, zoom });
+    if (!phrase || currentInBank) return;
+    const entry = createWheelBankPuzzle({
+      phrase,
+      topic: wheel.topic.trim(),
+      zoom: clampWheelZoom(wheel.zoom),
+      groupId: bankGroups.selectedGroupId,
+    });
     updateWheel((prev) => ({
       ...prev,
       bank: [...(prev.bank ?? []), entry],
@@ -312,6 +333,7 @@ export function WheelHostPanel() {
           phrase,
           topic,
           zoom: clampWheelZoom(wheel.zoom),
+          groupId: bankGroups.selectedGroupId,
         }),
       ]);
       setPhraseForm(null);
@@ -479,22 +501,13 @@ export function WheelHostPanel() {
                       <FolderOpen size={18} />
                     </button>
                   </Tooltip>
-                  {locked && wheel.phrase.trim() ? (
-                    <button
-                      type="button"
-                      onClick={handleSaveCurrentToBank}
-                      className="inline-flex h-10 items-center rounded-md border border-sky-500 bg-sky-600 px-4 text-sm font-semibold text-white hover:bg-sky-500"
-                    >
-                      {currentInBank ? "Update in bank" : "Save to bank"}
-                    </button>
-                  ) : null}
                   {locked && (
                     <button
                       type="button"
                       onClick={handleStartChange}
                       className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
                     >
-                      Change
+                      Edit
                     </button>
                   )}
                 </div>
@@ -639,7 +652,7 @@ export function WheelHostPanel() {
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[1000] bg-black/70" />
           <Dialog.Content
-            className="fixed top-1/2 left-1/2 z-[1001] flex max-h-[min(80vh,720px)] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 shadow-2xl"
+            className={bankDialogClass}
             onEscapeKeyDown={(event) => {
               if (!phraseForm) return;
               event.preventDefault();
@@ -655,37 +668,14 @@ export function WheelHostPanel() {
                 <X size={18} />
               </button>
             </Dialog.Close>
-            <div className="flex flex-wrap items-start justify-between gap-3 px-6 pt-6 pr-14 pb-4">
-              <div>
-                <Dialog.Title className="text-lg font-semibold text-white">
-                  Phrases and topics
-                </Dialog.Title>
-                <Dialog.Description className="mt-1 text-sm text-neutral-400">
-                  Pick a phrase to put it on the board. Each one shows its topic
-                  and saved board zoom. Add, edit, or delete phrases here.
-                </Dialog.Description>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {wheel.phrase.trim() ? (
-                  <button
-                    type="button"
-                    onClick={handleSaveCurrentToBank}
-                    className="inline-flex h-9 items-center rounded-lg border border-teal-500 bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-500"
-                  >
-                    {currentInBank ? "Update current" : "Save current"}
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setPhraseForm({ mode: "add", topic: "", phrase: "" })
-                  }
-                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-neutral-700 bg-neutral-800 px-3 text-sm font-medium text-white hover:bg-neutral-700"
-                >
-                  <Plus size={16} />
-                  Add phrase
-                </button>
-              </div>
+            <div className="px-6 pt-6 pr-14 pb-4">
+              <Dialog.Title className="text-lg font-semibold text-white">
+                Phrases and topics
+              </Dialog.Title>
+              <Dialog.Description className="mt-1 text-sm text-neutral-400">
+                Pick a phrase to put it on the board. Each one shows its topic
+                and saved board zoom. Add, edit, or delete phrases here.
+              </Dialog.Description>
             </div>
             {phraseForm?.mode === "add" ? (
               <form
@@ -745,13 +735,50 @@ export function WheelHostPanel() {
                 </button>
               </form>
             ) : null}
+            <BankGroupSplit
+              sidebar={
+                <BankGroupColumn
+                  groups={phraseGroups}
+                  filter={bankGroups.filter}
+                  onFilter={bankGroups.setFilter}
+                  onAdd={bankGroups.addGroup}
+                  onRename={bankGroups.renameGroup}
+                  onDelete={bankGroups.deleteGroup}
+                />
+              }
+            >
+            <BankListHeader title="Phrases">
+              {wheel.phrase.trim() && !currentInBank ? (
+                <button
+                  type="button"
+                  onClick={handleSaveCurrentToBank}
+                  className={bankHeaderSaveClass}
+                >
+                  Save current
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() =>
+                  setPhraseForm({ mode: "add", topic: "", phrase: "" })
+                }
+                className={bankHeaderNeutralClass}
+              >
+                <Plus size={14} />
+                Add phrase
+              </button>
+            </BankListHeader>
             {bank.length === 0 ? (
-              <p className="px-6 pb-6 text-sm text-neutral-500">
+              <p className="px-6 py-6 text-sm text-neutral-500">
                 No saved phrases yet. Save the current phrase, or add one here.
               </p>
+            ) : bankGroups.visible.length === 0 ? (
+              <p className="px-6 py-6 text-sm text-neutral-500">
+                No phrases in this group.
+              </p>
             ) : (
-              <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-6 pb-6">
-                {bank.map((item, index) => {
+              <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-6 py-3 pb-6">
+                {bankGroups.visible.map((item, index) => {
                   const selected = wheel.activeBankId === item.id;
                   const editing =
                     phraseForm?.mode === "edit" && phraseForm.id === item.id;
@@ -836,8 +863,15 @@ export function WheelHostPanel() {
                             {index + 1}
                           </span>
                           <span className="min-w-0 flex-1">
-                            <span className="block text-sm font-semibold text-white">
+                            <span className="text-sm font-semibold text-white">
                               {item.phrase.trim() || "(no phrase)"}
+                              {selected ? (
+                                <Check
+                                  size={16}
+                                  className="ml-1.5 inline-block align-[-2px] text-sky-400"
+                                  aria-hidden
+                                />
+                              ) : null}
                             </span>
                             <span className="mt-1 block text-xs leading-relaxed text-neutral-400">
                               {item.topic.trim() || "No topic"}
@@ -845,17 +879,14 @@ export function WheelHostPanel() {
                               Zoom {Math.round(clampWheelZoom(item.zoom) * 100)}%
                             </span>
                           </span>
-                          {selected ? (
-                            <Check
-                              size={16}
-                              className="mt-0.5 shrink-0 text-sky-400"
-                              aria-hidden
-                            />
-                          ) : null}
                         </button>
                       )}
                       {editing ? null : (
                         <div className="flex shrink-0 items-center gap-0.5 pt-2">
+                          <ChangeBankGroupButton
+                            label={item.phrase.trim() || `phrase ${index + 1}`}
+                            onClick={() => bankGroups.openPicker(item.id)}
+                          />
                           <button
                             type="button"
                             aria-label={`Edit phrase ${index + 1}`}
@@ -867,9 +898,9 @@ export function WheelHostPanel() {
                                 phrase: item.phrase,
                               })
                             }
-                            className="rounded-md p-2 text-neutral-400 hover:bg-neutral-800 hover:text-white"
+                            className={bankIconButtonClass}
                           >
-                            <Pencil size={15} />
+                            <Pencil size={18} />
                           </button>
                           <button
                             type="button"
@@ -879,9 +910,9 @@ export function WheelHostPanel() {
                                 bank.filter((entry) => entry.id !== item.id),
                               )
                             }
-                            className="rounded-md p-2 text-neutral-400 hover:bg-neutral-800 hover:text-red-300"
+                            className={bankIconDeleteClass}
                           >
-                            <Trash2 size={15} />
+                            <Trash2 size={18} />
                           </button>
                         </div>
                       )}
@@ -890,11 +921,26 @@ export function WheelHostPanel() {
                 })}
               </ul>
             )}
+            </BankGroupSplit>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
 
-      <Toast message={toastMessage} />
+      <BankGroupPicker
+        open={bankGroups.pickerItem != null}
+        onOpenChange={(next) => {
+          if (!next) bankGroups.closePicker();
+        }}
+        description={bankGroups.pickerItem?.phrase ?? ""}
+        groups={phraseGroups}
+        groupId={bankGroups.pickerItem?.groupId ?? null}
+        onChoose={(groupId) => {
+          if (!bankGroups.pickerItem) return;
+          bankGroups.moveItem(bankGroups.pickerItem.id, groupId);
+        }}
+      />
+
+      <Toast message={toastMessage} tone={toastTone} />
 
       <ConfirmDialog
         open={resetConfirmOpen}

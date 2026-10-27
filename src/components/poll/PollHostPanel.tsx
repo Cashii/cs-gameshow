@@ -25,7 +25,7 @@ function formatVoteTime(iso: string): string {
 
 export function PollHostPanel() {
   const { state, refreshSnapshot, updatePoll } = useSuite();
-  const { toastMessage, showToast } = useToast();
+  const { toastMessage, toastTone, showToast } = useToast();
   const spectatorLive = state.spectatorGame === "poll";
   const poll = state.poll;
   const question = poll.question || "";
@@ -172,11 +172,12 @@ export function PollHostPanel() {
   const questionBank = (
     <PollQuestionBank
       questions={poll.library ?? []}
+      groups={poll.groups ?? []}
       canSave={
         Boolean(question.trim()) &&
         choices.filter((choice) => choice.text.trim()).length >= 2
       }
-      onSave={() => {
+      onSave={(groupId) => {
         const texts = choices
           .map((choice) => choice.text.trim())
           .filter(Boolean)
@@ -196,6 +197,7 @@ export function PollHostPanel() {
                 correctIndex >= 0 && correctIndex < texts.length
                   ? correctIndex
                   : null,
+              groupId,
             },
           ]),
         }));
@@ -226,6 +228,13 @@ export function PollHostPanel() {
         updatePoll((prev) => ({
           ...prev,
           library: (prev.library ?? []).filter((item) => item.id !== id),
+        }))
+      }
+      onGroupsApply={(next) =>
+        updatePoll((prev) => ({
+          ...prev,
+          groups: next.groups,
+          library: next.items,
         }))
       }
     />
@@ -692,7 +701,7 @@ export function PollHostPanel() {
         }}
       />
 
-      <Toast message={toastMessage} />
+      <Toast message={toastMessage} tone={toastTone} />
     </div>
   );
 }

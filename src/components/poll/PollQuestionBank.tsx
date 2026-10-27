@@ -5,25 +5,43 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { FolderOpen, Trash2, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { bankLoadClass, bankSaveClass } from "@/components/operator/BankPanel";
+import { bankHeaderSaveClass, bankIconDeleteClass, bankLoadClass } from "@/components/operator/BankPanel";
+import {
+  bankDialogClass,
+  BankListHeader,
+  BankGroupColumn,
+  BankGroupPicker,
+  BankGroupSplit,
+  ChangeBankGroupButton,
+  useBankGroups,
+} from "@/components/operator/BankGroups";
+import type { ContentGroup } from "@/lib/content-bank";
 import type { PollBankQuestion } from "@/lib/poll/types";
 
 export function PollQuestionBank({
   questions,
+  groups,
   canSave,
   onSave,
   onLoad,
   onDelete,
+  onGroupsApply,
 }: {
   questions: PollBankQuestion[];
+  groups: ContentGroup[];
   canSave: boolean;
-  onSave: () => void;
+  onSave: (groupId: string | null) => void;
   onLoad: (id: string) => void;
   onDelete: (id: string) => void;
+  onGroupsApply: (next: {
+    groups: ContentGroup[];
+    items: PollBankQuestion[];
+  }) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [pendingLoadId, setPendingLoadId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const bankGroups = useBankGroups(groups, questions, onGroupsApply);
 
   return (
     <>
@@ -41,7 +59,7 @@ export function PollQuestionBank({
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[1000] bg-black/70" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 z-[1001] flex max-h-[min(80vh,720px)] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 shadow-2xl">
+          <Dialog.Content className={bankDialogClass}>
             <Dialog.Close asChild>
               <button
                 type="button"
@@ -51,32 +69,48 @@ export function PollQuestionBank({
                 <X size={18} />
               </button>
             </Dialog.Close>
-            <div className="flex flex-wrap items-start justify-between gap-3 px-6 pt-6 pr-14 pb-4">
-              <div>
-                <Dialog.Title className="text-lg font-semibold text-white">
-                  Saved questions
-                </Dialog.Title>
-                <Dialog.Description className="mt-1 text-sm text-neutral-400">
-                  Each saved question keeps its choices. Load replaces the
-                  current poll, clears the votes, and leaves it idle.
-                </Dialog.Description>
-              </div>
+            <div className="px-6 pt-6 pr-14 pb-4">
+              <Dialog.Title className="text-lg font-semibold text-white">
+                Saved questions
+              </Dialog.Title>
+              <Dialog.Description className="mt-1 text-sm text-neutral-400">
+                Each saved question keeps its choices. Load replaces the
+                current poll, clears the votes, and leaves it idle.
+              </Dialog.Description>
+            </div>
+            <BankGroupSplit
+              sidebar={
+                <BankGroupColumn
+                  groups={groups}
+                  filter={bankGroups.filter}
+                  onFilter={bankGroups.setFilter}
+                  onAdd={bankGroups.addGroup}
+                  onRename={bankGroups.renameGroup}
+                  onDelete={bankGroups.deleteGroup}
+                />
+              }
+            >
+            <BankListHeader title="Questions">
               <button
                 type="button"
                 disabled={!canSave}
-                onClick={onSave}
-                className={bankSaveClass}
+                onClick={() => onSave(bankGroups.selectedGroupId)}
+                className={bankHeaderSaveClass}
               >
                 Save this question
               </button>
-            </div>
+            </BankListHeader>
             {questions.length === 0 ? (
-              <p className="px-6 pb-6 text-sm text-neutral-500">
+              <p className="px-6 py-6 text-sm text-neutral-500">
                 No saved questions yet.
               </p>
+            ) : bankGroups.visible.length === 0 ? (
+              <p className="px-6 py-6 text-sm text-neutral-500">
+                No questions in this group.
+              </p>
             ) : (
-              <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-6 pb-6">
-                {questions.map((entry, index) => (
+              <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-6 py-3 pb-6">
+                {bankGroups.visible.map((entry, index) => (
                   <li
                     key={entry.id}
                     className="flex items-center gap-3 rounded-lg border border-neutral-700 bg-neutral-800/60 px-3 py-2"
@@ -110,6 +144,10 @@ export function PollQuestionBank({
                       </ul>
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5">
+                      <ChangeBankGroupButton
+                        label={entry.question.trim() || `question ${index + 1}`}
+                        onClick={() => bankGroups.openPicker(entry.id)}
+                      />
                       <button
                         type="button"
                         onClick={() => setPendingLoadId(entry.id)}
@@ -120,16 +158,17 @@ export function PollQuestionBank({
                       <button
                         type="button"
                         onClick={() => setPendingDeleteId(entry.id)}
-                        className="rounded-md p-2 text-neutral-400 hover:bg-neutral-800 hover:text-red-300"
+                        className={bankIconDeleteClass}
                         aria-label={`Delete question ${index + 1}`}
                       >
-                        <Trash2 size={15} />
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   </li>
                 ))}
               </ul>
             )}
+            </BankGroupSplit>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
@@ -157,6 +196,19 @@ export function PollQuestionBank({
         variant="danger"
         onConfirm={() => {
           if (pendingDeleteId) onDelete(pendingDeleteId);
+        }}
+      />
+      <BankGroupPicker
+        open={bankGroups.pickerItem != null}
+        onOpenChange={(next) => {
+          if (!next) bankGroups.closePicker();
+        }}
+        description={bankGroups.pickerItem?.question ?? ""}
+        groups={groups}
+        groupId={bankGroups.pickerItem?.groupId ?? null}
+        onChoose={(groupId) => {
+          if (!bankGroups.pickerItem) return;
+          bankGroups.moveItem(bankGroups.pickerItem.id, groupId);
         }}
       />
     </>

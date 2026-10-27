@@ -18,6 +18,7 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useSuite } from "@/lib/suite-provider";
 import { uid } from "@/lib/utils";
 import {
@@ -206,9 +207,9 @@ function RemoveButton({
       type="button"
       aria-label={`Remove saved message ${index + 1}`}
       onClick={onClick}
-      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-800 hover:text-red-300"
+      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-800 hover:text-red-300"
     >
-      <Trash2 size={14} />
+      <Trash2 size={18} />
     </button>
   );
 }
@@ -226,9 +227,9 @@ function ChangeGroupButton({
       aria-label={`Change group for saved message ${index + 1}`}
       title="Change group"
       onClick={onClick}
-      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-800 hover:text-white"
+      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-800 hover:text-white"
     >
-      <Pencil size={14} />
+      <Pencil size={18} />
     </button>
   );
 }
@@ -287,7 +288,7 @@ function GroupPickerDialog({
                   type="button"
                   aria-pressed={selected}
                   onClick={() => onChoose(option.value)}
-                  className={`flex h-9 items-center justify-between gap-2 rounded-md px-2.5 text-left text-sm font-semibold ${
+                  className={`flex h-11 items-center justify-between gap-2 rounded-md px-2.5 text-left text-sm font-semibold ${
                     selected
                       ? "bg-blue-600 text-white"
                       : "text-neutral-300 hover:bg-neutral-800 hover:text-white"
@@ -337,6 +338,10 @@ export function MessageBoardHostPanel() {
   const [addGroupOpen, setAddGroupOpen] = useState(false);
   const [groupPickerId, setGroupPickerId] = useState<string | null>(null);
   const [renamingGroupId, setRenamingGroupId] = useState<string | null>(null);
+  const [pendingDeleteGroup, setPendingDeleteGroup] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const skipRenameRef = useRef(false);
   const [renameDraft, setRenameDraft] = useState("");
   const selectedGroupId =
@@ -494,12 +499,12 @@ export function MessageBoardHostPanel() {
           <span className="mb-2.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
             On screen
           </span>
-          <div className="flex items-center gap-3">
+          <div className="flex items-end gap-3">
             <label className="min-w-0 flex-1">
               <AutoTextarea
                 value={text}
-                minPx={44}
-                maxPx={72}
+                minPx={132}
+                maxPx={240}
                 aria-label="Message on screen"
                 placeholder="Intermission — back in 10 minutes"
                 className="!py-[11px] leading-5"
@@ -565,53 +570,55 @@ export function MessageBoardHostPanel() {
           <span className="mb-2.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
             Message size
           </span>
-          <div className="flex items-center gap-2">
-            <span className="min-w-12 shrink-0 text-right text-sm font-semibold tabular-nums text-neutral-200">
+          <div className="flex gap-2">
+            <span className="flex h-6 min-w-12 shrink-0 items-center justify-end text-sm font-semibold tabular-nums text-neutral-200">
               {Math.round(scale * 100)}%
             </span>
-            <input
-              type="range"
-              min={MIN_MESSAGE_BOARD_SCALE}
-              max={MAX_MESSAGE_BOARD_SCALE}
-              step={MESSAGE_BOARD_SCALE_STEP}
-              value={scale}
-              aria-label="Message size"
-              onChange={(e) =>
-                setOnScreenScale(Number.parseFloat(e.target.value))
-              }
-              className="min-w-0 flex-1 accent-blue-500"
-            />
-            <div className="inline-flex shrink-0 items-center gap-1">
-              <button
-                type="button"
-                aria-label="Smaller message"
-                disabled={scale <= MIN_MESSAGE_BOARD_SCALE}
-                onClick={() =>
-                  setOnScreenScale(scale - MESSAGE_BOARD_SCALE_STEP)
+            <div className="min-w-0 flex-1">
+              <input
+                type="range"
+                min={MIN_MESSAGE_BOARD_SCALE}
+                max={MAX_MESSAGE_BOARD_SCALE}
+                step={MESSAGE_BOARD_SCALE_STEP}
+                value={scale}
+                aria-label="Message size"
+                onChange={(e) =>
+                  setOnScreenScale(Number.parseFloat(e.target.value))
                 }
-                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40"
-              >
-                <Minus size={16} />
-              </button>
-              <button
-                type="button"
-                aria-label="Larger message"
-                disabled={scale >= MAX_MESSAGE_BOARD_SCALE}
-                onClick={() =>
-                  setOnScreenScale(scale + MESSAGE_BOARD_SCALE_STEP)
-                }
-                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40"
-              >
-                <Plus size={16} />
-              </button>
-              <button
-                type="button"
-                disabled={scale === DEFAULT_MESSAGE_BOARD_SCALE}
-                onClick={() => setOnScreenScale(DEFAULT_MESSAGE_BOARD_SCALE)}
-                className="ml-1 inline-flex h-10 items-center rounded-md border border-neutral-600 bg-neutral-800 px-3 text-sm font-semibold text-white hover:bg-neutral-700 disabled:opacity-40"
-              >
-                Reset
-              </button>
+                className="block h-6 w-full accent-blue-500"
+              />
+              <div className="mt-3 flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  aria-label="Smaller message"
+                  disabled={scale <= MIN_MESSAGE_BOARD_SCALE}
+                  onClick={() =>
+                    setOnScreenScale(scale - MESSAGE_BOARD_SCALE_STEP)
+                  }
+                  className="inline-flex h-12 w-12 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40"
+                >
+                  <Minus size={20} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Larger message"
+                  disabled={scale >= MAX_MESSAGE_BOARD_SCALE}
+                  onClick={() =>
+                    setOnScreenScale(scale + MESSAGE_BOARD_SCALE_STEP)
+                  }
+                  className="inline-flex h-12 w-12 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40"
+                >
+                  <Plus size={20} />
+                </button>
+                <button
+                  type="button"
+                  disabled={scale === DEFAULT_MESSAGE_BOARD_SCALE}
+                  onClick={() => setOnScreenScale(DEFAULT_MESSAGE_BOARD_SCALE)}
+                  className="inline-flex h-12 items-center rounded-md border border-neutral-600 bg-neutral-800 px-4 text-base font-semibold text-white hover:bg-neutral-700 disabled:opacity-40"
+                >
+                  Reset
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -637,11 +644,11 @@ export function MessageBoardHostPanel() {
               <FolderPlus size={18} aria-hidden />
             </button>
           </div>
-          <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-auto p-2">
+          <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-auto p-2">
             <button
               type="button"
               onClick={() => setGroupFilter("all")}
-              className={`rounded-md px-2.5 py-2 text-left text-sm font-semibold ${
+              className={`h-11 shrink-0 rounded-md px-2.5 text-left text-sm font-semibold ${
                 groupFilter === "all"
                   ? "bg-blue-600 text-white"
                   : "text-neutral-300 hover:bg-neutral-800 hover:text-white"
@@ -652,7 +659,7 @@ export function MessageBoardHostPanel() {
             {groups.map((group) => {
               const selected = groupFilter === group.id;
               return (
-                <div key={group.id} className="flex items-center gap-1">
+                <div key={group.id} className="flex h-11 shrink-0 items-center gap-1">
                   {renamingGroupId === group.id ? (
                     <input
                       value={renameDraft}
@@ -679,7 +686,7 @@ export function MessageBoardHostPanel() {
                           setRenamingGroupId(null);
                         }
                       }}
-                      className="h-8 min-w-0 flex-1 rounded-md border border-neutral-700 bg-neutral-950 px-2 text-sm text-white focus:border-sky-500 focus:outline-none"
+                      className="h-11 min-w-0 flex-1 rounded-md border border-neutral-700 bg-neutral-950 px-2 text-sm text-white focus:border-sky-500 focus:outline-none"
                     />
                   ) : (
                     <button
@@ -690,7 +697,7 @@ export function MessageBoardHostPanel() {
                         setRenamingGroupId(group.id);
                         setRenameDraft(group.name);
                       }}
-                      className={`h-8 min-w-0 flex-1 truncate rounded-md px-2.5 text-left text-sm font-semibold ${
+                      className={`h-11 min-w-0 flex-1 truncate rounded-md px-2.5 text-left text-sm font-semibold ${
                         selected
                           ? "bg-blue-600 text-white"
                           : "text-neutral-300 hover:bg-neutral-800 hover:text-white"
@@ -704,8 +711,10 @@ export function MessageBoardHostPanel() {
                       type="button"
                       aria-label={`Delete ${group.name}`}
                       title="Delete group"
-                      onClick={() => deleteGroup(group.id)}
-                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-800 hover:text-red-300"
+                      onClick={() =>
+                        setPendingDeleteGroup({ id: group.id, name: group.name })
+                      }
+                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-800 hover:text-red-300"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -819,6 +828,23 @@ export function MessageBoardHostPanel() {
         submitLabel="Add group"
         placeholder="Group name"
         disabled={!groupDraft.trim() || atGroupLimit}
+      />
+      <ConfirmDialog
+        open={pendingDeleteGroup != null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteGroup(null);
+        }}
+        title="Delete group"
+        message={
+          pendingDeleteGroup
+            ? `Delete "${pendingDeleteGroup.name}"? Everything in it goes back to Ungrouped.`
+            : ""
+        }
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => {
+          if (pendingDeleteGroup) deleteGroup(pendingDeleteGroup.id);
+        }}
       />
       <GroupPickerDialog
         open={groupPickerPreset != null}

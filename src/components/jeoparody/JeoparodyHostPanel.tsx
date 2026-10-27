@@ -137,6 +137,7 @@ export function JeoparodyHostPanel() {
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <JeoparodyCategoryBank
         categories={game.library ?? []}
+        groups={game.groups ?? []}
         canSave={game.categories.some((category) =>
           jeoparodyCategoryHasContent({
             name: category.name,
@@ -147,7 +148,7 @@ export function JeoparodyHostPanel() {
             })),
           }),
         )}
-        onSaveAll={() => {
+        onSaveAll={(groupId) => {
           const incoming = game.categories.flatMap((category) => {
             const saved = {
               name: category.name,
@@ -158,7 +159,7 @@ export function JeoparodyHostPanel() {
               })),
             };
             if (!jeoparodyCategoryHasContent(saved)) return [];
-            return [{ id: uid(), ...saved }];
+            return [{ id: uid(), groupId, ...saved }];
           });
           updateJeoparody((prev) => ({
             ...prev,
@@ -187,6 +188,13 @@ export function JeoparodyHostPanel() {
           updateJeoparody((prev) => ({
             ...prev,
             library: (prev.library ?? []).filter((item) => item.id !== id),
+          }))
+        }
+        onGroupsApply={(next) =>
+          updateJeoparody((prev) => ({
+            ...prev,
+            groups: next.groups,
+            library: next.items,
           }))
         }
       />

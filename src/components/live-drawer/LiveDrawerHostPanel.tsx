@@ -368,7 +368,7 @@ export function LiveDrawerHostPanel() {
     applyServerSnapshot,
     updateLiveDrawer,
   } = useSuite();
-  const { toastMessage, showToast } = useToast();
+  const { toastMessage, toastTone, showToast } = useToast();
   const [colorCounts, setColorCounts] = useState<Record<string, number>>({});
   const [anyCount, setAnyCount] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -562,7 +562,7 @@ export function LiveDrawerHostPanel() {
       return true;
     } catch (e) {
       const text = e instanceof Error ? e.message : "Failed";
-      showToast(text);
+      showToast(text, "error");
       return false;
     } finally {
       setLoading(false);
@@ -572,13 +572,14 @@ export function LiveDrawerHostPanel() {
   const setColorDrawCount = (colorId: string, colorName: string, raw: number) => {
     const available = poolSummary[colorId] ?? 0;
     if (available === 0 && raw > 0) {
-      showToast(`No ${colorName} tokens in the pool`);
+      showToast(`No ${colorName} tokens in the pool`, "error");
       setColorCounts((prev) => ({ ...prev, [colorId]: 0 }));
       return;
     }
     if (raw > available) {
       showToast(
         `Only ${available} ${colorName} token${available === 1 ? "" : "s"} in the pool`,
+        "error",
       );
     }
     setColorCounts((prev) => ({
@@ -589,13 +590,14 @@ export function LiveDrawerHostPanel() {
 
   const setAnyDrawCount = (raw: number) => {
     if (anyAvailable === 0 && raw > 0) {
-      showToast("No tokens left in the pool");
+      showToast("No tokens left in the pool", "error");
       setAnyCount(0);
       return;
     }
     if (raw > anyAvailable) {
       showToast(
         `Only ${anyAvailable} token${anyAvailable === 1 ? "" : "s"} left in the pool`,
+        "error",
       );
     }
     setAnyCount(Math.min(Math.max(0, raw), anyAvailable));
@@ -609,7 +611,7 @@ export function LiveDrawerHostPanel() {
 
     const error = validateColorDrawRequests(requests, poolSummary, anyCount);
     if (error) {
-      showToast(error);
+      showToast(error, "error");
       return;
     }
     void runAction({ action: "draw", colorCounts: requests, anyCount });
@@ -617,7 +619,7 @@ export function LiveDrawerHostPanel() {
 
   const handleSelectedDraw = () => {
     if (selectedIds.size === 0) {
-      showToast("Select tokens to draw");
+      showToast("Select tokens to draw", "error");
       return;
     }
     const ids = [...selectedIds];
@@ -643,7 +645,7 @@ export function LiveDrawerHostPanel() {
 
   const addSelectedToQueue = () => {
     if (selectedIds.size === 0) {
-      showToast("Select tokens to queue");
+      showToast("Select tokens to queue", "error");
       return;
     }
     const poolIds = new Set(poolTokens.map((token) => token.id));
@@ -666,7 +668,7 @@ export function LiveDrawerHostPanel() {
 
   const addSelectedToGroup = (groupId: string) => {
     if (selectedIds.size === 0) {
-      showToast("Select tokens to add");
+      showToast("Select tokens to add", "error");
       return;
     }
     const poolIds = new Set(poolTokens.map((token) => token.id));
@@ -726,7 +728,7 @@ export function LiveDrawerHostPanel() {
   const handleDrawGroup = (groupId: string) => {
     const group = resolvedQueueGroups.find((entry) => entry.id === groupId);
     if (!group || group.tokens.length === 0) {
-      showToast("That group is empty");
+      showToast("That group is empty", "error");
       return;
     }
     const ids = group.tokens.map((token) => token.id);
@@ -773,7 +775,7 @@ export function LiveDrawerHostPanel() {
     if (numbers.length === 0) {
       if (addNumber.trim()) {
         const text = "Enter numbers or a range like 1-10";
-        showToast(text);
+        showToast(text, "error");
       }
       return;
     }
@@ -814,7 +816,7 @@ export function LiveDrawerHostPanel() {
     } catch (e) {
       if (previous) applyServerSnapshot(previous);
       const text = e instanceof Error ? e.message : "Failed";
-      showToast(text);
+      showToast(text, "error");
     } finally {
       addInFlightRef.current = false;
     }
@@ -837,7 +839,7 @@ export function LiveDrawerHostPanel() {
       showToast(summary);
     } catch (e) {
       const text = e instanceof Error ? e.message : "Failed";
-      showToast(text);
+      showToast(text, "error");
     } finally {
       setLoading(false);
     }
@@ -847,7 +849,7 @@ export function LiveDrawerHostPanel() {
     const calledIds = new Set(calledTokens.map((token) => token.id));
     const ids = [...selectedIds].filter((id) => calledIds.has(id));
     if (ids.length === 0) {
-      showToast("Select called numbers to return");
+      showToast("Select called numbers to return", "error");
       return;
     }
     const ok = await runAction({ action: "return", tokenIds: ids });
@@ -879,7 +881,7 @@ export function LiveDrawerHostPanel() {
 
   const handleRemoveSelected = async () => {
     if (selectedIds.size === 0) {
-      showToast("Select tokens to delete");
+      showToast("Select tokens to delete", "error");
       return;
     }
     const byId = new Map(
@@ -889,7 +891,7 @@ export function LiveDrawerHostPanel() {
       .map((id) => byId.get(id))
       .filter((token): token is LiveDrawerToken => token != null);
     if (tokens.length === 0) {
-      showToast("Select tokens to delete");
+      showToast("Select tokens to delete", "error");
       return;
     }
     const ids = tokens.map((token) => token.id);
@@ -924,7 +926,7 @@ export function LiveDrawerHostPanel() {
       );
     } catch (e) {
       if (previous) applyServerSnapshot(previous);
-      showToast(e instanceof Error ? e.message : "Failed");
+      showToast(e instanceof Error ? e.message : "Failed", "error");
     } finally {
       setLoading(false);
     }
@@ -952,7 +954,7 @@ export function LiveDrawerHostPanel() {
       if (!res.ok) throw new Error("Could not update mark");
       await refreshSnapshot();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Could not update mark");
+      showToast(e instanceof Error ? e.message : "Could not update mark", "error");
     } finally {
       setLoading(false);
     }
@@ -988,7 +990,7 @@ export function LiveDrawerHostPanel() {
       await refreshSnapshot();
       closeNoteEditor();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Could not update note");
+      showToast(e instanceof Error ? e.message : "Could not update note", "error");
     } finally {
       setLoading(false);
     }
@@ -999,7 +1001,7 @@ export function LiveDrawerHostPanel() {
 
   return (
     <>
-      <Toast message={toastMessage} />
+      <Toast message={toastMessage} tone={toastTone} />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {!spectatorLive && (
         <SpectatorScreenNotice>

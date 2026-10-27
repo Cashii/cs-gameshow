@@ -31,11 +31,12 @@ import { StatusSwitch } from "@/components/operator/StatusSwitch";
 import { useEffect, useState } from "react";
 
 export function PriceGuesserHostPanel() {
-  const { state, updatePriceGuesser, updatePriceCatalog } = useSuite();
+  const { state, setState, updatePriceGuesser, updatePriceCatalog } = useSuite();
   const game = state.priceGuesser ?? createDefaultPriceGuesserState();
   const catalog = state.priceCatalog ?? [];
+  const catalogGroups = state.priceCatalogGroups ?? [];
   const queue = game.queue ?? [];
-  const { toastMessage, showToast } = useToast();
+  const { toastMessage, toastTone, showToast } = useToast();
   const spectatorLive = state.spectatorGame === "priceGuesser";
   const [confirmReset, setConfirmReset] = useState(false);
   const [bankOpenRequest, setBankOpenRequest] = useState(0);
@@ -228,6 +229,7 @@ export function PriceGuesserHostPanel() {
           <div className="ml-auto">
             <PriceItemLibrary
               items={catalog}
+              groups={catalogGroups}
               openRequest={bankOpenRequest}
               closeOnLoad
               saveLabel="Save this item"
@@ -235,13 +237,14 @@ export function PriceGuesserHostPanel() {
                 !game.imageUrl && !game.label.trim() && game.price == null
               }
               pickHint="Click an item to put it on the desk, or Queue to stage it for later. The curtain starts closed."
-              onSave={async () => {
+              onSave={async (groupId) => {
                 const draft: PriceCatalogItem = {
                   id: "draft",
                   imageUrl: game.imageUrl,
                   label: game.label,
                   price: game.price,
                   photoFit: game.photoFit,
+                  groupId,
                 };
                 const key = priceCatalogKey(draft);
                 if (catalog.some((item) => priceCatalogKey(item) === key)) {
@@ -294,6 +297,13 @@ export function PriceGuesserHostPanel() {
                 }
                 void deleteMediaByUrl(url);
               }}
+              onGroupsApply={(next) =>
+                setState((prev) => ({
+                  ...prev,
+                  priceCatalog: next.items,
+                  priceCatalogGroups: next.groups,
+                }))
+              }
             />
           </div>
         </div>
@@ -407,7 +417,7 @@ export function PriceGuesserHostPanel() {
                 onFitChange={(photoFit) =>
                   patch((prev) => ({ ...prev, photoFit }))
                 }
-                onError={showToast}
+                onError={(message) => showToast(message, "error")}
               />
               <button
                 type="button"
@@ -481,7 +491,7 @@ export function PriceGuesserHostPanel() {
           </section>
         </div>
       </div>
-      <Toast message={toastMessage} />
+      <Toast message={toastMessage} tone={toastTone} />
       <ConfirmDialog
         open={confirmReset}
         onOpenChange={setConfirmReset}

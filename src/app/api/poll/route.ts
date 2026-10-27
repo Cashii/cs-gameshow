@@ -83,6 +83,7 @@ export async function POST(request: Request) {
             showJoinQr: Boolean(event.poll?.showJoinQr),
             scale: clampPollScale(event.poll?.scale),
             library: prev.poll?.library ?? [],
+            groups: prev.poll?.groups ?? [],
             ...pollTimerFields(prev.poll ?? event.poll ?? createEmptyPoll()),
           },
         }));
@@ -124,6 +125,7 @@ export async function POST(request: Request) {
               showJoinQr: Boolean(prev.poll?.showJoinQr),
               scale: clampPollScale(prev.poll?.scale),
               library: prev.poll?.library ?? [],
+              groups: prev.poll?.groups ?? [],
               ...pollTimerFields(prev.poll),
             },
           };
@@ -211,6 +213,7 @@ export async function POST(request: Request) {
             showJoinQr: false,
             scale: clampPollScale(prev.poll?.scale),
             library: prev.poll?.library ?? [],
+            groups: prev.poll?.groups ?? [],
             ...pollTimerFields(prev.poll),
           },
         }));

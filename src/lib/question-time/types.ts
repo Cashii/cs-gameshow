@@ -1,10 +1,18 @@
-import { appendUnique, claimBankId, legacyNamedPayload } from "@/lib/content-bank";
+import {
+  appendUnique,
+  claimBankId,
+  groupIdOf,
+  legacyNamedPayload,
+  type ContentGroup,
+} from "@/lib/content-bank";
 import { uid } from "@/lib/utils";
 
 export type QuestionTimeBankEntry = {
   id: string;
   title: string;
   question: string;
+  /** Null means this question is ungrouped. */
+  groupId: string | null;
 };
 
 export type QuestionTimeTeam = {
@@ -25,6 +33,7 @@ export type QuestionTimeState = {
   timerRunning: boolean;
   /** Epoch ms when a running clock hits zero. */
   timerEndsAt: number | null;
+  groups: ContentGroup[];
   library: QuestionTimeBankEntry[];
 };
 
@@ -59,6 +68,7 @@ export function createDefaultQuestionTimeState(): QuestionTimeState {
     timerRemainingMs: DEFAULT_QUESTION_TIME_DURATION_MS,
     timerRunning: false,
     timerEndsAt: null,
+    groups: [],
     library: [],
   };
 }
@@ -97,6 +107,7 @@ function readQuestionTimePrompt(
 
 export function normalizeQuestionTimeLibrary(
   raw: unknown,
+  groups: readonly ContentGroup[] = [],
 ): QuestionTimeBankEntry[] {
   if (!Array.isArray(raw)) return [];
   const entries: QuestionTimeBankEntry[] = [];
@@ -115,6 +126,7 @@ export function normalizeQuestionTimeLibrary(
         : legacy?.id ?? "";
     entries.push({
       id: claimBankId(id, seen, `question-${index}`),
+      groupId: groupIdOf(legacy ? source : item, groups),
       ...prompt,
     });
   });

@@ -263,6 +263,7 @@ function triviaLibraryWithEntry(
     optionA?: string;
     optionB?: string;
     correctChoiceId?: TriviaChoiceId | null;
+    groupId?: string | null;
   },
 ) {
   const question =
@@ -275,11 +276,13 @@ function triviaLibraryWithEntry(
     optionA: libraryEntry?.optionA,
     optionB: libraryEntry?.optionB,
   });
+  const id =
+    typeof libraryEntry?.id === "string" && libraryEntry.id.trim()
+      ? libraryEntry.id
+      : `bank-${Date.now()}`;
+  const prior = library.find((item) => item.id === id);
   const saved = {
-    id:
-      typeof libraryEntry?.id === "string" && libraryEntry.id.trim()
-        ? libraryEntry.id
-        : `bank-${Date.now()}`,
+    id,
     question,
     options: syncedEntry.options,
     optionA: syncedEntry.optionA,
@@ -288,6 +291,10 @@ function triviaLibraryWithEntry(
       libraryEntry?.correctChoiceId,
       syncedEntry.options.length,
     ),
+    groupId:
+      typeof libraryEntry?.groupId === "string"
+        ? libraryEntry.groupId
+        : (prior?.groupId ?? null),
   };
   if (library.some((item) => item.id === saved.id)) {
     return upsertTriviaBankEntry(library, saved);
@@ -786,6 +793,7 @@ export async function triviaResetSeries(): Promise<EventSnapshot> {
       trivia: {
         ...defaults,
         library: prior?.library ?? [],
+        groups: prior?.groups ?? [],
         timerDurationMs,
         timerRemainingMs: timerDurationMs,
       },

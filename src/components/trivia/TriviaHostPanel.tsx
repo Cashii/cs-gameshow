@@ -323,6 +323,7 @@ export function TriviaHostPanel() {
       correctChoiceId?: TriviaChoiceId | null;
     },
     id = uid(),
+    groupId: string | null = null,
   ): TriviaBankQuestion => {
     const synced = syncTriviaOptionsFields({ options: entry.options });
     return {
@@ -335,15 +336,19 @@ export function TriviaHostPanel() {
         entry.correctChoiceId,
         synced.options.length,
       ),
+      groupId,
     };
   };
 
-  const saveBankEntry = (entry: {
-    question: string;
-    options: string[];
-    correctChoiceId?: TriviaChoiceId | null;
-  }) => {
-    const saved = toBankEntry(entry);
+  const saveBankEntry = (
+    entry: {
+      question: string;
+      options: string[];
+      correctChoiceId?: TriviaChoiceId | null;
+    },
+    groupId: string | null = null,
+  ) => {
+    const saved = toBankEntry(entry, uid(), groupId);
     setState((prev) => ({
       ...prev,
       trivia: {
@@ -358,8 +363,9 @@ export function TriviaHostPanel() {
     options: string[];
     correctChoiceId?: TriviaChoiceId | null;
     id?: string;
+    groupId?: string | null;
   }) => {
-    const saved = toBankEntry(entry, entry.id);
+    const saved = toBankEntry(entry, entry.id, entry.groupId ?? null);
     saveQueue(
       [...queue, createTriviaQueuedQuestion({ ...saved, id: uid() })],
       saved,
@@ -372,6 +378,7 @@ export function TriviaHostPanel() {
       options: string[];
       correctChoiceId?: TriviaChoiceId | null;
       id?: string;
+      groupId?: string | null;
     },
     saveToBank = false,
   ) => {
@@ -387,7 +394,11 @@ export function TriviaHostPanel() {
     setOptions(nextOptions);
     setCorrectChoiceId(nextCorrect);
     const saved = saveToBank
-      ? toBankEntry({ ...entry, correctChoiceId: nextCorrect }, entry.id)
+      ? toBankEntry(
+          { ...entry, correctChoiceId: nextCorrect },
+          entry.id,
+          entry.groupId ?? null,
+        )
       : null;
     draftRef.current = {
       question: nextQuestion,
@@ -469,34 +480,42 @@ export function TriviaHostPanel() {
           <div className="ml-auto">
             <TriviaQuestionBank
               questions={trivia.library ?? []}
+              groups={trivia.groups ?? []}
               canSaveCurrent={Boolean(question.trim())}
               canSaveUpcoming={queue.some((item) => item.question.trim())}
               canLoadToCurrent={trivia.status === "idle"}
-              onSaveCurrent={() =>
-                saveBankEntry({
-                  question,
-                  options,
-                  correctChoiceId: markedCorrectId,
-                })
+              onSaveCurrent={(groupId) =>
+                saveBankEntry(
+                  {
+                    question,
+                    options,
+                    correctChoiceId: markedCorrectId,
+                  },
+                  groupId,
+                )
               }
-              onSaveUpcoming={() => {
+              onSaveUpcoming={(groupId) => {
                 const incoming = queue
                   .filter((item) => item.question.trim())
                   .map((item) =>
-                    toBankEntry({
-                      question: item.question,
-                      options: item.options?.length
-                        ? item.options
-                        : [item.optionA, item.optionB],
-                      correctChoiceId: resolveTriviaCorrectChoice(
-                        trivia.library ?? [],
-                        item.question,
-                        item.options?.length
+                    toBankEntry(
+                      {
+                        question: item.question,
+                        options: item.options?.length
                           ? item.options
                           : [item.optionA, item.optionB],
-                        item.correctChoiceId,
-                      ),
-                    }),
+                        correctChoiceId: resolveTriviaCorrectChoice(
+                          trivia.library ?? [],
+                          item.question,
+                          item.options?.length
+                            ? item.options
+                            : [item.optionA, item.optionB],
+                          item.correctChoiceId,
+                        ),
+                      },
+                      uid(),
+                      groupId,
+                    ),
                   );
                 setState((prev) => ({
                   ...prev,
@@ -534,17 +553,26 @@ export function TriviaHostPanel() {
               }}
               onUseAsCurrent={(entry) => applyEntryToCurrent(entry, true)}
               onUpdate={(id, entry) => {
-                const saved = toBankEntry(entry, id);
-                setState((prev) => ({
-                  ...prev,
-                  trivia: {
-                    ...prev.trivia,
-                    library: upsertTriviaBankEntry(
-                      prev.trivia.library ?? [],
-                      saved,
-                    ),
-                  },
-                }));
+                setState((prev) => {
+                  const existing = (prev.trivia.library ?? []).find(
+                    (item) => item.id === id,
+                  );
+                  const saved = toBankEntry(
+                    entry,
+                    id,
+                    existing?.groupId ?? null,
+                  );
+                  return {
+                    ...prev,
+                    trivia: {
+                      ...prev.trivia,
+                      library: upsertTriviaBankEntry(
+                        prev.trivia.library ?? [],
+                        saved,
+                      ),
+                    },
+                  };
+                });
               }}
               onDelete={(id) =>
                 setState((prev) => ({
@@ -554,6 +582,16 @@ export function TriviaHostPanel() {
                     library: (prev.trivia.library ?? []).filter(
                       (item) => item.id !== id,
                     ),
+                  },
+                }))
+              }
+              onGroupsApply={(next) =>
+                setState((prev) => ({
+                  ...prev,
+                  trivia: {
+                    ...prev.trivia,
+                    groups: next.groups,
+                    library: next.items,
                   },
                 }))
               }

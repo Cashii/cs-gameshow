@@ -1,9 +1,13 @@
+import type { ContentGroup } from "@/lib/content-bank";
+
 export type WheelBankPuzzle = {
   id: string;
   topic: string;
   phrase: string;
   /** Board zoom saved with this phrase (30%–200%). */
   zoom: number;
+  /** Null means this phrase is ungrouped. */
+  groupId: string | null;
 };
 
 export type WheelGameState = {
@@ -18,6 +22,8 @@ export type WheelGameState = {
   wrongCount: number;
   /** Saved topics/phrases you can load onto the board anytime. */
   bank: WheelBankPuzzle[];
+  /** Groups for saved phrases. Missing ids stay ungrouped. */
+  groups: ContentGroup[];
   /** Bank item currently on the board, if loaded from the bank. */
   activeBankId: string | null;
 };
@@ -46,6 +52,7 @@ export function createWheelBankPuzzle(
     topic: typeof partial?.topic === "string" ? partial.topic : "",
     phrase: typeof partial?.phrase === "string" ? partial.phrase : "",
     zoom: clampWheelZoom(partial?.zoom),
+    groupId: typeof partial?.groupId === "string" ? partial.groupId : null,
   };
 }
 
@@ -68,7 +75,18 @@ export function normalizeWheelBankPuzzle(
     topic: typeof item.topic === "string" ? item.topic : "",
     phrase,
     zoom: item.zoom,
+    groupId: item.groupId,
   });
+}
+
+function withKnownGroup(
+  item: WheelBankPuzzle,
+  groups: readonly ContentGroup[],
+): WheelBankPuzzle {
+  if (item.groupId && groups.some((group) => group.id === item.groupId)) {
+    return item;
+  }
+  return item.groupId ? { ...item, groupId: null } : item;
 }
 
 function dedupeBank(items: WheelBankPuzzle[]): WheelBankPuzzle[] {
@@ -83,7 +101,10 @@ function dedupeBank(items: WheelBankPuzzle[]): WheelBankPuzzle[] {
 }
 
 /** Prefer `bank`; migrate legacy `queue` + `history` when bank is missing. */
-export function normalizeWheelBank(rawWheel: unknown): WheelBankPuzzle[] {
+export function normalizeWheelBank(
+  rawWheel: unknown,
+  groups: readonly ContentGroup[] = [],
+): WheelBankPuzzle[] {
   if (!rawWheel || typeof rawWheel !== "object") return [];
   const wheel = rawWheel as {
     bank?: unknown;
@@ -91,8 +112,11 @@ export function normalizeWheelBank(rawWheel: unknown): WheelBankPuzzle[] {
     history?: unknown;
   };
 
+  const known = (items: WheelBankPuzzle[]) =>
+    dedupeBank(items.map((item) => withKnownGroup(item, groups)));
+
   if (Array.isArray(wheel.bank)) {
-    return dedupeBank(
+    return known(
       wheel.bank
         .map((item, index) => normalizeWheelBankPuzzle(item, index))
         .filter((item): item is WheelBankPuzzle => item != null),
@@ -112,7 +136,7 @@ export function normalizeWheelBank(rawWheel: unknown): WheelBankPuzzle[] {
         .filter((item): item is WheelBankPuzzle => item != null)
     : [];
 
-  return dedupeBank([...fromQueue, ...fromHistory]);
+  return known([...fromQueue, ...fromHistory]);
 }
 
 /** Copy a bank puzzle onto the live board. Returns null if phrase is blank. */
@@ -145,6 +169,7 @@ export function createDefaultWheelState(): WheelGameState {
     strikesEnabled: true,
     wrongCount: 0,
     bank: [],
+    groups: [],
     activeBankId: null,
   };
 }
