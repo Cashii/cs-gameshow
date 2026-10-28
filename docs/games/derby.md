@@ -1,6 +1,6 @@
 # Derby
 
-Operator-rigged four-racer race. The operator picks the winner; the spectator screen plays a race (default 20 seconds; change length in the Derby header) that always ends with that racer crossing first.
+Operator-rigged four-racer race. The operator picks the winner; the spectator screen plays a race (default 20 seconds; change length between Status and Phone votes) that always ends with that racer crossing first.
 
 Two visual themes share the same race math:
 
@@ -14,7 +14,7 @@ While the race is idle, phones on `/player` can pick a toy or horse. Vote tallie
 1. Select **Derby** in the left nav.
 2. Put **Derby** on the Spectator screen so the projector shows the track (phones follow that screen for voting).
 3. Choose a **Theme**. The pick syncs to the spectator display immediately.
-4. In the header, set **Race length** in seconds (5–600). Length locks while a race is running.
+4. Between **Status** and **Phone votes**, set **Race length** in seconds (5–600). **−** and **+** change it by one second. Length locks while a race is running.
 5. Set **Horse size** / **Toy size** if the projector sprites need to be larger or smaller. **Reset Race** keeps this scale.
 6. Watch **Player votes** while guests pick on their phones.
 7. Pick the winning color. The audience does not see this pick.
