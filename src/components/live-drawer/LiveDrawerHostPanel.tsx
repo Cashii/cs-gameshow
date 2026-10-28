@@ -1012,7 +1012,7 @@ export function LiveDrawerHostPanel() {
       <div className="min-h-0 flex-1 overflow-auto">
       <div className="flex min-h-full min-w-0 flex-col divide-y divide-neutral-700 xl:flex-row xl:divide-y-0 xl:items-stretch">
               <div className="flex min-h-0 min-w-0 flex-1 flex-col divide-y divide-neutral-700 xl:border-r xl:border-neutral-700">
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 px-3 py-4">
+              <div className="flex shrink-0 min-w-0 flex-col gap-4 px-3 py-4">
                 <div className="shrink-0">
                   <div className="flex items-start justify-between gap-3">
                     <h2 className="text-base font-bold text-white">On Display</h2>
@@ -1052,7 +1052,7 @@ export function LiveDrawerHostPanel() {
                     </ul>
                   )}
                 </div>
-                <div className="grid flex-1 grid-cols-[minmax(0,1fr)_auto] grid-rows-2 items-end gap-x-4 gap-y-2">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_auto] items-end gap-x-4 gap-y-2">
                   <div className="grid grid-cols-5 gap-2">
                     {LIVE_DRAWER_COLORS.slice(0, 5).map((c) => {
                       const available = poolSummary[c.id] ?? 0;
