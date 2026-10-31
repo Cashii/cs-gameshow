@@ -2,7 +2,7 @@
 
 ## October 31, 2026
 
-1. **Operator desk** — Each page shows its icon in the header. If Spectator is on another game, a light amber tag sits on the right of the header.
+1. **Operator dashboard** — Each page shows its icon in the header. If Spectator is on another game, a light amber tag sits on the right of the header.
 1. **Load saved…** — Word Up, Newly Weds, O69, Elimination Trivia, and Price games use labeled **Load saved…** buttons instead of folder-only icons on Game actions.
 1. **O69 Club Poll** — **Game actions** with **Open Voting**, **Close Voting**, and **Clear poll** (with icons). Question/answer fields no longer jump while typing.
 1. **Elimination Trivia** — **Start Game** / **Game Started**; **Load saved question** beside the field; mark correct on upcoming answers; counts on one row.

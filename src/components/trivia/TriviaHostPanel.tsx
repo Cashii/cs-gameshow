@@ -26,7 +26,7 @@ import { ResetButton } from "@/components/ui/ResetButton";
 import { TriviaTimerPanel } from "@/components/trivia/TriviaTimerPanel";
 import { OperatorNotice } from "@/components/operator/OperatorNotice";
 import { uid } from "@/lib/utils";
-import { FolderOpen, Plus, Trash2 } from "lucide-react";
+import { FolderOpen, Play, Plus, QrCode, Trash2 } from "lucide-react";
 import { QueueMoveControls } from "@/components/ui/QueueMoveControls";
 import { usePriceItemLayoutAnimation } from "@/components/price-order/usePriceItemLayoutAnimation";
 
@@ -399,16 +399,18 @@ export function TriviaHostPanel() {
                   correctChoiceId: draftRef.current.correctChoiceId,
                 });
               }}
-              className="inline-flex h-10 items-center rounded-md border border-emerald-500 bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40"
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-emerald-500 bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40"
             >
+              <Play size={16} />
               Start Game
             </button>
           ) : (
             <button
               type="button"
               disabled
-              className="inline-flex h-10 items-center rounded-md border border-emerald-500 bg-emerald-600 px-4 text-sm font-semibold text-white opacity-40"
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-emerald-500 bg-emerald-600 px-4 text-sm font-semibold text-white opacity-40"
             >
+              <Play size={16} />
               Game Started
             </button>
           )}
@@ -422,12 +424,13 @@ export function TriviaHostPanel() {
                   showJoinQr: !prev.showJoinQr,
                 }))
               }
-              className={`inline-flex h-10 items-center rounded-md border px-4 text-sm font-semibold disabled:opacity-50 ${
+              className={`inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold disabled:opacity-50 ${
                 trivia.showJoinQr
                   ? "border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
                   : "border-sky-500 bg-transparent text-sky-300 hover:bg-sky-500/10"
               }`}
             >
+              <QrCode size={16} />
               {trivia.showJoinQr ? "Hide QR code" : "Show QR code"}
             </button>
           ) : null}
@@ -643,36 +646,12 @@ export function TriviaHostPanel() {
               const letter = triviaChoiceLetter(choiceId ?? "a");
               const isCorrect = choiceId != null && markedCorrectId === choiceId;
               return (
-                <div key={`${index}-${letter}`}>
-                  <span className="flex items-center justify-between gap-2 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                <div
+                  key={`${index}-${letter}`}
+                  className="flex items-center gap-2"
+                >
+                  <span className="w-16 shrink-0 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                     Answer {letter}
-                    <span className="flex items-center gap-1">
-                      {choiceId ? (
-                        <button
-                          type="button"
-                          aria-pressed={isCorrect}
-                          disabled={loading}
-                          onClick={() => markCurrentAnswer(choiceId)}
-                          className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase disabled:opacity-40 ${
-                            isCorrect
-                              ? "bg-emerald-500 text-neutral-950"
-                              : "bg-neutral-900 text-neutral-400 hover:text-emerald-300"
-                          }`}
-                        >
-                          {isCorrect ? "Correct" : "Mark correct"}
-                        </button>
-                      ) : null}
-                      {options.length > MIN_TRIVIA_OPTIONS && !answersLocked ? (
-                        <button
-                          type="button"
-                          onClick={() => removeOption(index)}
-                          className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-red-300"
-                          aria-label={`Remove answer ${letter}`}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      ) : null}
-                    </span>
                   </span>
                   <input
                     value={option}
@@ -686,10 +665,35 @@ export function TriviaHostPanel() {
                     onBlur={persistQuestionDraft}
                     disabled={answersLocked}
                     aria-label={`Answer ${letter}`}
-                    className={`mt-1 w-full rounded-lg border bg-neutral-800 px-3 py-2 text-sm text-white disabled:opacity-60 ${
+                    className={`min-w-0 flex-1 rounded-lg border bg-neutral-800 px-3 py-2 text-sm text-white disabled:opacity-60 ${
                       isCorrect ? "border-emerald-500" : "border-neutral-700"
                     }`}
                   />
+                  {choiceId ? (
+                    <button
+                      type="button"
+                      aria-pressed={isCorrect}
+                      disabled={loading}
+                      onClick={() => markCurrentAnswer(choiceId)}
+                      className={`shrink-0 rounded-md px-2 py-2 text-[10px] font-bold tracking-wide uppercase disabled:opacity-40 ${
+                        isCorrect
+                          ? "bg-emerald-500 text-neutral-950"
+                          : "bg-neutral-900 text-neutral-400 hover:text-emerald-300"
+                      }`}
+                    >
+                      {isCorrect ? "Correct" : "Mark correct"}
+                    </button>
+                  ) : null}
+                  {options.length > MIN_TRIVIA_OPTIONS && !answersLocked ? (
+                    <button
+                      type="button"
+                      onClick={() => removeOption(index)}
+                      className="shrink-0 rounded-md p-2 text-neutral-500 hover:bg-neutral-800 hover:text-red-300"
+                      aria-label={`Remove answer ${letter}`}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  ) : null}
                 </div>
               );
             })}
@@ -934,84 +938,87 @@ export function TriviaHostPanel() {
                           const isCorrect =
                             choiceId != null && queuedCorrectId === choiceId;
                           return (
-                          <div key={`${item.id}-${optionIndex}`}>
-                            <span className="flex items-center justify-between gap-2 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                          <div
+                            key={`${item.id}-${optionIndex}`}
+                            className="flex items-center gap-2"
+                          >
+                            <span className="w-16 shrink-0 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                               Answer {letter}
-                              <span className="flex items-center gap-1">
-                                {choiceId ? (
-                                  <button
-                                    type="button"
-                                    aria-pressed={isCorrect}
-                                    disabled={loading}
-                                    onClick={() =>
-                                      markQueuedAnswer(item.id, choiceId)
-                                    }
-                                    className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase disabled:opacity-40 ${
-                                      isCorrect
-                                        ? "bg-emerald-500 text-neutral-950"
-                                        : "bg-neutral-900 text-neutral-400 hover:text-emerald-300"
-                                    }`}
-                                  >
-                                    {isCorrect ? "Correct" : "Mark correct"}
-                                  </button>
-                                ) : null}
-                                {queuedOptions.length > MIN_TRIVIA_OPTIONS ? (
-                                  <button
-                                    type="button"
-                                    disabled={loading}
-                                    onClick={() => {
-                                      setQueueDraft((prev) =>
-                                        prev.map((entry) => {
-                                          if (entry.id !== item.id) return entry;
-                                          const current = entry.options?.length
-                                            ? entry.options
-                                            : [entry.optionA, entry.optionB];
-                                          const nextOptions = current.filter(
-                                            (_, i) => i !== optionIndex,
-                                          );
-                                          return {
-                                            ...entry,
-                                            options: nextOptions,
-                                            optionA:
-                                              nextOptions[0] ?? entry.optionA,
-                                            optionB:
-                                              nextOptions[1] ?? entry.optionB,
-                                            correctChoiceId:
-                                              triviaCorrectChoiceAfterRemoval(
-                                                entry.correctChoiceId,
-                                                optionIndex,
-                                              ),
-                                          };
-                                        }),
-                                      );
-                                      persistQueueDraft();
-                                    }}
-                                    className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-red-300 disabled:opacity-40"
-                                    aria-label={`Remove answer ${letter}`}
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
-                                ) : null}
-                              </span>
                             </span>
                             <input
                               value={option}
                               onChange={(e) => {
                                 updateQueuedOptions(item.id, (current) =>
                                   current.map((entry, i) =>
-                                    i === optionIndex ? e.target.value : entry,
+                                    i === optionIndex
+                                      ? e.target.value
+                                      : entry,
                                   ),
                                 );
                               }}
                               onBlur={persistQueueDraft}
                               disabled={loading}
                               aria-label={`Answer ${letter}`}
-                              className={`mt-1 w-full rounded-lg border bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-60 ${
+                              className={`min-w-0 flex-1 rounded-lg border bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-60 ${
                                 isCorrect
                                   ? "border-emerald-500"
                                   : "border-neutral-700"
                               }`}
                             />
+                            {choiceId ? (
+                              <button
+                                type="button"
+                                aria-pressed={isCorrect}
+                                disabled={loading}
+                                onClick={() =>
+                                  markQueuedAnswer(item.id, choiceId)
+                                }
+                                className={`shrink-0 rounded-md px-2 py-2 text-[10px] font-bold tracking-wide uppercase disabled:opacity-40 ${
+                                  isCorrect
+                                    ? "bg-emerald-500 text-neutral-950"
+                                    : "bg-neutral-900 text-neutral-400 hover:text-emerald-300"
+                                }`}
+                              >
+                                {isCorrect ? "Correct" : "Mark correct"}
+                              </button>
+                            ) : null}
+                            {queuedOptions.length > MIN_TRIVIA_OPTIONS ? (
+                              <button
+                                type="button"
+                                disabled={loading}
+                                onClick={() => {
+                                  setQueueDraft((prev) =>
+                                    prev.map((entry) => {
+                                      if (entry.id !== item.id) return entry;
+                                      const current = entry.options?.length
+                                        ? entry.options
+                                        : [entry.optionA, entry.optionB];
+                                      const nextOptions = current.filter(
+                                        (_, i) => i !== optionIndex,
+                                      );
+                                      return {
+                                        ...entry,
+                                        options: nextOptions,
+                                        optionA:
+                                          nextOptions[0] ?? entry.optionA,
+                                        optionB:
+                                          nextOptions[1] ?? entry.optionB,
+                                        correctChoiceId:
+                                          triviaCorrectChoiceAfterRemoval(
+                                            entry.correctChoiceId,
+                                            optionIndex,
+                                          ),
+                                      };
+                                    }),
+                                  );
+                                  persistQueueDraft();
+                                }}
+                                className="shrink-0 rounded-md p-2 text-neutral-500 hover:bg-neutral-800 hover:text-red-300 disabled:opacity-40"
+                                aria-label={`Remove answer ${letter}`}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            ) : null}
                           </div>
                           );
                         })}

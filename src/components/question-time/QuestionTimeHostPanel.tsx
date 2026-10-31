@@ -228,11 +228,23 @@ export function QuestionTimeHostPanel() {
                 />
               </div>
               <div className="flex flex-col gap-2 px-4 py-4">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
                     Question
                   </h3>
-                  {questionRepository}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {questionRepository}
+                    <button
+                      type="button"
+                      disabled={!game.question.trim()}
+                      onClick={() =>
+                        patch((prev) => ({ ...prev, question: "" }))
+                      }
+                      className="inline-flex shrink-0 items-center rounded-lg border border-teal-500 bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
+                    >
+                      Clear question
+                    </button>
+                  </div>
                 </div>
                 <textarea
                   value={game.question}
@@ -243,16 +255,6 @@ export function QuestionTimeHostPanel() {
                   rows={3}
                   className="min-h-20 w-full resize-y rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-lg leading-relaxed text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
                 />
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    disabled={!game.question.trim()}
-                    onClick={() => patch((prev) => ({ ...prev, question: "" }))}
-                    className="rounded-lg border border-teal-500 bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
-                  >
-                    Clear question
-                  </button>
-                </div>
               </div>
             </section>
 

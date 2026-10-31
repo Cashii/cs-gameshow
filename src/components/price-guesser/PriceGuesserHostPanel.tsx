@@ -11,7 +11,7 @@ import {
   type PriceGuesserResult,
   type PriceGuesserState,
 } from "@/lib/price-guesser/types";
-import { formatPrice, parsePriceInput, priceInputValue } from "@/lib/price/format";
+import { parsePriceInput, priceInputValue } from "@/lib/price/format";
 import { copyMediaUrl, deleteMediaByUrl } from "@/lib/media/upload";
 import { PriceItemLibrary } from "@/components/price/PriceItemLibrary";
 import {
@@ -350,33 +350,16 @@ export function PriceGuesserHostPanel() {
                 >
                   Item name (optional)
                 </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    id="price-guesser-name"
-                    type="text"
-                    value={game.label}
-                    onChange={(event) =>
-                      patch((prev) => ({ ...prev, label: event.target.value }))
-                    }
-                    placeholder="Espresso machine"
-                    className="h-10 min-w-0 flex-1 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
-                  />
-                  <div className="w-40 shrink-0">
-                    <StatusSwitch
-                      checked={itemShowing}
-                      disabled={!game.imageUrl}
-                      labelOn="Item showing"
-                      labelOff="Curtain closed"
-                      ariaLabel="Toggle curtain"
-                      onToggle={() =>
-                        patch((prev) => ({
-                          ...prev,
-                          itemRevealed: !prev.itemRevealed,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
+                <input
+                  id="price-guesser-name"
+                  type="text"
+                  value={game.label}
+                  onChange={(event) =>
+                    patch((prev) => ({ ...prev, label: event.target.value }))
+                  }
+                  placeholder="Espresso machine"
+                  className="h-10 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
+                />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label
@@ -385,54 +368,65 @@ export function PriceGuesserHostPanel() {
                 >
                   Price
                 </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    id="price-guesser-price"
-                    type="text"
-                    inputMode="decimal"
-                    value={priceText}
-                    onFocus={() => {
-                      priceFocusedRef.current = true;
-                    }}
-                    onChange={(event) => {
-                      const next = event.target.value;
-                      setPriceText(next);
-                      patch((prev) => ({
-                        ...prev,
-                        price: parsePriceInput(next),
-                        priceRevealed: false,
-                      }));
-                    }}
-                    onBlur={(event) => {
-                      priceFocusedRef.current = false;
-                      const parsed = parsePriceInput(event.target.value);
-                      setPriceText(priceInputValue(parsed));
-                      patch((prev) => ({
-                        ...prev,
-                        price: parsed,
-                        priceRevealed: false,
-                      }));
-                    }}
-                    placeholder="49.99"
-                    className="h-10 min-w-0 flex-1 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
-                  />
-                  <div className="w-40 shrink-0">
-                    <StatusSwitch
-                      checked={priceShowing}
-                      disabled={!game.imageUrl || game.price == null}
-                      labelOn="Price showing"
-                      labelOff="Price hidden"
-                      ariaLabel="Toggle price"
-                      onToggle={() =>
-                        patch((prev) => ({
-                          ...prev,
-                          priceRevealed: !prev.priceRevealed,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
+                <input
+                  id="price-guesser-price"
+                  type="text"
+                  inputMode="decimal"
+                  value={priceText}
+                  onFocus={() => {
+                    priceFocusedRef.current = true;
+                  }}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setPriceText(next);
+                    patch((prev) => ({
+                      ...prev,
+                      price: parsePriceInput(next),
+                      priceRevealed: false,
+                    }));
+                  }}
+                  onBlur={(event) => {
+                    priceFocusedRef.current = false;
+                    const parsed = parsePriceInput(event.target.value);
+                    setPriceText(priceInputValue(parsed));
+                    patch((prev) => ({
+                      ...prev,
+                      price: parsed,
+                      priceRevealed: false,
+                    }));
+                  }}
+                  placeholder="49.99"
+                  className="h-10 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
+                />
               </div>
+              <StatusSwitch
+                size="lg"
+                checked={itemShowing}
+                disabled={!game.imageUrl}
+                labelOn="Curtain open"
+                labelOff="Curtain closed"
+                ariaLabel="Toggle curtain"
+                onToggle={() =>
+                  patch((prev) => ({
+                    ...prev,
+                    itemRevealed: !prev.itemRevealed,
+                  }))
+                }
+              />
+              <StatusSwitch
+                size="lg"
+                checked={priceShowing}
+                disabled={!game.imageUrl || game.price == null}
+                labelOn="Price showing"
+                labelOff="Price hidden"
+                ariaLabel="Toggle price"
+                onToggle={() =>
+                  patch((prev) => ({
+                    ...prev,
+                    priceRevealed: !prev.priceRevealed,
+                  }))
+                }
+              />
             </div>
 
             <section className="min-w-80 flex-1">
@@ -470,7 +464,8 @@ export function PriceGuesserHostPanel() {
               ) : (
                 <div className="space-y-2">
                   <p className="text-sm text-neutral-500">
-                    Use the arrows to reorder. Top item plays next.
+                    Edit name or price, or use the arrows to reorder. Top item
+                    plays next.
                   </p>
                   <ul ref={queueListRef} className="flex flex-col gap-2">
                     {queue.map((item, index) => (
@@ -482,6 +477,15 @@ export function PriceGuesserHostPanel() {
                         canMoveDown={index < queue.length - 1}
                         onMoveUp={() => moveQueueItem(index, -1)}
                         onMoveDown={() => moveQueueItem(index, 1)}
+                        onUpdate={(patch) => {
+                          setQueue(
+                            queue.map((entry) =>
+                              entry.id === item.id
+                                ? { ...entry, ...patch }
+                                : entry,
+                            ),
+                          );
+                        }}
                         onRemove={() => {
                           setQueue(
                             queue.filter((entry) => entry.id !== item.id),
@@ -518,6 +522,7 @@ function QueueRow({
   canMoveDown,
   onMoveUp,
   onMoveDown,
+  onUpdate,
   onRemove,
 }: Readonly<{
   item: PriceGuesserQueuedItem;
@@ -526,9 +531,17 @@ function QueueRow({
   canMoveDown: boolean;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  onUpdate: (patch: Partial<PriceGuesserQueuedItem>) => void;
   onRemove: () => void;
 }>) {
   const name = item.label.trim() || "Untitled item";
+  const [priceText, setPriceText] = useState(() => priceInputValue(item.price));
+  const priceFocusedRef = useRef(false);
+
+  useEffect(() => {
+    if (priceFocusedRef.current) return;
+    setPriceText(priceInputValue(item.price));
+  }, [item.price]);
 
   return (
     <li
@@ -561,11 +574,37 @@ function QueueRow({
           </span>
         )}
       </span>
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 py-1">
-        <p className="truncate text-base font-semibold text-white">{name}</p>
-        <p className="text-sm font-semibold text-amber-300">
-          {formatPrice(item.price)}
-        </p>
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 py-1">
+        <input
+          type="text"
+          value={item.label}
+          onChange={(event) => onUpdate({ label: event.target.value })}
+          placeholder="Item name (optional)"
+          aria-label={`${name} name`}
+          className="h-9 w-full rounded-lg border border-neutral-700 bg-neutral-950 px-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
+        />
+        <input
+          type="text"
+          inputMode="decimal"
+          value={priceText}
+          onFocus={() => {
+            priceFocusedRef.current = true;
+          }}
+          onChange={(event) => {
+            const next = event.target.value;
+            setPriceText(next);
+            onUpdate({ price: parsePriceInput(next) });
+          }}
+          onBlur={(event) => {
+            priceFocusedRef.current = false;
+            const parsed = parsePriceInput(event.target.value);
+            setPriceText(priceInputValue(parsed));
+            onUpdate({ price: parsed });
+          }}
+          placeholder="Price"
+          aria-label={`${name} price`}
+          className="h-9 w-full max-w-40 rounded-lg border border-neutral-700 bg-neutral-950 px-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
+        />
         {index === 0 ? (
           <p className="text-xs font-semibold text-sky-400">Plays next</p>
         ) : null}
