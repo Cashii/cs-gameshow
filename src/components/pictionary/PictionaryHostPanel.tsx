@@ -324,12 +324,15 @@ export function PictionaryHostPanel() {
                         : startPictionaryTimer(prev),
                     )
                   }
-                  className="inline-flex h-10 items-center gap-2 rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
+                  className="inline-flex h-10 items-center gap-2 rounded-md border border-teal-500 bg-transparent px-4 text-sm font-semibold text-teal-300 hover:bg-teal-500/10 disabled:opacity-40"
                 >
                   {game.timerRunning ? <Pause size={16} /> : <Play size={16} />}
                   {timerActionLabel}
                 </button>
-                <ResetButton onClick={() => patch(resetPictionaryTimer)}>
+                <ResetButton
+                  appearance="outline"
+                  onClick={() => patch(resetPictionaryTimer)}
+                >
                   Reset Clock
                 </ResetButton>
               </div>
@@ -404,7 +407,7 @@ export function PictionaryHostPanel() {
               <button
                 type="button"
                 onClick={applyCustomDuration}
-                className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
+                className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-transparent px-4 text-sm font-semibold text-teal-300 hover:bg-teal-500/10"
               >
                 Set duration
               </button>

@@ -281,12 +281,15 @@ export function QuestionTimeHostPanel() {
                           : startQuestionTimeTimer(prev, t),
                       );
                     }}
-                    className="inline-flex h-10 items-center gap-2 rounded-md bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500"
+                    className="inline-flex h-10 items-center gap-2 rounded-md border border-blue-500 bg-transparent px-4 text-sm font-semibold text-blue-300 hover:bg-blue-500/10 disabled:cursor-not-allowed disabled:border-neutral-700 disabled:text-neutral-500"
                   >
                     {game.timerRunning ? <Pause size={16} /> : <Play size={16} />}
                     {timerActionLabel}
                   </button>
-                  <ResetButton onClick={() => patch(resetQuestionTimeTimer)}>
+                  <ResetButton
+                    appearance="outline"
+                    onClick={() => patch(resetQuestionTimeTimer)}
+                  >
                     Reset Clock
                   </ResetButton>
                 </div>
@@ -361,7 +364,7 @@ export function QuestionTimeHostPanel() {
                 <button
                   type="button"
                   onClick={applyCustomDuration}
-                  className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
+                  className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-transparent px-4 text-sm font-semibold text-teal-300 hover:bg-teal-500/10"
                 >
                   Set duration
                 </button>

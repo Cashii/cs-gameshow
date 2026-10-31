@@ -383,6 +383,7 @@ export function LiveDrawerHostPanel() {
   const [clearPoolOpen, setClearPoolOpen] = useState(false);
   const [clearCalledOpen, setClearCalledOpen] = useState(false);
   const [clearHistoryOpen, setClearHistoryOpen] = useState(false);
+  const [deleteSelectedOpen, setDeleteSelectedOpen] = useState(false);
   const [addTokensOpen, setAddTokensOpen] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const [noteEditToken, setNoteEditToken] = useState<LiveDrawerToken | null>(
@@ -1155,7 +1156,7 @@ export function LiveDrawerHostPanel() {
                 <h3 className="text-base font-bold text-white">Queued Tokens</h3>
                 {resolvedQueueGroups.length === 0 ? (
                   <p className="mt-2 text-sm text-neutral-400">
-                    Select pool tokens, then Queue tokens in Token Summary.
+                    Select pool tokens, then Queue selected in Token Summary.
                   </p>
                 ) : (
                   <ol className="mt-2 grid max-h-[13.5rem] grid-cols-1 gap-1.5 overflow-y-auto p-0.5 min-[72rem]:grid-cols-2">
@@ -1282,7 +1283,14 @@ export function LiveDrawerHostPanel() {
                       })}
                     </ul>
                   </div>
-                  <div className="flex justify-end">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setAddTokensOpen(true)}
+                      className="inline-flex shrink-0 items-center rounded-md border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500"
+                    >
+                      Add tokens
+                    </button>
                     <div className="flex rounded-lg border border-neutral-600 p-0.5">
                       <button
                         type="button"
@@ -1334,9 +1342,13 @@ export function LiveDrawerHostPanel() {
                         type="button"
                         disabled={loading || selectedIds.size === 0}
                         onClick={addSelectedToQueue}
-                        className="inline-flex shrink-0 items-center rounded-md border border-neutral-600 px-3 py-1.5 text-sm font-semibold text-neutral-200 hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-40"
+                        className={`inline-flex shrink-0 items-center rounded-md px-3 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed ${
+                          selectedIds.size === 0
+                            ? "border border-neutral-500 bg-transparent text-neutral-400 disabled:opacity-100"
+                            : "border border-emerald-500 bg-transparent text-emerald-300 hover:bg-emerald-500/10 disabled:opacity-40"
+                        }`}
                       >
-                        Queue tokens ({selectedIds.size})
+                        Queue selected ({selectedIds.size})
                       </button>
                     </>
                   )}
@@ -1354,18 +1366,11 @@ export function LiveDrawerHostPanel() {
                       Return selected ({selectedIds.size})
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => setAddTokensOpen(true)}
-                    className="inline-flex shrink-0 items-center rounded-md border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500"
-                  >
-                    Add tokens
-                  </button>
                   {selectedIds.size > 0 && (
                     <button
                       type="button"
                       disabled={loading}
-                      onClick={() => void handleRemoveSelected()}
+                      onClick={() => setDeleteSelectedOpen(true)}
                       className="inline-flex shrink-0 items-center rounded-md border border-red-500/40 px-3 py-1.5 text-sm font-semibold text-red-400 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Delete selected ({selectedIds.size})
@@ -1375,13 +1380,9 @@ export function LiveDrawerHostPanel() {
                     type="button"
                     disabled={selectedIds.size === 0}
                     onClick={() => setSelectedIds(new Set())}
-                    className={`inline-flex shrink-0 items-center rounded-md px-3 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed ${
-                      selectedIds.size === 0
-                        ? "border border-neutral-500 bg-transparent text-neutral-400 disabled:opacity-100"
-                        : "border border-neutral-500 bg-neutral-700 text-white hover:bg-neutral-600"
-                    }`}
+                    className="inline-flex shrink-0 items-center px-3 py-1.5 text-sm font-semibold text-neutral-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    Clear selected
+                    Unselect all
                   </button>
                   {listTab === "pool" && (
                     <button
@@ -1893,6 +1894,17 @@ export function LiveDrawerHostPanel() {
         </Dialog.Portal>
       </Dialog.Root>
 
+      <ConfirmDialog
+        open={deleteSelectedOpen}
+        onOpenChange={setDeleteSelectedOpen}
+        title="Delete selected numbers?"
+        message={`This permanently removes ${selectedIds.size} selected number${selectedIds.size === 1 ? "" : "s"} from the pool or called list.\n\nThis cannot be undone.`}
+        confirmLabel="Delete selected"
+        variant="danger"
+        onConfirm={() => {
+          void handleRemoveSelected();
+        }}
+      />
       <ConfirmDialog
         open={clearPoolOpen}
         onOpenChange={setClearPoolOpen}

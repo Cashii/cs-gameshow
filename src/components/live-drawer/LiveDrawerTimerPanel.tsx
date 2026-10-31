@@ -154,7 +154,7 @@ export function LiveDrawerTimerPanel() {
         <button
           type="button"
           onClick={applyCustomDuration}
-          className={`${controlButtonClass} w-full border border-teal-500 bg-teal-600 text-white hover:bg-teal-500`}
+          className={`${controlButtonClass} w-full border border-teal-500 bg-transparent text-teal-300 hover:bg-teal-500/10`}
         >
           Set
         </button>
@@ -170,12 +170,15 @@ export function LiveDrawerTimerPanel() {
                 : startLiveDrawerTimer(prev),
             )
           }
-          className={`${controlButtonClass} gap-1.5 border border-teal-500 bg-teal-600 text-white hover:bg-teal-500 disabled:opacity-40`}
+          className={`${controlButtonClass} gap-1.5 border border-teal-500 bg-transparent text-teal-300 hover:bg-teal-500/10 disabled:opacity-40`}
         >
           {game.timerRunning ? <Pause size={18} /> : <Play size={18} />}
           {timerActionLabel}
         </button>
-        <ResetButton onClick={() => updateLiveDrawer(resetLiveDrawerTimer)}>
+        <ResetButton
+          appearance="outline"
+          onClick={() => updateLiveDrawer(resetLiveDrawerTimer)}
+        >
           Reset Clock
         </ResetButton>
       </div>
