@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Play, Plus, RotateCcw } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import {
   clampDerbyDurationMs,
@@ -23,8 +23,8 @@ import {
 } from "@/lib/derby/types";
 import { DerbyHorse } from "@/components/derby/DerbyHorse";
 import { DerbyToy } from "@/components/derby/DerbyToy";
+import { DerbyHeaderSettings } from "@/components/derby/DerbyHeaderSettings";
 import { publishDerbyClock } from "@/lib/derby/clock";
-import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { ResetButton } from "@/components/ui/ResetButton";
 
 function newRaceId(): string {
@@ -53,7 +53,6 @@ export function DerbyHostPanel() {
   const racing = game.phase === "racing";
   const finished = game.phase === "finished";
   const canPickWinner = game.phase === "idle";
-  const spectatorShowingDerby = state.spectatorGame === "derby";
 
   useEffect(() => {
     setSecondsDraft(String(durationSeconds));
@@ -256,8 +255,9 @@ export function DerbyHostPanel() {
               <button
                 type="button"
                 onClick={raceAgain}
-                className="inline-flex h-10 items-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-500"
+                className="inline-flex h-10 items-center gap-2 rounded-md bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-500"
               >
+                <RotateCcw size={16} />
                 Race again
               </button>
             ) : (
@@ -265,8 +265,9 @@ export function DerbyHostPanel() {
                 type="button"
                 disabled={!game.winnerId || racing}
                 onClick={startRace}
-                className="inline-flex h-10 items-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500"
+                className="inline-flex h-10 items-center gap-2 rounded-md bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500"
               >
+                <Play size={16} />
                 Start race
               </button>
             )}
@@ -326,26 +327,20 @@ export function DerbyHostPanel() {
             >
               <Plus size={18} />
             </button>
+            <DerbyHeaderSettings />
           </div>
         </div>
       </div>
 
-      {!spectatorShowingDerby && (
-        <SpectatorScreenNotice>
-          Spectator is not on Derby Race. Use the Spectator screen dropdown so
-          the projector shows the race.
-        </SpectatorScreenNotice>
-      )}
-
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex w-full flex-col gap-6 px-6 py-6">
         <div>
-          <div className="mb-4 flex flex-wrap items-start gap-x-8 gap-y-3">
+          <div className="mb-4 flex flex-wrap items-start gap-x-10 gap-y-4">
             <div className="min-w-0">
               <p className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                 Status
               </p>
-              <p className="mt-1 flex h-9 items-center text-sm font-semibold text-white">
+              <p className="mt-1.5 flex h-12 items-center text-lg font-semibold text-white">
                 {statusText}
               </p>
             </div>
@@ -353,15 +348,15 @@ export function DerbyHostPanel() {
               <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                 Race length
               </span>
-              <span className="mt-1 flex h-9 items-center gap-1.5">
+              <span className="mt-1.5 flex h-12 items-center gap-2">
                 <button
                   type="button"
                   aria-label="Decrease race length"
                   disabled={racing || durationSecondsForLimits <= minDurationSeconds}
                   onClick={() => nudgeDuration(-1)}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-neutral-700 disabled:bg-neutral-800 disabled:text-neutral-500"
+                  className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-neutral-700 disabled:bg-neutral-800 disabled:text-neutral-500"
                 >
-                  <Minus size={16} />
+                  <Minus size={22} />
                 </button>
                 <input
                   type="number"
@@ -378,18 +373,18 @@ export function DerbyHostPanel() {
                       event.currentTarget.blur();
                     }
                   }}
-                  className="h-9 w-14 rounded-md border border-neutral-600 bg-neutral-800 text-center text-sm font-semibold text-white tabular-nums focus:border-sky-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  className="h-12 w-20 rounded-md border border-neutral-600 bg-neutral-800 text-center text-xl font-semibold text-white tabular-nums focus:border-sky-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 />
                 <button
                   type="button"
                   aria-label="Increase race length"
                   disabled={racing || durationSecondsForLimits >= maxDurationSeconds}
                   onClick={() => nudgeDuration(1)}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-neutral-700 disabled:bg-neutral-800 disabled:text-neutral-500"
+                  className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-neutral-700 disabled:bg-neutral-800 disabled:text-neutral-500"
                 >
-                  <Plus size={16} />
+                  <Plus size={22} />
                 </button>
-                <span className="text-sm font-semibold text-neutral-400">
+                <span className="text-base font-semibold text-neutral-400">
                   sec
                 </span>
               </span>
@@ -398,7 +393,7 @@ export function DerbyHostPanel() {
               <p className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                 Phone votes
               </p>
-              <p className="mt-1 flex h-9 items-center text-sm font-semibold tabular-nums text-amber-300">
+              <p className="mt-1.5 flex h-12 items-center text-lg font-semibold tabular-nums text-amber-300">
                 {voteTotal}
               </p>
             </div>

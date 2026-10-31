@@ -35,7 +35,6 @@ import { uid } from "@/lib/utils";
 import { SquarePhotoEditor } from "@/components/price/SquarePhotoEditor";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { StatusSwitch } from "@/components/operator/StatusSwitch";
 import { usePriceItemLayoutAnimation } from "@/components/price-order/usePriceItemLayoutAnimation";
 import { ResetButton } from "@/components/ui/ResetButton";
@@ -46,7 +45,6 @@ export function PriceOrderHostPanel() {
   const catalog = state.priceCatalog ?? [];
   const catalogGroups = state.priceCatalogGroups ?? [];
   const { toastMessage, toastTone, showToast } = useToast();
-  const spectatorLive = state.spectatorGame === "priceOrder";
   const [confirmReset, setConfirmReset] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [bankOpenRequest, setBankOpenRequest] = useState(0);
@@ -257,11 +255,11 @@ export function PriceOrderHostPanel() {
           <ResetButton onClick={() => setConfirmReset(true)}>
             Reset Game
           </ResetButton>
-          <div className="ml-auto">
-            <PriceItemLibrary
+          <PriceItemLibrary
               items={catalog}
               groups={catalogGroups}
               openRequest={bankOpenRequest}
+              showTrigger={false}
               saveLabel="Save all items"
               saveDisabled={
                 !game.items.some(
@@ -270,7 +268,8 @@ export function PriceOrderHostPanel() {
                 )
               }
               loadDisabled={game.items.length >= PRICE_ORDER_MAX_ITEMS}
-              pickHint="Pick one to add it to the board, up to five."
+              loadActionLabel="Add item"
+              pickHint="Use Add item to put a saved photo on the board, up to five."
               onSave={async (groupId) => {
                 const seen = new Set(catalog.map(priceCatalogKey));
                 const incoming: PriceCatalogItem[] = [];
@@ -358,15 +357,8 @@ export function PriceOrderHostPanel() {
                 }))
               }
             />
-          </div>
         </div>
       </div>
-      {!spectatorLive && (
-        <SpectatorScreenNotice>
-          Spectator is not on Price Order. Use the Spectator screen list so the
-          projector shows the items.
-        </SpectatorScreenNotice>
-      )}
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex w-full flex-col gap-3 px-6 py-6">
           <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">

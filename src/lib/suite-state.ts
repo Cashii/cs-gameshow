@@ -17,8 +17,6 @@ import {
 import {
   createDefaultLiveDrawerState,
   clampLiveDrawerDurationMs,
-  clampLiveDrawerNumberScale,
-  DEFAULT_LIVE_DRAWER_NUMBER_SCALE,
   normalizeLiveDrawerQueueGroups,
   normalizeTokenMark,
   normalizeTokenNote,
@@ -417,10 +415,6 @@ function normalizeLiveDrawerState(
         }))
       : [],
     queueGroups,
-    numberScale:
-      typeof rest.numberScale === "number"
-        ? clampLiveDrawerNumberScale(rest.numberScale)
-        : DEFAULT_LIVE_DRAWER_NUMBER_SCALE,
     sequence: typeof rest.sequence === "number" ? rest.sequence : 0,
     timerEnabled: Boolean(rest.timerEnabled),
     timerDurationMs,

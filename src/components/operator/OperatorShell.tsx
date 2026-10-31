@@ -49,13 +49,10 @@ import { TooltipProvider } from "@/components/ui/Tooltip";
 import { FeudHostPanel } from "@/components/feud/FeudHostPanel";
 import { WheelHostPanel } from "@/components/wheel/WheelHostPanel";
 import { LiveDrawerHostPanel } from "@/components/live-drawer/LiveDrawerHostPanel";
-import { LiveDrawerHeaderSettings } from "@/components/live-drawer/LiveDrawerHeaderSettings";
-import { FeudHeaderSettings } from "@/components/feud/FeudHeaderSettings";
 import { TakeItOrLeaveItHostPanel } from "@/components/take-it-or-leave-it/TakeItOrLeaveItHostPanel";
 import { PollHostPanel } from "@/components/poll/PollHostPanel";
 import { MessageBoardHostPanel } from "@/components/message-board/MessageBoardHostPanel";
 import { DerbyHostPanel } from "@/components/derby/DerbyHostPanel";
-import { DerbyHeaderSettings } from "@/components/derby/DerbyHeaderSettings";
 import { JeoparodyHostPanel } from "@/components/jeoparody/JeoparodyHostPanel";
 import { TriviaHostPanel } from "@/components/trivia/TriviaHostPanel";
 import { PriceGuesserHostPanel } from "@/components/price-guesser/PriceGuesserHostPanel";
@@ -364,6 +361,8 @@ function OperatorContent({
     reader.readAsText(file);
   };
 
+  const HeaderIcon = GAME_ICONS[state.activeGame];
+
   return (
     <div className="flex h-screen bg-transparent text-neutral-100">
       <aside
@@ -599,14 +598,31 @@ function OperatorContent({
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-neutral-800 bg-neutral-900 px-6">
-          <div className="min-w-0 leading-tight">
-            <h1 className="text-lg font-bold text-white">
+          <div className="flex min-w-0 items-center gap-2.5 leading-tight">
+            <HeaderIcon
+              size={22}
+              strokeWidth={1.75}
+              className={`shrink-0 ${
+                state.activeGame === "idle"
+                  ? "text-white"
+                  : GAME_ICON_TEXT[state.activeGame]
+              }`}
+              aria-hidden
+            />
+            <h1 className="truncate text-lg font-bold text-white">
               {ACTIVE_GAME_LABELS[state.activeGame]}
             </h1>
           </div>
-          {state.activeGame === "liveDrawer" && <LiveDrawerHeaderSettings />}
-          {state.activeGame === "feud" && <FeudHeaderSettings />}
-          {state.activeGame === "derby" && <DerbyHeaderSettings />}
+          <div className="flex min-w-0 shrink items-center justify-end gap-3">
+            {state.activeGame !== "idle" &&
+            spectatorGame !== state.activeGame ? (
+              <p className="min-w-0 truncate rounded-md border border-amber-300 px-2.5 py-1 text-right text-sm font-semibold text-amber-300">
+                Spectator view is not on{" "}
+                {ACTIVE_GAME_LABELS[state.activeGame]}. Use the Spectator
+                screen list.
+              </p>
+            ) : null}
+          </div>
         </header>
 
         <PinSettingsPanel

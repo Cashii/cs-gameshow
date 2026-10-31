@@ -170,10 +170,7 @@ function pickLiveDrawer(
   if (a.revealedTokens.length !== b.revealedTokens.length) {
     return a.revealedTokens.length > b.revealedTokens.length ? a : b;
   }
-  return {
-    ...b,
-    numberScale: a.numberScale,
-  };
+  return b;
 }
 
 function withLiveDrawerTimer(

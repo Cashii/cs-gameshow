@@ -22,7 +22,6 @@ import { PictionaryWordBank } from "@/components/pictionary/PictionaryWordBank";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { uid } from "@/lib/utils";
-import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { StatusSwitch } from "@/components/operator/StatusSwitch";
 
 function durationParts(ms: number) {
@@ -36,7 +35,6 @@ function durationParts(ms: number) {
 export function PictionaryHostPanel() {
   const { state, updatePictionary } = useSuite();
   const game = state.pictionary ?? createDefaultPictionaryState();
-  const spectatorLive = state.spectatorGame === "pictionary";
   const [confirmReset, setConfirmReset] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [customMinutes, setCustomMinutes] = useState(
@@ -127,13 +125,6 @@ export function PictionaryHostPanel() {
           </ResetButton>
         </div>
       </div>
-
-      {!spectatorLive && (
-        <SpectatorScreenNotice>
-          Spectator is not on Dicktionary. Use the Spectator screen list so the
-          projector shows the word, curtain, and clock.
-        </SpectatorScreenNotice>
-      )}
 
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex w-full flex-col gap-6 px-6 py-6">

@@ -68,6 +68,7 @@ export function TriviaQuestionBank({
   onDelete,
   onGroupsApply,
   openRequest = 0,
+  showTrigger = true,
 }: {
   questions: TriviaBankQuestion[];
   groups: ContentGroup[];
@@ -92,6 +93,8 @@ export function TriviaQuestionBank({
     items: TriviaBankQuestion[];
   }) => void;
   openRequest?: number;
+  /** When false, only the dialog is mounted (opened via openRequest). */
+  showTrigger?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -146,17 +149,19 @@ export function TriviaQuestionBank({
 
   return (
     <>
+      {showTrigger ? (
         <Tooltip content="Save and load questions">
-        <button
-          type="button"
-          aria-label="Save and load questions"
-          aria-haspopup="dialog"
-          onClick={() => setOpen(true)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
-        >
-          <FolderOpen size={18} />
-        </button>
-      </Tooltip>
+          <button
+            type="button"
+            aria-label="Save and load questions"
+            aria-haspopup="dialog"
+            onClick={() => setOpen(true)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
+          >
+            <FolderOpen size={18} />
+          </button>
+        </Tooltip>
+      ) : null}
       <Dialog.Root
         open={open}
         onOpenChange={(next) => {

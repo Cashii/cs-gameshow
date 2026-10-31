@@ -24,8 +24,6 @@ import { QuestionRepository } from "@/components/question-time/QuestionRepositor
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { uid } from "@/lib/utils";
-import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
-
 function durationParts(ms: number) {
   const totalSec = Math.max(0, Math.round(ms / 1000));
   return {
@@ -37,7 +35,6 @@ function durationParts(ms: number) {
 export function QuestionTimeHostPanel() {
   const { state, updateQuestionTime } = useSuite();
   const game = state.questionTime ?? createDefaultQuestionTimeState();
-  const spectatorLive = state.spectatorGame === "questionTime";
   const [confirmReset, setConfirmReset] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [customMinutes, setCustomMinutes] = useState(
@@ -212,60 +209,54 @@ export function QuestionTimeHostPanel() {
         </div>
       </div>
 
-      {!spectatorLive && (
-        <SpectatorScreenNotice>
-          Spectator is not on Newly Weds. Use the Spectator screen list so
-          the projector shows the question, scores, and clock.
-        </SpectatorScreenNotice>
-      )}
-
       <div className="min-h-0 flex-1 overflow-auto">
-        <div className="flex w-full flex-col gap-6 px-6 py-6">
-          <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
-            <section className="flex h-full min-w-0 flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4 md:col-span-2">
-              <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-                Title
-              </h3>
-              <input
-                type="text"
-                value={game.title}
-                onChange={(event) =>
-                  patch((prev) => ({ ...prev, title: event.target.value }))
-                }
-                placeholder="Newly Weds"
-                className="h-10 w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
-              />
-            </section>
-
-            <section className="flex h-full min-w-0 flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4">
-              <div className="flex items-center justify-between gap-3">
+        <div className="flex w-full flex-col divide-y divide-neutral-800">
+          <div className="grid grid-cols-1 divide-y divide-neutral-800 md:grid-cols-2 md:divide-x md:divide-y-0">
+            <section className="flex min-w-0 flex-col divide-y divide-neutral-800">
+              <div className="flex flex-col gap-2 px-4 py-4">
                 <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-                  Question
+                  Game title
                 </h3>
-                {questionRepository}
+                <input
+                  type="text"
+                  value={game.title}
+                  onChange={(event) =>
+                    patch((prev) => ({ ...prev, title: event.target.value }))
+                  }
+                  placeholder="Newly Weds"
+                  className="h-10 w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
+                />
               </div>
-              <textarea
-                value={game.question}
-                onChange={(event) =>
-                  patch((prev) => ({ ...prev, question: event.target.value }))
-                }
-                placeholder="Who is more likely to leave dishes in the sink?"
-                rows={6}
-                className="min-h-28 w-full flex-1 resize-y rounded-xl border border-neutral-700 bg-neutral-950 px-4 py-3 text-lg leading-relaxed text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
-              />
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  disabled={!game.question.trim()}
-                  onClick={() => patch((prev) => ({ ...prev, question: "" }))}
-                  className="rounded-lg border border-teal-500 bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
-                >
-                  Clear question
-                </button>
+              <div className="flex flex-col gap-2 px-4 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+                    Question
+                  </h3>
+                  {questionRepository}
+                </div>
+                <textarea
+                  value={game.question}
+                  onChange={(event) =>
+                    patch((prev) => ({ ...prev, question: event.target.value }))
+                  }
+                  placeholder="Who is more likely to leave dishes in the sink?"
+                  rows={3}
+                  className="min-h-20 w-full resize-y rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-lg leading-relaxed text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    disabled={!game.question.trim()}
+                    onClick={() => patch((prev) => ({ ...prev, question: "" }))}
+                    className="rounded-lg border border-teal-500 bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
+                  >
+                    Clear question
+                  </button>
+                </div>
               </div>
             </section>
 
-            <section className="flex h-full min-w-0 flex-col gap-4 rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+            <section className="flex min-w-0 flex-col gap-3 px-4 py-4">
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
@@ -374,112 +365,115 @@ export function QuestionTimeHostPanel() {
                 </button>
               </div>
             </section>
-
-            <section className="flex flex-col gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4 md:col-span-2">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-                  Teams ({game.teams.length}/{MAX_QUESTION_TIME_TEAMS})
-                </h3>
-                <button
-                  type="button"
-                  disabled={game.teams.length >= MAX_QUESTION_TIME_TEAMS}
-                  onClick={addTeam}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
-                >
-                  <Plus size={14} />
-                  Add team
-                </button>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {game.teams.map((team, index) => (
-                  <article
-                    key={team.id}
-                    className="flex flex-col gap-3 rounded-xl border border-neutral-700 bg-neutral-950 p-4"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-                        Team {index + 1}
-                      </h4>
-                      <button
-                        type="button"
-                        disabled={game.teams.length <= MIN_QUESTION_TIME_TEAMS}
-                        onClick={() => removeTeam(team.id)}
-                        className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-red-300 disabled:opacity-30"
-                        aria-label={`Remove team ${index + 1}`}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-[minmax(0,1fr)_5rem] gap-2">
-                      <label className="flex min-w-0 flex-col gap-1">
-                        <span className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-                          Team name
-                        </span>
-                        <input
-                          type="text"
-                          value={team.name}
-                          onChange={(event) =>
-                            patch((prev) => ({
-                              ...prev,
-                              teams: prev.teams.map((entry) =>
-                                entry.id === team.id
-                                  ? { ...entry, name: event.target.value }
-                                  : entry,
-                              ),
-                            }))
-                          }
-                          placeholder={`Team ${index + 1}`}
-                          className="h-10 min-w-0 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
-                        />
-                      </label>
-                      <label className="flex flex-col gap-1">
-                        <span className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-                          Score
-                        </span>
-                        <input
-                          type="number"
-                          min={0}
-                          max={9999}
-                          value={team.score}
-                          onChange={(event) =>
-                            patch((prev) => ({
-                              ...prev,
-                              teams: prev.teams.map((entry) =>
-                                entry.id === team.id
-                                  ? {
-                                      ...entry,
-                                      score: clampQuestionTimeScore(
-                                        Number.parseInt(
-                                          event.target.value || "0",
-                                          10,
-                                        ),
-                                      ),
-                                    }
-                                  : entry,
-                              ),
-                            }))
-                          }
-                          className="h-10 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white focus:border-sky-500 focus:outline-none"
-                        />
-                      </label>
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {[-1, 1, 5, 10].map((delta) => (
-                        <button
-                          key={`${team.id}-${delta}`}
-                          type="button"
-                          onClick={() => adjustScore(team.id, delta)}
-                          className="inline-flex h-10 items-center justify-center rounded-md border border-teal-500 bg-teal-600 px-2 text-sm font-semibold text-white hover:bg-teal-500"
-                        >
-                          {delta > 0 ? `+${delta}` : delta}
-                        </button>
-                      ))}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
           </div>
+
+          <section className="flex flex-col px-4 py-4">
+            <h3 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+              Teams ({game.teams.length}/{MAX_QUESTION_TIME_TEAMS})
+            </h3>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {game.teams.map((team, index) => (
+                <article
+                  key={team.id}
+                  className="flex flex-col gap-3 rounded-xl border border-neutral-700 bg-neutral-950 p-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+                      Team {index + 1}
+                    </h4>
+                    <button
+                      type="button"
+                      disabled={game.teams.length <= MIN_QUESTION_TIME_TEAMS}
+                      onClick={() => removeTeam(team.id)}
+                      className="rounded-md p-1 text-neutral-500 hover:bg-neutral-800 hover:text-red-300 disabled:opacity-30"
+                      aria-label={`Remove team ${index + 1}`}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-[minmax(0,1fr)_5rem] gap-2">
+                    <label className="flex min-w-0 flex-col gap-1">
+                      <span className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+                        Team name
+                      </span>
+                      <input
+                        type="text"
+                        value={team.name}
+                        onChange={(event) =>
+                          patch((prev) => ({
+                            ...prev,
+                            teams: prev.teams.map((entry) =>
+                              entry.id === team.id
+                                ? { ...entry, name: event.target.value }
+                                : entry,
+                            ),
+                          }))
+                        }
+                        placeholder={`Team ${index + 1}`}
+                        className="h-10 min-w-0 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1">
+                      <span className="text-xs font-semibold tracking-wide text-neutral-500 uppercase">
+                        Score
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={9999}
+                        value={team.score}
+                        onChange={(event) =>
+                          patch((prev) => ({
+                            ...prev,
+                            teams: prev.teams.map((entry) =>
+                              entry.id === team.id
+                                ? {
+                                    ...entry,
+                                    score: clampQuestionTimeScore(
+                                      Number.parseInt(
+                                        event.target.value || "0",
+                                        10,
+                                      ),
+                                    ),
+                                  }
+                                : entry,
+                            ),
+                          }))
+                        }
+                        className="h-10 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white focus:border-sky-500 focus:outline-none"
+                      />
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[-1, 1, 5, 10].map((delta) => (
+                      <button
+                        key={`${team.id}-${delta}`}
+                        type="button"
+                        onClick={() => adjustScore(team.id, delta)}
+                        className="inline-flex h-10 items-center justify-center rounded-md border border-teal-500 bg-teal-600 px-2 text-sm font-semibold text-white hover:bg-teal-500"
+                      >
+                        {delta > 0 ? `+${delta}` : delta}
+                      </button>
+                    ))}
+                  </div>
+                </article>
+              ))}
+              {game.teams.length < MAX_QUESTION_TIME_TEAMS ? (
+                <div className="flex min-h-40 flex-col items-center justify-center self-stretch rounded-xl border border-dashed border-neutral-600 bg-neutral-950 px-4 py-8">
+                  <button
+                    type="button"
+                    onClick={addTeam}
+                    className="flex flex-col items-center gap-3 text-neutral-300 hover:text-sky-200"
+                  >
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-current">
+                      <Plus size={22} />
+                    </span>
+                    <span className="text-sm font-semibold">Add team</span>
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </section>
         </div>
       </div>
 

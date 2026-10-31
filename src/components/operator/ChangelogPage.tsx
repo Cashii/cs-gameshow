@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ScrollText } from "lucide-react";
 import { PinGate } from "@/components/auth/PinGate";
 import { ChangelogItemIcons } from "@/components/operator/changelogIcons";
 import { ChangelogRichText } from "@/components/operator/ChangelogRichText";
@@ -47,7 +47,8 @@ function ChangelogContent({ markdown }: Readonly<{ markdown: string }>) {
       </header>
       <main className="min-h-0 flex-1 overflow-auto">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-5 px-6 py-6">
-          <h1 className="text-2xl font-bold tracking-tight text-white">
+          <h1 className="flex items-center gap-2.5 text-2xl font-bold tracking-tight text-white">
+            <ScrollText size={26} strokeWidth={1.75} className="shrink-0" aria-hidden />
             {changelog.title}
           </h1>
           {changelog.sections.map((entry) => (

@@ -23,7 +23,6 @@ export function TakeItOrLeaveItHostPanel() {
     (sum, n) => sum + n,
     0,
   );
-  const spectatorLive = state.spectatorGame === "takeIt";
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -134,12 +133,6 @@ export function TakeItOrLeaveItHostPanel() {
               Cases left:{" "}
               <span className="font-semibold text-white">{unopened}</span>
             </p>
-            {!spectatorLive ? (
-              <p className="mt-2 text-sm text-amber-300">
-                Put Take It or Leave It on the Spectator screen for the room
-                display. Phones can still pick while this game is selected.
-              </p>
-            ) : null}
             {message ? (
               <p className="mt-2 text-sm text-red-300">{message}</p>
             ) : null}

@@ -2,8 +2,16 @@
 
 ## October 31, 2026
 
-1. **O69 Club Poll** — Question and answer fields no longer jump or reset while you type.
-1. **Price is Tight** — Typing a price like **84.96** no longer inserts a trailing **0** after the first decimal digit.
+1. **Operator desk** — Each page shows its icon in the header. If Spectator is on another game, a light amber tag sits on the right of the header.
+1. **Load saved…** — Word Up, Newly Weds, O69, Elimination Trivia, and Price games use labeled **Load saved…** buttons instead of folder-only icons on Game actions.
+1. **O69 Club Poll** — **Game actions** with **Open Voting**, **Close Voting**, and **Clear poll** (with icons). Question/answer fields no longer jump while typing.
+1. **Elimination Trivia** — **Start Game** / **Game Started**; **Load saved question** beside the field; mark correct on upcoming answers; counts on one row.
+1. **Newly Weds** — Cleaner layout (title left of question, shorter question box, divider layout). **Add team** is a dashed card. **Load saved question**.
+1. **Derby Race** — Larger race-length controls; icons on **Start race** and **Race again**; Settings next to Zoom.
+1. **Price is Tight** / **Price Order** — **Load saved item** on the desk; Price Order saved photos use **Add item**. Name/price sit under the load control. Decimal prices no longer add a trailing 0.
+1. **Friendly Feud** — Settings gear removed; **Answer scores** sits on Game actions.
+1. **Live Drawer** — Text size setting removed.
+1. **Message Board** — Message size slider is easier to drag.
 
 ## October 26, 2026
 

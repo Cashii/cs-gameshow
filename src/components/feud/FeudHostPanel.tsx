@@ -29,7 +29,6 @@ import {
   ChangeBankGroupButton,
   useBankGroups,
 } from "@/components/operator/BankGroups";
-import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { FeudAudienceView } from "./FeudAudienceView";
@@ -102,7 +101,6 @@ const ghostIconButtonStyle: CSSProperties = {
 
 export function FeudHostPanel() {
   const { state, updateFeud, currentFeudRound } = useSuite();
-  const spectatorLive = state.spectatorGame === "feud";
   const sounds = useSound();
   const feud = state.feud;
   const round = currentFeudRound;
@@ -429,15 +427,34 @@ export function FeudHostPanel() {
             Reset Round
           </ResetButton>
           <ResetButton onClick={resetGame}>Reset Game</ResetButton>
+          <div className="ml-auto inline-flex h-10 items-center gap-2">
+            <span className="text-sm font-semibold text-neutral-200">
+              Answer scores
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={feud.showAnswerScores}
+              aria-label="Toggle answer scores"
+              onClick={() =>
+                updateFeud((prev) => ({
+                  ...prev,
+                  showAnswerScores: !prev.showAnswerScores,
+                }))
+              }
+              className={`relative h-6 w-11 rounded-full transition-colors ${
+                feud.showAnswerScores ? "bg-emerald-500" : "bg-neutral-500"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                  feud.showAnswerScores ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
         </div>
       </div>
-
-      {!spectatorLive && (
-        <SpectatorScreenNotice>
-          Spectator is not on Friendly Feud. Use the Spectator screen list so
-          the projector shows the board.
-        </SpectatorScreenNotice>
-      )}
 
       <div
         style={{

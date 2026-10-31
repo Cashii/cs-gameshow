@@ -113,12 +113,10 @@ function fitNumberInBall(ball: HTMLElement): void {
 function LiveDrawerFittedNumbers({
   tokens,
   phase,
-  numberScale,
   sequence,
 }: Readonly<{
   tokens: LiveDrawerToken[];
   phase: Phase;
-  numberScale: number;
   sequence: number;
 }>) {
   const boxRef = useRef<HTMLDivElement>(null);
@@ -133,7 +131,7 @@ function LiveDrawerFittedNumbers({
     if (maxW < 8 || maxH < 8) return;
 
     let lo = 12;
-    let hi = Math.max(lo, Math.min(maxW, maxH) * 1.2 * numberScale);
+    let hi = Math.max(lo, Math.min(maxW, maxH) * 1.2);
     for (let i = 0; i < 18; i += 1) {
       const mid = (lo + hi) / 2;
       text.style.fontSize = `${mid}px`;
@@ -144,7 +142,7 @@ function LiveDrawerFittedNumbers({
     }
     text.style.fontSize = `${lo}px`;
     text.querySelectorAll<HTMLElement>(".live-drawer-ball").forEach(fitNumberInBall);
-  }, [numberScale]);
+  }, []);
 
   useLayoutEffect(() => {
     fit();
@@ -280,16 +278,11 @@ export function LiveDrawerReveal({
     };
   }, [game.sequence, tokenKey, tokens]);
 
-  const themeStyle = {
-    "--live-drawer-text-scale": String(game.numberScale ?? 1),
-  } as React.CSSProperties;
-
   const showTimer = liveDrawerTimerOnScreen(game);
 
   return (
     <div
       className={`live-drawer-audience${showTimer ? " has-timer" : ""}`}
-      style={themeStyle}
     >
       {phase === "empty" || displayTokens.length === 0 ? (
         <LiveDrawerWaitingReel />
@@ -299,7 +292,6 @@ export function LiveDrawerReveal({
           <LiveDrawerFittedNumbers
             tokens={displayTokens}
             phase={phase}
-            numberScale={game.numberScale ?? 1}
             sequence={game.sequence}
           />
         </div>

@@ -34,6 +34,8 @@ export function PriceItemLibrary({
   onGroupsApply,
   openRequest = 0,
   closeOnLoad = false,
+  showTrigger = true,
+  loadActionLabel,
 }: {
   items: PriceCatalogItem[];
   groups: ContentGroup[];
@@ -52,6 +54,10 @@ export function PriceItemLibrary({
   }) => void;
   openRequest?: number;
   closeOnLoad?: boolean;
+  /** When false, only the dialog is mounted (opened via openRequest). */
+  showTrigger?: boolean;
+  /** When set, load uses this button instead of clicking the card. */
+  loadActionLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -73,17 +79,19 @@ export function PriceItemLibrary({
 
   return (
     <>
-      <Tooltip content="Save and load items">
-        <button
-          type="button"
-          aria-label="Save and load items"
-          aria-haspopup="dialog"
-          onClick={() => setOpen(true)}
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
-        >
-          <FolderOpen size={18} />
-        </button>
-      </Tooltip>
+      {showTrigger ? (
+        <Tooltip content="Save and load items">
+          <button
+            type="button"
+            aria-label="Save and load items"
+            aria-haspopup="dialog"
+            onClick={() => setOpen(true)}
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
+          >
+            <FolderOpen size={18} />
+          </button>
+        </Tooltip>
+      ) : null}
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[1000] bg-black/70" />
@@ -146,47 +154,68 @@ export function PriceItemLibrary({
               <ul className="grid min-h-0 flex-1 content-start grid-cols-2 gap-3 overflow-y-auto px-4 py-3 pb-6 sm:grid-cols-3">
                 {bankGroups.visible.map((item) => {
                   const name = item.label.trim() || "Untitled item";
+                  const loadItem = () =>
+                    void run(async () => {
+                      await onLoad(item.id);
+                      if (closeOnLoad) setOpen(false);
+                    });
+                  const cardClassName =
+                    "flex w-full flex-col gap-2 rounded-xl border border-neutral-700 bg-neutral-800/70 p-2 text-left";
+                  const preview = (
+                    <>
+                      <span className="relative block aspect-square overflow-hidden rounded-lg bg-neutral-950">
+                        {item.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={item.imageUrl}
+                            alt=""
+                            className="h-full w-full"
+                            style={photoFitStyle(item.photoFit)}
+                          />
+                        ) : (
+                          <span className="flex h-full items-center justify-center px-2 text-center text-xs text-neutral-500">
+                            No photo
+                          </span>
+                        )}
+                      </span>
+                      <span className="truncate px-1 text-sm font-semibold text-white">
+                        {name}
+                      </span>
+                      <span className="px-1 text-xs font-semibold text-amber-300">
+                        {formatPrice(item.price)}
+                      </span>
+                    </>
+                  );
                   return (
                     <li key={item.id} className="relative">
-                      <button
-                        type="button"
-                        disabled={busy || loadDisabled}
-                        onClick={() =>
-                          void run(async () => {
-                            await onLoad(item.id);
-                            if (closeOnLoad) setOpen(false);
-                          })
-                        }
-                        className="flex w-full flex-col gap-2 rounded-xl border border-neutral-700 bg-neutral-800/70 p-2 text-left hover:border-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <span className="relative block aspect-square overflow-hidden rounded-lg bg-neutral-950">
-                          {item.imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={item.imageUrl}
-                              alt=""
-                              className="h-full w-full"
-                              style={photoFitStyle(item.photoFit)}
-                            />
-                          ) : (
-                            <span className="flex h-full items-center justify-center px-2 text-center text-xs text-neutral-500">
-                              No photo
-                            </span>
-                          )}
-                        </span>
-                        <span className="truncate px-1 text-sm font-semibold text-white">
-                          {name}
-                        </span>
-                        <span className="px-1 text-xs font-semibold text-amber-300">
-                          {formatPrice(item.price)}
-                        </span>
-                      </button>
+                      {loadActionLabel ? (
+                        <div className={cardClassName}>{preview}</div>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={busy || loadDisabled}
+                          onClick={loadItem}
+                          className={`${cardClassName} hover:border-sky-400 disabled:cursor-not-allowed disabled:opacity-50`}
+                        >
+                          {preview}
+                        </button>
+                      )}
                       <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
                         <ChangeBankGroupButton
                           label={name}
                           onClick={() => bankGroups.openPicker(item.id)}
                           className="bg-neutral-950/80 text-neutral-200 hover:bg-neutral-900"
                         />
+                        {loadActionLabel ? (
+                          <button
+                            type="button"
+                            disabled={busy || loadDisabled}
+                            onClick={loadItem}
+                            className="inline-flex h-11 items-center rounded-md bg-sky-700/90 px-3 text-sm font-semibold text-white hover:bg-sky-600 disabled:opacity-40"
+                          >
+                            {loadActionLabel}
+                          </button>
+                        ) : null}
                         {onQueue ? (
                           <button
                             type="button"

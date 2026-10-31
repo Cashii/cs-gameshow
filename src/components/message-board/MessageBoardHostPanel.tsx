@@ -17,7 +17,6 @@ import {
   useState,
   type TextareaHTMLAttributes,
 } from "react";
-import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useSuite } from "@/lib/suite-provider";
 import { uid } from "@/lib/utils";
@@ -313,7 +312,6 @@ function GroupPickerDialog({
 
 export function MessageBoardHostPanel() {
   const { state, updateMessageBoard } = useSuite();
-  const spectatorLive = state.spectatorGame === "messageBoard";
   const text = state.messageBoard?.text ?? "";
   const scale = clampMessageBoardScale(state.messageBoard?.scale);
   const groups = state.messageBoard?.groups ?? [];
@@ -487,13 +485,6 @@ export function MessageBoardHostPanel() {
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
-      {!spectatorLive && (
-        <SpectatorScreenNotice>
-          Spectator is not on Message Board. Use the Spectator screen list so
-          the projector shows the message.
-        </SpectatorScreenNotice>
-      )}
-
       <div className="grid shrink-0 grid-cols-1 gap-4 border-b border-neutral-800 px-8 py-5 md:grid-cols-2">
         <div className="min-w-0">
           <span className="mb-2.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
@@ -571,7 +562,7 @@ export function MessageBoardHostPanel() {
             Message size
           </span>
           <div className="flex gap-2">
-            <span className="flex h-6 min-w-12 shrink-0 items-center justify-end text-sm font-semibold tabular-nums text-neutral-200">
+            <span className="flex h-12 min-w-12 shrink-0 items-center justify-end text-sm font-semibold tabular-nums text-neutral-200">
               {Math.round(scale * 100)}%
             </span>
             <div className="min-w-0 flex-1">
@@ -585,7 +576,7 @@ export function MessageBoardHostPanel() {
                 onChange={(e) =>
                   setOnScreenScale(Number.parseFloat(e.target.value))
                 }
-                className="block h-6 w-full accent-blue-500"
+                className="block h-12 w-full cursor-pointer appearance-none bg-transparent accent-blue-500 [&::-moz-range-thumb]:h-7 [&::-moz-range-thumb]:w-7 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-blue-500 [&::-moz-range-track]:h-3 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-neutral-700 [&::-webkit-slider-runnable-track]:h-3 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-neutral-700 [&::-webkit-slider-thumb]:mt-[-8px] [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:w-7 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-500"
               />
               <div className="mt-3 flex items-center justify-center gap-2">
                 <button

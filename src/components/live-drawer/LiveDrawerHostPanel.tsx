@@ -35,7 +35,6 @@ import {
   poolTokenCount,
   validateColorDrawRequests,
 } from "@/lib/live-drawer/draw";
-import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -997,18 +996,11 @@ export function LiveDrawerHostPanel() {
   };
 
   const drawTotal = colorDrawTotal + anyCount;
-  const spectatorLive = state.spectatorGame === "liveDrawer";
 
   return (
     <>
       <Toast message={toastMessage} tone={toastTone} />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      {!spectatorLive && (
-        <SpectatorScreenNotice>
-          Spectator is not on Live Drawer. Use the Spectator screen list so the
-          projector shows the draw.
-        </SpectatorScreenNotice>
-      )}
       <div className="min-h-0 flex-1 overflow-auto">
       <div className="flex min-h-full min-w-0 flex-col divide-y divide-neutral-700 xl:flex-row xl:divide-y-0 xl:items-stretch">
               <div className="flex min-h-0 min-w-0 flex-1 flex-col divide-y divide-neutral-700 xl:border-r xl:border-neutral-700">

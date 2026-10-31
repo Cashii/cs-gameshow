@@ -1,10 +1,9 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Lock, Play, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { PollQuestionBank } from "@/components/poll/PollQuestionBank";
 import { PollTimerPanel } from "@/components/poll/PollTimerPanel";
-import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { uid } from "@/lib/utils";
@@ -58,7 +57,6 @@ function formatVoteTime(iso: string): string {
 export function PollHostPanel() {
   const { state, refreshSnapshot, updatePoll } = useSuite();
   const { toastMessage, toastTone, showToast } = useToast();
-  const spectatorLive = state.spectatorGame === "poll";
   const poll = state.poll;
   const [questionDraft, setQuestionDraft] = useState(poll.question || "");
   const [choicesDraft, setChoicesDraft] = useState(() =>
@@ -313,41 +311,36 @@ export function PollHostPanel() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-              Spectator actions
+              Game actions
             </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={votingOpen}
-              aria-label="Toggle voting"
-              disabled={loading || (!votingOpen && !question.trim())}
-              onClick={() => {
-                if (votingOpen) void runAction({ action: "close" });
-                else handleOpen();
-              }}
-              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-40 ${
-                votingOpen ? "bg-emerald-500" : "bg-neutral-500"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
-                  votingOpen ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-            <span
-              className={`text-sm font-semibold ${
-                votingOpen ? "text-emerald-400" : "text-red-400"
-              }`}
-            >
-              {votingOpen ? "Voting Live" : "Voting Closed"}
-            </span>
+            {votingOpen ? (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => void runAction({ action: "close" })}
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-orange-500 bg-orange-600 px-4 text-sm font-semibold text-white hover:bg-orange-500 disabled:opacity-40"
+              >
+                <Lock size={16} />
+                Close Voting
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={loading || !question.trim()}
+                onClick={handleOpen}
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-emerald-500 bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40"
+              >
+                <Play size={16} />
+                Open Voting
+              </button>
+            )}
             <button
               type="button"
               disabled={loading}
               onClick={() => runAction({ action: "clear" })}
-              className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
             >
+              <RotateCcw size={16} />
               Clear poll
             </button>
             {poll.status === "idle" ? (
@@ -428,13 +421,6 @@ export function PollHostPanel() {
           </div>
         </div>
       </div>
-
-      {!spectatorLive && (
-        <SpectatorScreenNotice>
-          Spectator is not on O69 Club Poll. Use the Spectator screen list so the
-          projector shows the poll.
-        </SpectatorScreenNotice>
-      )}
 
       <div className="min-h-0 flex-1 overflow-auto px-6 py-6 lg:overflow-hidden">
         <div className="grid items-start gap-6 lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.8fr)] lg:overflow-hidden">

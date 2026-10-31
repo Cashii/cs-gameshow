@@ -6,9 +6,7 @@ import { Check, FolderOpen, Minus, Pencil, Plus, RotateCcw, Trash2, X } from "lu
 import { useSuite } from "@/lib/suite-provider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ResetButton } from "@/components/ui/ResetButton";
-import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { Toast, useToast } from "@/components/ui/Toast";
-import { Tooltip } from "@/components/ui/Tooltip";
 import {
   bankHeaderNeutralClass,
   bankHeaderSaveClass,
@@ -160,7 +158,6 @@ function PhraseRevealRow({
 export function WheelHostPanel() {
   const { state, updateWheel } = useSuite();
   const wheel = state.wheel;
-  const spectatorLive = state.spectatorGame === "wheel";
   const [phraseInput, setPhraseInput] = useState(wheel.phrase);
   const [topicInput, setTopicInput] = useState(wheel.topic);
   const [editing, setEditing] = useState(!wheel.phrase);
@@ -414,17 +411,15 @@ export function WheelHostPanel() {
             <ResetButton onClick={() => setResetConfirmOpen(true)}>
               Reset Game
             </ResetButton>
-            <Tooltip content="Phrases and topics">
-              <button
-                type="button"
-                aria-label="Phrases and topics"
-                aria-haspopup="dialog"
-                onClick={() => setBankOpen(true)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
-              >
-                <FolderOpen size={18} />
-              </button>
-            </Tooltip>
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setBankOpen(true)}
+              className="inline-flex h-10 items-center gap-1.5 rounded-md border border-sky-500 bg-sky-600 px-3 text-sm font-semibold text-white hover:bg-sky-500"
+            >
+              <FolderOpen size={14} />
+              Load saved phrase
+            </button>
           </div>
 
           <div className="ml-auto flex flex-wrap items-center gap-4">
@@ -487,13 +482,6 @@ export function WheelHostPanel() {
           </div>
         </div>
       </div>
-
-      {!spectatorLive && (
-        <SpectatorScreenNotice>
-          Spectator is not on Word Up. Use the Spectator screen list so
-          the projector shows the board.
-        </SpectatorScreenNotice>
-      )}
 
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="w-full px-6 py-6">
@@ -569,7 +557,7 @@ export function WheelHostPanel() {
                         value={topicInput}
                         onChange={(e) => setTopicInput(e.target.value)}
                         placeholder="Shown on the spectator banner"
-                        className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                        className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500"
                       />
                     </label>
                     <div className="flex flex-wrap items-center gap-3">
@@ -621,7 +609,7 @@ export function WheelHostPanel() {
                         if (e.key === "Enter") handleSetPhrase();
                       }}
                       placeholder="Enter the phrase for the board"
-                      className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500"
                     />
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -726,7 +714,7 @@ export function WheelHostPanel() {
                   }
                   placeholder="Topic"
                   aria-label="New topic"
-                  className="min-w-28 flex-1 rounded-lg border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-500 focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                  className="min-w-28 flex-1 rounded-lg border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-500"
                 />
                 <input
                   value={phraseForm.phrase}
@@ -740,7 +728,7 @@ export function WheelHostPanel() {
                   placeholder="Phrase"
                   aria-label="New phrase"
                   autoFocus
-                  className="min-w-40 flex-2 rounded-lg border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-500 focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                  className="min-w-40 flex-2 rounded-lg border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-500"
                 />
                 <span className="rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm font-semibold tabular-nums text-neutral-300">
                   Zoom {Math.round(clampWheelZoom(wheel.zoom) * 100)}%
@@ -843,7 +831,7 @@ export function WheelHostPanel() {
                             }
                             placeholder="Topic"
                             aria-label={`Topic for phrase ${index + 1}`}
-                            className="min-w-28 flex-1 rounded-md border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                            className="min-w-28 flex-1 rounded-md border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white"
                           />
                           <input
                             value={phraseForm.phrase}
@@ -858,7 +846,7 @@ export function WheelHostPanel() {
                             placeholder="Phrase"
                             aria-label={`Phrase ${index + 1}`}
                             autoFocus
-                            className="min-w-40 flex-2 rounded-md border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                            className="min-w-40 flex-2 rounded-md border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white"
                           />
                           <span className="rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm font-semibold tabular-nums text-neutral-300">
                             Zoom {Math.round(clampWheelZoom(item.zoom) * 100)}%

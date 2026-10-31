@@ -2,7 +2,6 @@
   --live-drawer-bg: #0b1220;
   --live-drawer-glow: #38bdf8;
   --live-drawer-glow-soft: #1d4ed8;
-  --live-drawer-text-scale: 1;
   box-sizing: border-box;
   position: relative;
   display: flex;
@@ -177,7 +176,7 @@
 
 .live-drawer-audience .live-drawer-waiting-mark {
   display: block;
-  font-size: calc(min(52vw, 56vh) * var(--live-drawer-text-scale));
+  font-size: min(52vw, 56vh);
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 0.8;

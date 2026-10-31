@@ -62,8 +62,6 @@ export type LiveDrawerGameState = LiveDrawerTimerState & {
   /** Ordered call groups prepared to draw next. */
   queueGroups: LiveDrawerQueueGroup[];
   sequence: number;
-  /** Scale relative to the default audience text size (1 = current default). */
-  numberScale: number;
 };
 
 export function normalizeLiveDrawerQueueGroups(raw: unknown): LiveDrawerQueueGroup[] {
@@ -124,10 +122,6 @@ export function removeTokenIdsFromQueueGroups(
     .filter((group) => group.tokenIds.length > 0);
 }
 
-export const DEFAULT_LIVE_DRAWER_NUMBER_SCALE = 1;
-export const MIN_LIVE_DRAWER_NUMBER_SCALE = 0.5;
-export const MAX_LIVE_DRAWER_NUMBER_SCALE = 1.75;
-
 export const LIVE_DRAWER_DURATION_PRESETS_MS = [
   30_000, 45_000, 60_000,
 ] as const;
@@ -156,7 +150,6 @@ export function createDefaultLiveDrawerState(): LiveDrawerGameState {
     revealedTokens: [],
     queueGroups: [],
     sequence: 0,
-    numberScale: DEFAULT_LIVE_DRAWER_NUMBER_SCALE,
     timerEnabled: false,
     timerDurationMs: DEFAULT_LIVE_DRAWER_DURATION_MS,
     timerRemainingMs: DEFAULT_LIVE_DRAWER_DURATION_MS,
@@ -267,13 +260,6 @@ export function formatLiveDrawerPreset(ms: number): string {
   const minutes = Math.floor(ms / 60_000);
   const seconds = (ms % 60_000) / 1000;
   return seconds ? `${minutes}:${String(seconds).padStart(2, "0")}` : `${minutes}m`;
-}
-
-export function clampLiveDrawerNumberScale(value: number): number {
-  return Math.min(
-    MAX_LIVE_DRAWER_NUMBER_SCALE,
-    Math.max(MIN_LIVE_DRAWER_NUMBER_SCALE, Math.round(value * 100) / 100),
-  );
 }
 
 export function getLiveDrawerColor(

@@ -4,7 +4,6 @@ import { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { FolderOpen, Trash2, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { Tooltip } from "@/components/ui/Tooltip";
 import { bankHeaderSaveClass, bankIconDeleteClass, bankLoadClass } from "@/components/operator/BankPanel";
 import {
   bankDialogClass,
@@ -45,17 +44,15 @@ export function PollQuestionBank({
 
   return (
     <>
-      <Tooltip content="Save and load questions">
-        <button
-          type="button"
-          aria-label="Save and load questions"
-          aria-haspopup="dialog"
-          onClick={() => setOpen(true)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
-        >
-          <FolderOpen size={18} />
-        </button>
-      </Tooltip>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        onClick={() => setOpen(true)}
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-sky-500 bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-500"
+      >
+        <FolderOpen size={14} />
+        Load saved question
+      </button>
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-[1000] bg-black/70" />

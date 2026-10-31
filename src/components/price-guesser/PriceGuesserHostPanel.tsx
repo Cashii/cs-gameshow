@@ -27,7 +27,6 @@ import { Toast, useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { QueueMoveControls } from "@/components/ui/QueueMoveControls";
 import { usePriceItemLayoutAnimation } from "@/components/price-order/usePriceItemLayoutAnimation";
-import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { StatusSwitch } from "@/components/operator/StatusSwitch";
 import { useEffect, useRef, useState } from "react";
 
@@ -40,7 +39,6 @@ export function PriceGuesserHostPanel() {
   const queueOrderKey = queue.map((item) => item.id).join(",");
   const queueListRef = usePriceItemLayoutAnimation<HTMLUListElement>(queueOrderKey);
   const { toastMessage, toastTone, showToast } = useToast();
-  const spectatorLive = state.spectatorGame === "priceGuesser";
   const [confirmReset, setConfirmReset] = useState(false);
   const [bankOpenRequest, setBankOpenRequest] = useState(0);
   const [priceText, setPriceText] = useState(() => priceInputValue(game.price));
@@ -233,11 +231,11 @@ export function PriceGuesserHostPanel() {
             <RotateCcw size={16} />
             Clear item
           </button>
-          <div className="ml-auto">
-            <PriceItemLibrary
+          <PriceItemLibrary
               items={catalog}
               groups={catalogGroups}
               openRequest={bankOpenRequest}
+              showTrigger={false}
               closeOnLoad
               saveLabel="Save this item"
               saveDisabled={
@@ -312,21 +310,39 @@ export function PriceGuesserHostPanel() {
                 }))
               }
             />
-          </div>
         </div>
       </div>
-
-      {!spectatorLive && (
-        <SpectatorScreenNotice>
-          Spectator is not on Price is Tight. Use the Spectator screen list so
-          the projector shows the item.
-        </SpectatorScreenNotice>
-      )}
 
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex w-full flex-col gap-6 px-6 py-6">
           <div className="flex flex-wrap items-start gap-6">
-            <div className="flex w-[28rem] max-w-full shrink-0 flex-col gap-4">
+            <div className="flex w-80 max-w-full shrink-0 flex-col gap-3">
+              <SquarePhotoEditor
+                imageUrl={game.imageUrl}
+                fit={game.photoFit ?? DEFAULT_PHOTO_FIT}
+                onUploaded={(url) =>
+                  patch((prev) => ({
+                    ...prev,
+                    imageUrl: url,
+                    priceRevealed: false,
+                    itemRevealed: false,
+                    resultOverlay: null,
+                    photoFit: { ...DEFAULT_PHOTO_FIT },
+                  }))
+                }
+                onFitChange={(photoFit) =>
+                  patch((prev) => ({ ...prev, photoFit }))
+                }
+                onError={(message) => showToast(message, "error")}
+              />
+              <button
+                type="button"
+                onClick={() => setBankOpenRequest((current) => current + 1)}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-sky-500 bg-sky-600 px-3 text-sm font-semibold text-white hover:bg-sky-500"
+              >
+                <FolderOpen size={16} />
+                Load saved item
+              </button>
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="price-guesser-name"
@@ -334,7 +350,7 @@ export function PriceGuesserHostPanel() {
                 >
                   Item name (optional)
                 </label>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <input
                     id="price-guesser-name"
                     type="text"
@@ -345,7 +361,7 @@ export function PriceGuesserHostPanel() {
                     placeholder="Espresso machine"
                     className="h-10 min-w-0 flex-1 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
                   />
-                  <div className="w-48 shrink-0">
+                  <div className="w-40 shrink-0">
                     <StatusSwitch
                       checked={itemShowing}
                       disabled={!game.imageUrl}
@@ -362,7 +378,6 @@ export function PriceGuesserHostPanel() {
                   </div>
                 </div>
               </div>
-
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="price-guesser-price"
@@ -370,7 +385,7 @@ export function PriceGuesserHostPanel() {
                 >
                   Price
                 </label>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <input
                     id="price-guesser-price"
                     type="text"
@@ -401,7 +416,7 @@ export function PriceGuesserHostPanel() {
                     placeholder="49.99"
                     className="h-10 min-w-0 flex-1 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
                   />
-                  <div className="w-48 shrink-0">
+                  <div className="w-40 shrink-0">
                     <StatusSwitch
                       checked={priceShowing}
                       disabled={!game.imageUrl || game.price == null}
@@ -420,35 +435,6 @@ export function PriceGuesserHostPanel() {
               </div>
             </div>
 
-            <div className="flex w-80 max-w-full shrink-0 flex-col gap-3">
-              <SquarePhotoEditor
-                imageUrl={game.imageUrl}
-                fit={game.photoFit ?? DEFAULT_PHOTO_FIT}
-                onUploaded={(url) =>
-                  patch((prev) => ({
-                    ...prev,
-                    imageUrl: url,
-                    priceRevealed: false,
-                    itemRevealed: false,
-                    resultOverlay: null,
-                    photoFit: { ...DEFAULT_PHOTO_FIT },
-                  }))
-                }
-                onFitChange={(photoFit) =>
-                  patch((prev) => ({ ...prev, photoFit }))
-                }
-                onError={(message) => showToast(message, "error")}
-              />
-              <button
-                type="button"
-                onClick={() => setBankOpenRequest((current) => current + 1)}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-sky-500 bg-sky-600 px-3 text-sm font-semibold text-white hover:bg-sky-500"
-              >
-                <FolderOpen size={16} />
-                Load saved item
-              </button>
-            </div>
-
             <section className="min-w-80 flex-1">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
@@ -461,7 +447,7 @@ export function PriceGuesserHostPanel() {
                     className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500 bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-500"
                   >
                     <FolderOpen size={14} />
-                    Add saved
+                    Load saved item
                   </button>
                   <button
                     type="button"
