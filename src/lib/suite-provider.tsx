@@ -389,7 +389,9 @@ export function SuiteProvider({
       const suite = snapshotToSuite(current);
       const json = JSON.stringify(suite);
       if (json === lastPersistedJsonRef.current) {
-        dirtyRef.current = false;
+        // A pending debounce means newer keystrokes exist; keep dirty so SSE
+        // cannot clobber them before that timer fires.
+        if (persistTimerRef.current == null) dirtyRef.current = false;
         continue;
       }
       try {
@@ -415,6 +417,10 @@ export function SuiteProvider({
         }
       } catch {
         persistQueuedRef.current = false;
+        if (persistTimerRef.current != null) {
+          // Local edits are still queued; keep optimistic state and retry.
+          break;
+        }
         dirtyRef.current = false;
         try {
           const next = await fetchSnapshot();
@@ -428,7 +434,9 @@ export function SuiteProvider({
     }
 
     persistInFlightRef.current = false;
-    if (!persistQueuedRef.current) dirtyRef.current = false;
+    if (!persistQueuedRef.current && persistTimerRef.current == null) {
+      dirtyRef.current = false;
+    }
   }, [rememberPersisted, replaceSnapshot, role]);
 
   const schedulePersist = useCallback(() => {

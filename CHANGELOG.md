@@ -1,5 +1,10 @@
 # Updates
 
+## October 31, 2026
+
+1. **O69 Club Poll** — Question and answer fields no longer jump or reset while you type.
+1. **Price is Tight** — Typing a price like **84.96** no longer inserts a trailing **0** after the first decimal digit.
+
 ## October 26, 2026
 
 1. **Word Up** — **Topic on display** and **Phrase on display** sit on the page, with **Board zoom** beside the topic and a divider before **Letter Controls**. Phrase letters are large, outlined, and wrap when the phrase is long. Unselected letters are a light gray and fade to green when you select them. **Letter Controls** use the same letter size.

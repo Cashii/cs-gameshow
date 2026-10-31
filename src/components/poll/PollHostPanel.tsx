@@ -1,17 +1,49 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PollQuestionBank } from "@/components/poll/PollQuestionBank";
 import { PollTimerPanel } from "@/components/poll/PollTimerPanel";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { uid } from "@/lib/utils";
-import { mergePollBank, nextPollChoiceId } from "@/lib/poll/types";
+import {
+  mergePollBank,
+  nextPollChoiceId,
+  type PollChoice,
+  type PollState,
+} from "@/lib/poll/types";
 import { useSuite } from "@/lib/suite-provider";
 
 const HISTORY_PAGE_SIZE = 10;
+
+type ChoiceDraft = { id: string; text: string };
+
+function defaultChoiceDrafts(): ChoiceDraft[] {
+  return [
+    { id: "a", text: "Option A" },
+    { id: "b", text: "Option B" },
+  ];
+}
+
+function choiceDraftsFromPoll(poll: PollState): ChoiceDraft[] {
+  return poll.choices.length >= 2
+    ? poll.choices.map((choice) => ({ id: choice.id, text: choice.text }))
+    : defaultChoiceDrafts();
+}
+
+function withLiveVotes(
+  drafts: ChoiceDraft[],
+  live: PollChoice[],
+): PollChoice[] {
+  const source = drafts.length >= 2 ? drafts : defaultChoiceDrafts();
+  return source.map((draft) => ({
+    id: draft.id,
+    text: draft.text,
+    votes: live.find((choice) => choice.id === draft.id)?.votes ?? 0,
+  }));
+}
 
 function formatVoteTime(iso: string): string {
   const date = new Date(iso);
@@ -28,11 +60,16 @@ export function PollHostPanel() {
   const { toastMessage, toastTone, showToast } = useToast();
   const spectatorLive = state.spectatorGame === "poll";
   const poll = state.poll;
-  const question = poll.question || "";
-  const choices = poll.choices.length >= 2 ? poll.choices : [
-    { id: "a", text: "Option A", votes: 0 },
-    { id: "b", text: "Option B", votes: 0 },
-  ];
+  const [questionDraft, setQuestionDraft] = useState(poll.question || "");
+  const [choicesDraft, setChoicesDraft] = useState(() =>
+    choiceDraftsFromPoll(poll),
+  );
+  const draftRef = useRef({
+    question: questionDraft,
+    choices: choicesDraft,
+  });
+  draftRef.current = { question: questionDraft, choices: choicesDraft };
+
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(
@@ -44,6 +81,28 @@ export function PollHostPanel() {
     pollId: string;
     question: string;
   }>({ open: false, pollId: "", question: "" });
+
+  useEffect(() => {
+    setQuestionDraft(poll.question || "");
+    setChoicesDraft(choiceDraftsFromPoll(poll));
+  }, [poll.id]);
+
+  const persistDraft = () => {
+    const { question, choices } = draftRef.current;
+    updatePoll((prev) => {
+      const nextChoices = withLiveVotes(choices, prev.choices);
+      const sameQuestion = prev.question === question;
+      const sameChoices =
+        prev.choices.length === nextChoices.length &&
+        prev.choices.every(
+          (choice, index) =>
+            choice.id === nextChoices[index]?.id &&
+            choice.text === nextChoices[index]?.text,
+        );
+      if (sameQuestion && sameChoices) return prev;
+      return { ...prev, question, choices: nextChoices };
+    });
+  };
 
   const runAction = async (body: Record<string, unknown>) => {
     setLoading(true);
@@ -68,10 +127,12 @@ export function PollHostPanel() {
   };
 
   const handleOpen = () => {
+    const { question, choices } = draftRef.current;
+    persistDraft();
     void runAction({
       action: "open",
       question,
-      choices: choices.map((choice) => ({
+      choices: withLiveVotes(choices, poll.choices).map((choice) => ({
         id: choice.id,
         text: choice.text,
       })),
@@ -79,25 +140,27 @@ export function PollHostPanel() {
   };
 
   const setQuestion = (value: string) => {
-    updatePoll((prev) => ({ ...prev, question: value }));
+    setQuestionDraft(value);
   };
 
   const setChoiceText = (index: number, text: string) => {
-    updatePoll((prev) => ({
-      ...prev,
-      choices: prev.choices.map((choice, i) =>
-        i === index ? { ...choice, text } : choice,
-      ),
-    }));
+    setChoicesDraft((prev) =>
+      prev.map((choice, i) => (i === index ? { ...choice, text } : choice)),
+    );
   };
 
   const removeChoice = (index: number) => {
+    const prevDrafts = draftRef.current.choices;
+    if (prevDrafts.length <= 2) return;
+    const removedId = prevDrafts[index]?.id;
+    const nextDrafts = prevDrafts.filter((_, i) => i !== index);
+    setChoicesDraft(nextDrafts);
+    draftRef.current = { ...draftRef.current, choices: nextDrafts };
     updatePoll((prev) => {
-      if (prev.choices.length <= 2) return prev;
-      const removedId = prev.choices[index]?.id;
-      const nextChoices = prev.choices.filter((_, i) => i !== index);
+      const nextChoices = withLiveVotes(nextDrafts, prev.choices);
       return {
         ...prev,
+        question: draftRef.current.question,
         choices: nextChoices,
         correctChoiceId:
           prev.correctChoiceId && prev.correctChoiceId === removedId
@@ -112,22 +175,19 @@ export function PollHostPanel() {
   };
 
   const addChoice = () => {
-    updatePoll((prev) => {
-      if (prev.choices.length >= 6) return prev;
-      return {
-        ...prev,
-        choices: [
-          ...prev.choices,
-          {
-            id: nextPollChoiceId(prev.choices),
-            text: "",
-            votes: 0,
-          },
-        ],
-      };
-    });
+    const prevDrafts = draftRef.current.choices;
+    if (prevDrafts.length >= 6) return;
+    const nextDrafts = [
+      ...prevDrafts,
+      { id: nextPollChoiceId(prevDrafts), text: "" },
+    ];
+    setChoicesDraft(nextDrafts);
+    draftRef.current = { ...draftRef.current, choices: nextDrafts };
+    persistDraft();
   };
 
+  const question = questionDraft;
+  const choices = withLiveVotes(choicesDraft, poll.choices);
   const totalVotes = poll.choices.reduce((s, c) => s + c.votes, 0);
   const statusLabel =
     poll.status === "open"
@@ -178,20 +238,23 @@ export function PollHostPanel() {
         choices.filter((choice) => choice.text.trim()).length >= 2
       }
       onSave={(groupId) => {
+        persistDraft();
         const texts = choices
           .map((choice) => choice.text.trim())
           .filter(Boolean)
           .slice(0, 6);
         if (!question.trim() || texts.length < 2) return;
-        const correctIndex = poll.choices.findIndex(
+        const correctIndex = choices.findIndex(
           (choice) => choice.id === poll.correctChoiceId,
         );
         updatePoll((prev) => ({
           ...prev,
+          question: draftRef.current.question,
+          choices: withLiveVotes(draftRef.current.choices, prev.choices),
           library: mergePollBank(prev.library ?? [], [
             {
               id: uid(),
-              question,
+              question: draftRef.current.question,
               choices: texts.map((text) => ({ text })),
               correctChoiceIndex:
                 correctIndex >= 0 && correctIndex < texts.length
@@ -210,6 +273,10 @@ export function PollHostPanel() {
           text: choice.text,
           votes: 0,
         }));
+        setQuestionDraft(entry.question);
+        setChoicesDraft(
+          nextChoices.map((choice) => ({ id: choice.id, text: choice.text })),
+        );
         updatePoll((prev) => ({
           ...prev,
           id: uid(),
@@ -381,6 +448,7 @@ export function PollHostPanel() {
                   <input
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
+                    onBlur={persistDraft}
                     placeholder="What should we ask?"
                     aria-label="Question"
                     className="min-w-0 flex-1 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-white"
@@ -399,6 +467,7 @@ export function PollHostPanel() {
                       <input
                         value={choice.text}
                         onChange={(e) => setChoiceText(i, e.target.value)}
+                        onBlur={persistDraft}
                         placeholder={`Choice ${i + 1}`}
                         className="min-w-0 flex-1 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-white"
                       />
@@ -610,7 +679,7 @@ export function PollHostPanel() {
                   {totalVotes} vote{totalVotes === 1 ? "" : "s"}
                 </p>
                 <ul className="mt-1.5 space-y-1.5 text-sm">
-                  {poll.choices.map((c) => {
+                  {choices.map((c) => {
                     const isCorrect = poll.correctChoiceId === c.id;
                     return (
                       <li

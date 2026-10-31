@@ -29,7 +29,7 @@ import { QueueMoveControls } from "@/components/ui/QueueMoveControls";
 import { usePriceItemLayoutAnimation } from "@/components/price-order/usePriceItemLayoutAnimation";
 import { SpectatorScreenNotice } from "@/components/operator/OperatorNotice";
 import { StatusSwitch } from "@/components/operator/StatusSwitch";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function PriceGuesserHostPanel() {
   const { state, setState, updatePriceGuesser, updatePriceCatalog } = useSuite();
@@ -44,8 +44,12 @@ export function PriceGuesserHostPanel() {
   const [confirmReset, setConfirmReset] = useState(false);
   const [bankOpenRequest, setBankOpenRequest] = useState(0);
   const [priceText, setPriceText] = useState(() => priceInputValue(game.price));
+  const priceFocusedRef = useRef(false);
 
   useEffect(() => {
+    // While typing, keep the raw draft (e.g. "84.9") — rewriting from the
+    // parsed number pads ".90" and fights the second decimal digit.
+    if (priceFocusedRef.current) return;
     setPriceText(priceInputValue(game.price));
   }, [game.imageUrl, game.price]);
 
@@ -372,12 +376,25 @@ export function PriceGuesserHostPanel() {
                     type="text"
                     inputMode="decimal"
                     value={priceText}
+                    onFocus={() => {
+                      priceFocusedRef.current = true;
+                    }}
                     onChange={(event) => {
                       const next = event.target.value;
                       setPriceText(next);
                       patch((prev) => ({
                         ...prev,
                         price: parsePriceInput(next),
+                        priceRevealed: false,
+                      }));
+                    }}
+                    onBlur={(event) => {
+                      priceFocusedRef.current = false;
+                      const parsed = parsePriceInput(event.target.value);
+                      setPriceText(priceInputValue(parsed));
+                      patch((prev) => ({
+                        ...prev,
+                        price: parsed,
                         priceRevealed: false,
                       }));
                     }}
