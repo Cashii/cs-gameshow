@@ -438,7 +438,7 @@ export function PriceOrderHostPanel() {
                     }))
                   }
                   placeholder="Name (optional)"
-                  className="h-8 rounded-lg border border-neutral-700 bg-neutral-950 px-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
+                  className="h-10 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
                 />
                 <input
                   type="text"
@@ -461,7 +461,7 @@ export function PriceOrderHostPanel() {
                     );
                   }}
                   placeholder="Price"
-                  className="h-8 rounded-lg border border-neutral-700 bg-neutral-950 px-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
+                  className="h-10 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-white placeholder:text-neutral-600 focus:border-sky-500 focus:outline-none"
                 />
                 <StatusSwitch
                   size="lg"

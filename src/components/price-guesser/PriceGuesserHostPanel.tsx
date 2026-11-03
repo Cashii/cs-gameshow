@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderOpen, RotateCcw, SkipForward, Trash2 } from "lucide-react";
+import { FolderOpen, ListPlus, SkipForward, Trash2 } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import {
   advancePriceGuesserFromQueue,
@@ -184,165 +184,151 @@ export function PriceGuesserHostPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-            Game actions
-          </span>
-          <button
-            type="button"
-            disabled={!hasItem && game.resultOverlay !== "correct"}
-            onClick={() => toggleResult("correct")}
-            className={`inline-flex h-10 items-center rounded-md border px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500 ${
-              game.resultOverlay === "correct"
-                ? "border-teal-500 bg-teal-600 hover:bg-teal-500"
-                : "border-green-500 bg-green-600 hover:bg-green-700"
-            }`}
-          >
-            {game.resultOverlay === "correct" ? "Hide result" : "Show Correct"}
-          </button>
-          <button
-            type="button"
-            disabled={!hasItem && game.resultOverlay !== "wrong"}
-            onClick={() => toggleResult("wrong")}
-            className={`inline-flex h-10 items-center rounded-md border px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500 ${
-              game.resultOverlay === "wrong"
-                ? "border-teal-500 bg-teal-600 hover:bg-teal-500"
-                : "border-red-500 bg-red-600 hover:bg-red-700"
-            }`}
-          >
-            {game.resultOverlay === "wrong" ? "Hide result" : "Show Not quite"}
-          </button>
-          <button
-            type="button"
-            disabled={queue.length === 0}
-            onClick={loadNextFromQueue}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-amber-500 bg-amber-600 px-4 text-sm font-semibold text-white hover:bg-amber-500 disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500"
-          >
-            <SkipForward size={16} />
-            Next item
-            {queue.length > 0 ? ` (${queue.length})` : ""}
-          </button>
-          <button
-            type="button"
-            onClick={() => setConfirmReset(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
-          >
-            <RotateCcw size={16} />
-            Clear item
-          </button>
-          <PriceItemLibrary
-              items={catalog}
-              groups={catalogGroups}
-              openRequest={bankOpenRequest}
-              showTrigger={false}
-              closeOnLoad
-              saveLabel="Save this item"
-              saveDisabled={
-                !game.imageUrl && !game.label.trim() && game.price == null
-              }
-              pickHint="Click an item to put it on the desk, or Queue to stage it for later. The curtain starts closed."
-              onSave={async (groupId) => {
-                const draft: PriceCatalogItem = {
-                  id: "draft",
-                  imageUrl: game.imageUrl,
-                  label: game.label,
-                  price: game.price,
-                  photoFit: game.photoFit,
-                  groupId,
-                };
-                const key = priceCatalogKey(draft);
-                if (catalog.some((item) => priceCatalogKey(item) === key)) {
-                  return;
-                }
-                const imageUrl = game.imageUrl
-                  ? await copyMediaUrl(game.imageUrl)
-                  : "";
-                const entry: PriceCatalogItem = { ...draft, id: uid(), imageUrl };
-                updatePriceCatalog((items) => mergePriceCatalog(items, [entry]));
-              }}
-              onLoad={async (id) => {
-                const entry = catalog.find((item) => item.id === id);
-                if (!entry) return;
-                const imageUrl = entry.imageUrl
-                  ? await copyMediaUrl(entry.imageUrl)
-                  : "";
-                updatePriceGuesser((prev) => {
-                  if (
-                    prev.imageUrl &&
-                    prev.imageUrl !== imageUrl &&
-                    !savedUrls().has(prev.imageUrl) &&
-                    !(prev.queue ?? []).some(
-                      (item) => item.imageUrl === prev.imageUrl,
-                    )
-                  ) {
-                    void deleteMediaByUrl(prev.imageUrl);
-                  }
-                  return {
-                    ...prev,
-                    imageUrl,
-                    label: entry.label,
-                    price: entry.price,
-                    photoFit: entry.photoFit,
-                    priceRevealed: false,
-                    itemRevealed: false,
-                    resultOverlay: null,
-                  };
-                });
-              }}
-              onQueue={(id) => void queueFromCatalog(id)}
-              onDelete={(id) => {
-                const entry = catalog.find((item) => item.id === id);
-                updatePriceCatalog((items) =>
-                  items.filter((item) => item.id !== id),
-                );
-                const url = entry?.imageUrl;
-                if (!url || priceImageStillUsed(url, catalog, id, liveImageUrls())) {
-                  return;
-                }
-                void deleteMediaByUrl(url);
-              }}
-              onGroupsApply={(next) =>
-                setState((prev) => ({
-                  ...prev,
-                  priceCatalog: next.items,
-                  priceCatalogGroups: next.groups,
-                }))
-              }
-            />
-        </div>
-      </div>
+      <PriceItemLibrary
+        items={catalog}
+        groups={catalogGroups}
+        openRequest={bankOpenRequest}
+        showTrigger={false}
+        closeOnLoad
+        saveLabel="Save this item"
+        saveDisabled={
+          !game.imageUrl && !game.label.trim() && game.price == null
+        }
+        pickHint="Click an item to put it on the desk, or Queue to stage it for later. The curtain starts closed."
+        onSave={async (groupId) => {
+          const draft: PriceCatalogItem = {
+            id: "draft",
+            imageUrl: game.imageUrl,
+            label: game.label,
+            price: game.price,
+            photoFit: game.photoFit,
+            groupId,
+          };
+          const key = priceCatalogKey(draft);
+          if (catalog.some((item) => priceCatalogKey(item) === key)) {
+            return;
+          }
+          const imageUrl = game.imageUrl
+            ? await copyMediaUrl(game.imageUrl)
+            : "";
+          const entry: PriceCatalogItem = { ...draft, id: uid(), imageUrl };
+          updatePriceCatalog((items) => mergePriceCatalog(items, [entry]));
+        }}
+        onLoad={async (id) => {
+          const entry = catalog.find((item) => item.id === id);
+          if (!entry) return;
+          const imageUrl = entry.imageUrl
+            ? await copyMediaUrl(entry.imageUrl)
+            : "";
+          updatePriceGuesser((prev) => {
+            if (
+              prev.imageUrl &&
+              prev.imageUrl !== imageUrl &&
+              !savedUrls().has(prev.imageUrl) &&
+              !(prev.queue ?? []).some(
+                (item) => item.imageUrl === prev.imageUrl,
+              )
+            ) {
+              void deleteMediaByUrl(prev.imageUrl);
+            }
+            return {
+              ...prev,
+              imageUrl,
+              label: entry.label,
+              price: entry.price,
+              photoFit: entry.photoFit,
+              priceRevealed: false,
+              itemRevealed: false,
+              resultOverlay: null,
+            };
+          });
+        }}
+        onQueue={(id) => void queueFromCatalog(id)}
+        onDelete={(id) => {
+          const entry = catalog.find((item) => item.id === id);
+          updatePriceCatalog((items) =>
+            items.filter((item) => item.id !== id),
+          );
+          const url = entry?.imageUrl;
+          if (!url || priceImageStillUsed(url, catalog, id, liveImageUrls())) {
+            return;
+          }
+          void deleteMediaByUrl(url);
+        }}
+        onGroupsApply={(next) =>
+          setState((prev) => ({
+            ...prev,
+            priceCatalog: next.items,
+            priceCatalogGroups: next.groups,
+          }))
+        }
+      />
 
       <div className="min-h-0 flex-1 overflow-auto">
-        <div className="flex w-full flex-col gap-6 px-6 py-6">
-          <div className="flex flex-wrap items-start gap-6">
-            <div className="flex w-80 max-w-full shrink-0 flex-col gap-3">
-              <SquarePhotoEditor
-                imageUrl={game.imageUrl}
-                fit={game.photoFit ?? DEFAULT_PHOTO_FIT}
-                onUploaded={(url) =>
-                  patch((prev) => ({
-                    ...prev,
-                    imageUrl: url,
-                    priceRevealed: false,
-                    itemRevealed: false,
-                    resultOverlay: null,
-                    photoFit: { ...DEFAULT_PHOTO_FIT },
-                  }))
-                }
-                onFitChange={(photoFit) =>
-                  patch((prev) => ({ ...prev, photoFit }))
-                }
-                onError={(message) => showToast(message, "error")}
-              />
+        <div className="flex w-full justify-center px-6 py-6">
+          <div className="flex max-w-full flex-nowrap items-start gap-6 overflow-x-auto">
+            <div className="flex w-72 shrink-0 flex-col gap-3">
+              <h3 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                Current Item
+              </h3>
               <button
                 type="button"
                 onClick={() => setBankOpenRequest((current) => current + 1)}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-sky-500 bg-sky-600 px-3 text-sm font-semibold text-white hover:bg-sky-500"
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-sky-500 bg-sky-600 px-3 text-sm font-semibold text-white hover:bg-sky-500"
               >
                 <FolderOpen size={16} />
                 Load saved item
               </button>
+              <div className="relative">
+                <SquarePhotoEditor
+                  imageUrl={game.imageUrl}
+                  fit={game.photoFit ?? DEFAULT_PHOTO_FIT}
+                  onUploaded={(url) =>
+                    patch((prev) => ({
+                      ...prev,
+                      imageUrl: url,
+                      priceRevealed: false,
+                      itemRevealed: false,
+                      resultOverlay: null,
+                      photoFit: { ...DEFAULT_PHOTO_FIT },
+                    }))
+                  }
+                  onFitChange={(photoFit) =>
+                    patch((prev) => ({ ...prev, photoFit }))
+                  }
+                  onError={(message) => showToast(message, "error")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setConfirmReset(true)}
+                  aria-label="Clear item"
+                  title="Clear item"
+                  className="absolute top-1.5 right-1.5 z-20 rounded-md bg-neutral-950/80 p-1.5 text-white hover:bg-neutral-950 hover:text-white"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  disabled={queue.length === 0}
+                  onClick={loadNextFromQueue}
+                  className="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-teal-500 bg-teal-600 px-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500"
+                >
+                  <SkipForward size={16} />
+                  Next item
+                  {queue.length > 0 ? ` (${queue.length})` : ""}
+                </button>
+                <button
+                  type="button"
+                  disabled={!canQueueCurrent}
+                  onClick={() => void queueCurrentDesk()}
+                  className="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-teal-500 bg-transparent px-2 text-sm font-semibold text-teal-300 hover:bg-teal-500/10 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ListPlus size={16} />
+                  Queue current
+                </button>
+              </div>
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="price-guesser-name"
@@ -429,74 +415,104 @@ export function PriceGuesserHostPanel() {
               />
             </div>
 
-            <section className="min-w-80 flex-1">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                  Upcoming items ({queue.length})
+            <section className="w-[36rem] max-w-2xl shrink-0">
+              <div className="mb-6">
+                <h3 className="mb-3 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                  Overlays
                 </h3>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setBankOpenRequest((current) => current + 1)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500 bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-500"
+                    disabled={!hasItem && game.resultOverlay !== "correct"}
+                    onClick={() => toggleResult("correct")}
+                    className={`inline-flex h-10 w-full items-center justify-center rounded-md border px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-transparent disabled:text-neutral-500 ${
+                      game.resultOverlay === "correct"
+                        ? "border-teal-500 bg-teal-600 text-white hover:bg-teal-500"
+                        : "border-green-500 bg-transparent text-green-300 hover:bg-green-500/10"
+                    }`}
                   >
-                    <FolderOpen size={14} />
-                    Load saved item
+                    {game.resultOverlay === "correct"
+                      ? "Hide result"
+                      : "Show Correct"}
                   </button>
                   <button
                     type="button"
-                    disabled={!canQueueCurrent}
-                    onClick={() => void queueCurrentDesk()}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500 bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={!hasItem && game.resultOverlay !== "wrong"}
+                    onClick={() => toggleResult("wrong")}
+                    className={`inline-flex h-10 w-full items-center justify-center rounded-md border px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-transparent disabled:text-neutral-500 ${
+                      game.resultOverlay === "wrong"
+                        ? "border-teal-500 bg-teal-600 text-white hover:bg-teal-500"
+                        : "border-red-500 bg-transparent text-red-300 hover:bg-red-500/10"
+                    }`}
                   >
-                    Queue current
+                    {game.resultOverlay === "wrong"
+                      ? "Hide result"
+                      : "Show Not quite"}
                   </button>
                 </div>
               </div>
-              {queue.length === 0 ? (
-                <p className="text-sm text-neutral-500">
-                  Stage items here from the bank, or queue the current desk item.
-                  {" "}
-                  <span className="font-semibold text-neutral-400">Next item</span>
-                  {" "}
-                  loads the first one onto the desk with the curtain closed.
-                </p>
-              ) : (
-                <div className="space-y-2">
+              <div className="mb-3">
+                <h3 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                  Upcoming items ({queue.length})
+                </h3>
+              </div>
+              <div className="space-y-2">
+                {queue.length > 0 ? (
                   <p className="text-sm text-neutral-500">
                     Edit name or price, or use the arrows to reorder. Top item
                     plays next.
                   </p>
-                  <ul ref={queueListRef} className="flex flex-col gap-2">
-                    {queue.map((item, index) => (
-                      <QueueRow
-                        key={item.id}
-                        item={item}
-                        index={index}
-                        canMoveUp={index > 0}
-                        canMoveDown={index < queue.length - 1}
-                        onMoveUp={() => moveQueueItem(index, -1)}
-                        onMoveDown={() => moveQueueItem(index, 1)}
-                        onUpdate={(patch) => {
-                          setQueue(
-                            queue.map((entry) =>
-                              entry.id === item.id
-                                ? { ...entry, ...patch }
-                                : entry,
-                            ),
-                          );
-                        }}
-                        onRemove={() => {
-                          setQueue(
-                            queue.filter((entry) => entry.id !== item.id),
-                            [item.imageUrl],
-                          );
-                        }}
-                      />
-                    ))}
-                  </ul>
-                </div>
-              )}
+                ) : (
+                  <p className="text-sm text-neutral-500">
+                    Stage items here from the bank, or queue the current desk
+                    item.{" "}
+                    <span className="font-semibold text-neutral-400">
+                      Next item
+                    </span>{" "}
+                    loads the first one onto the desk with the curtain closed.
+                  </p>
+                )}
+                <ul ref={queueListRef} className="flex flex-col gap-2">
+                  {queue.map((item, index) => (
+                    <QueueRow
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      canMoveUp={index > 0}
+                      canMoveDown={index < queue.length - 1}
+                      onMoveUp={() => moveQueueItem(index, -1)}
+                      onMoveDown={() => moveQueueItem(index, 1)}
+                      onUpdate={(patch) => {
+                        setQueue(
+                          queue.map((entry) =>
+                            entry.id === item.id
+                              ? { ...entry, ...patch }
+                              : entry,
+                          ),
+                        );
+                      }}
+                      onRemove={() => {
+                        setQueue(
+                          queue.filter((entry) => entry.id !== item.id),
+                          [item.imageUrl],
+                        );
+                      }}
+                    />
+                  ))}
+                  <li className="flex min-h-24 max-w-2xl items-center justify-center rounded-xl border border-dashed border-neutral-600 bg-neutral-950/60 px-4 py-4">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBankOpenRequest((current) => current + 1)
+                      }
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500 bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-500"
+                    >
+                      <FolderOpen size={14} />
+                      Load saved item
+                    </button>
+                  </li>
+                </ul>
+              </div>
             </section>
           </div>
         </div>
@@ -546,7 +562,7 @@ function QueueRow({
   return (
     <li
       data-price-move={item.id}
-      className="relative flex items-stretch gap-2 rounded-xl border border-neutral-700 bg-neutral-800/70 p-2"
+      className="relative grid max-w-2xl grid-cols-[auto_auto_auto_minmax(0,1fr)_auto] items-stretch gap-2 rounded-xl border border-neutral-700 bg-neutral-800/70 p-2"
     >
       <QueueMoveControls
         canMoveUp={canMoveUp}
@@ -555,26 +571,26 @@ function QueueRow({
         onMoveDown={onMoveDown}
         label="item"
       />
-      <span className="flex w-10 shrink-0 items-center justify-center text-lg font-bold text-neutral-400">
+      <span className="flex w-10 items-center justify-center self-center text-lg font-bold text-neutral-400">
         {index + 1}
       </span>
-      <span className="relative block h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-neutral-950">
+      <span className="relative aspect-square h-full w-auto justify-self-start overflow-hidden rounded-lg bg-neutral-950">
         {item.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={item.imageUrl}
             alt=""
             draggable={false}
-            className="h-full w-full"
+            className="absolute inset-0 h-full w-full"
             style={photoFitStyle(item.photoFit)}
           />
         ) : (
-          <span className="flex h-full items-center justify-center px-1 text-center text-xs text-neutral-500">
+          <span className="absolute inset-0 flex items-center justify-center px-1 text-center text-xs text-neutral-500">
             No photo
           </span>
         )}
       </span>
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 py-1">
+      <div className="flex min-w-0 flex-col justify-center gap-1.5 py-1">
         <input
           type="text"
           value={item.label}
@@ -612,7 +628,7 @@ function QueueRow({
       <button
         type="button"
         onClick={onRemove}
-        className="inline-flex h-14 w-14 shrink-0 self-center items-center justify-center rounded-xl border border-neutral-600 bg-neutral-900 text-neutral-300 hover:border-red-500 hover:text-red-300"
+        className="inline-flex h-14 w-14 self-center items-center justify-center rounded-xl border border-neutral-600 bg-neutral-900 text-neutral-300 hover:border-red-500 hover:text-red-300"
         aria-label={`Remove ${name} from queue`}
       >
         <Trash2 size={22} />

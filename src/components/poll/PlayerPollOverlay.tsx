@@ -32,22 +32,47 @@ export function PlayerPollOverlay({
   const canVote = poll.status === "open" && !voted && !checkingVote;
   const showCorrect =
     poll.correctAnswerRevealed && Boolean(poll.correctChoiceId);
-  const showPercentages = poll.showPercentages !== false && showResults;
+  const waitingForReveal = showResults && !showCorrect;
+  const showPercentages = poll.showPercentages !== false && showCorrect;
+  const selectedChoice = poll.choices.find(
+    (choice) => choice.id === selectedChoiceId,
+  );
+  const correctChoice = poll.choices.find(
+    (choice) => choice.id === poll.correctChoiceId,
+  );
+  const playerWon =
+    showCorrect &&
+    Boolean(selectedChoiceId) &&
+    selectedChoiceId === poll.correctChoiceId;
+
+  const statusLabel = poll.status === "open"
+    ? voted
+      ? "Vote recorded"
+      : "O69 Club Poll"
+    : showCorrect
+      ? playerWon
+        ? "You got it!"
+        : voted
+          ? "Not this time"
+          : "Correct answer"
+      : "Waiting for answer";
 
   return (
     <div className="flex h-full w-full flex-col overflow-auto bg-transparent px-4 py-8">
       <div className="mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col">
         <div className="flex flex-1 flex-col items-center justify-center text-center">
-          <p className="text-sm font-semibold tracking-[0.2em] text-teal-600 uppercase">
-            {poll.status === "open"
-              ? voted
-                ? "Vote recorded"
-                : "O69 Club Poll"
-              : showCorrect
-                ? "Correct answer"
-                : showPercentages
-                  ? "Poll results"
-                  : "Poll closed"}
+          <p
+            className={`text-sm font-semibold tracking-[0.2em] uppercase ${
+              showCorrect
+                ? playerWon
+                  ? "text-emerald-400"
+                  : voted
+                    ? "text-amber-400"
+                    : "text-teal-600"
+                : "text-teal-600"
+            }`}
+          >
+            {statusLabel}
           </p>
           <h1 className="mt-2 text-2xl font-bold text-white sm:text-3xl">
             {question}
@@ -83,59 +108,94 @@ export function PlayerPollOverlay({
                 </p>
               ) : null}
             </div>
+          ) : waitingForReveal ? (
+            <div className="mt-8 w-full space-y-4">
+              {selectedChoice ? (
+                <div
+                  className={`rounded-2xl border-2 px-4 py-4 text-lg font-semibold ${SELECTED_CHOICE_CLASS}`}
+                >
+                  {selectedChoice.text}
+                  {" ✓"}
+                </div>
+              ) : (
+                <p className="text-neutral-400">You didn&apos;t vote this round.</p>
+              )}
+              <p className="text-base font-semibold text-neutral-300">
+                Hang tight — waiting for the correct answer to be revealed.
+              </p>
+            </div>
           ) : (
-            <ul className="mt-8 w-full space-y-3">
-              {poll.choices.map((choice) => {
-                const isCorrect =
-                  showCorrect && choice.id === poll.correctChoiceId;
-                const selected = selectedChoiceId === choice.id;
-                return (
-                  <li key={choice.id}>
-                    <div
-                      className={`flex items-center justify-center gap-4 rounded-2xl border-2 px-4 py-3 ${
-                        selected
-                          ? SELECTED_CHOICE_CLASS
-                          : isCorrect
-                            ? "border-emerald-400/80 bg-emerald-500/20 font-semibold text-emerald-100"
-                            : "border-neutral-700 bg-neutral-900 text-white"
-                      }`}
-                    >
-                      <span>
-                        {choice.text}
-                        {isCorrect ? " ✓" : ""}
-                        {selected && !isCorrect ? " · your pick" : ""}
-                      </span>
-                      {showPercentages && (
-                        <span className="font-bold tabular-nums">
-                          {total > 0
-                            ? Math.round((choice.votes / total) * 100)
-                            : 0}
-                          %
+            <div className="mt-8 w-full space-y-4">
+              {showCorrect ? (
+                <p
+                  className={`text-lg font-bold ${
+                    playerWon
+                      ? "text-emerald-300"
+                      : voted
+                        ? "text-amber-300"
+                        : "text-neutral-300"
+                  }`}
+                >
+                  {playerWon
+                    ? "Your pick was correct."
+                    : voted
+                      ? `Correct answer: ${correctChoice?.text ?? "—"}`
+                      : `Correct answer: ${correctChoice?.text ?? "—"}`}
+                </p>
+              ) : null}
+              <ul className="w-full space-y-3">
+                {poll.choices.map((choice) => {
+                  const isCorrect =
+                    showCorrect && choice.id === poll.correctChoiceId;
+                  const selected = selectedChoiceId === choice.id;
+                  return (
+                    <li key={choice.id}>
+                      <div
+                        className={`flex items-center justify-center gap-4 rounded-2xl border-2 px-4 py-3 ${
+                          selected
+                            ? SELECTED_CHOICE_CLASS
+                            : isCorrect
+                              ? "border-emerald-400/80 bg-emerald-500/20 font-semibold text-emerald-100"
+                              : "border-neutral-700 bg-neutral-900 text-white"
+                        }`}
+                      >
+                        <span>
+                          {choice.text}
+                          {isCorrect ? " ✓" : ""}
+                          {selected && !isCorrect ? " · your pick" : ""}
                         </span>
-                      )}
-                    </div>
-                    {showPercentages && (
-                      <div className="mt-1 h-2 overflow-hidden rounded-full bg-neutral-800">
-                        <div
-                          className={`mx-auto h-full rounded-full transition-all duration-500 ${
-                            isCorrect || selected
-                              ? "bg-teal-400"
-                              : "bg-neutral-500"
-                          }`}
-                          style={{
-                            width: `${
-                              total > 0
-                                ? Math.round((choice.votes / total) * 100)
-                                : 0
-                            }%`,
-                          }}
-                        />
+                        {showPercentages && (
+                          <span className="font-bold tabular-nums">
+                            {total > 0
+                              ? Math.round((choice.votes / total) * 100)
+                              : 0}
+                            %
+                          </span>
+                        )}
                       </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+                      {showPercentages && (
+                        <div className="mt-1 h-2 overflow-hidden rounded-full bg-neutral-800">
+                          <div
+                            className={`mx-auto h-full rounded-full transition-all duration-500 ${
+                              isCorrect || selected
+                                ? "bg-teal-400"
+                                : "bg-neutral-500"
+                            }`}
+                            style={{
+                              width: `${
+                                total > 0
+                                  ? Math.round((choice.votes / total) * 100)
+                                  : 0
+                              }%`,
+                            }}
+                          />
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           )}
 
           {message && <p className="mt-4 text-sm text-red-400">{message}</p>}

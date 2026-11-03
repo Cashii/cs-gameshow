@@ -383,6 +383,41 @@ export function WheelHostPanel() {
     </button>
   );
 
+  const boardZoomControls = (
+    <div className="flex shrink-0 flex-col items-start gap-1.5">
+      <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+        Board Zoom:{" "}
+        <span className="tabular-nums text-neutral-300">
+          {Math.round(clampWheelZoom(wheel.zoom) * 100)}%
+        </span>
+      </span>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          aria-label="Zoom out"
+          disabled={clampWheelZoom(wheel.zoom) <= MIN_WHEEL_ZOOM}
+          onClick={() =>
+            applyBoardZoom(clampWheelZoom(wheel.zoom) - WHEEL_ZOOM_STEP)
+          }
+          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+        >
+          <Minus size={18} />
+        </button>
+        <button
+          type="button"
+          aria-label="Zoom in"
+          disabled={clampWheelZoom(wheel.zoom) >= MAX_WHEEL_ZOOM}
+          onClick={() =>
+            applyBoardZoom(clampWheelZoom(wheel.zoom) + WHEEL_ZOOM_STEP)
+          }
+          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+        >
+          <Plus size={18} />
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="min-h-0 flex-1 overflow-auto">
@@ -391,7 +426,7 @@ export function WheelHostPanel() {
             <section>
               {locked ? (
                 <>
-                  <div className="mb-4 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                  <div className="mb-4 flex flex-wrap items-start gap-x-6 gap-y-3">
                     <div className="min-w-0">
                       <p className="mb-1.5 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                         Topic on display
@@ -411,42 +446,7 @@ export function WheelHostPanel() {
                         {loadSavedPhraseButton}
                       </div>
                     </div>
-                    <div className="flex flex-col items-center">
-                      <p className="mb-1.5 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                        Board Zoom:{" "}
-                        <span className="tabular-nums">
-                          {Math.round(clampWheelZoom(wheel.zoom) * 100)}%
-                        </span>
-                      </p>
-                      <div className="flex flex-wrap items-center justify-center gap-3">
-                        <button
-                          type="button"
-                          aria-label="Zoom out"
-                          disabled={clampWheelZoom(wheel.zoom) <= MIN_WHEEL_ZOOM}
-                          onClick={() =>
-                            applyBoardZoom(
-                              clampWheelZoom(wheel.zoom) - WHEEL_ZOOM_STEP,
-                            )
-                          }
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
-                        >
-                          <Minus size={18} />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="Zoom in"
-                          disabled={clampWheelZoom(wheel.zoom) >= MAX_WHEEL_ZOOM}
-                          onClick={() =>
-                            applyBoardZoom(
-                              clampWheelZoom(wheel.zoom) + WHEEL_ZOOM_STEP,
-                            )
-                          }
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
-                        >
-                          <Plus size={18} />
-                        </button>
-                      </div>
-                    </div>
+                    {boardZoomControls}
                   </div>
                   <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                     Phrase on display
@@ -460,8 +460,8 @@ export function WheelHostPanel() {
                 </>
               ) : (
                 <>
-                  <div className="mb-3 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-                    <label className="min-w-0 flex-1">
+                  <div className="mb-3 flex flex-wrap items-end gap-x-4 gap-y-3">
+                    <label className="block w-md max-w-full min-w-0">
                       <span className="mb-1.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                         Topic on display
                       </span>
@@ -473,44 +473,10 @@ export function WheelHostPanel() {
                         className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500"
                       />
                     </label>
-                    <div className="flex flex-col items-center">
-                      <p className="mb-1.5 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                        Board Zoom:{" "}
-                        <span className="tabular-nums">
-                          {Math.round(clampWheelZoom(wheel.zoom) * 100)}%
-                        </span>
-                      </p>
-                      <div className="flex flex-wrap items-center justify-center gap-3">
-                        <button
-                          type="button"
-                          aria-label="Zoom out"
-                          disabled={clampWheelZoom(wheel.zoom) <= MIN_WHEEL_ZOOM}
-                          onClick={() =>
-                            applyBoardZoom(
-                              clampWheelZoom(wheel.zoom) - WHEEL_ZOOM_STEP,
-                            )
-                          }
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
-                        >
-                          <Minus size={18} />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="Zoom in"
-                          disabled={clampWheelZoom(wheel.zoom) >= MAX_WHEEL_ZOOM}
-                          onClick={() =>
-                            applyBoardZoom(
-                              clampWheelZoom(wheel.zoom) + WHEEL_ZOOM_STEP,
-                            )
-                          }
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
-                        >
-                          <Plus size={18} />
-                        </button>
-                      </div>
-                    </div>
+                    {loadSavedPhraseButton}
+                    {boardZoomControls}
                   </div>
-                  <label className="mb-4 block">
+                  <label className="mb-4 block w-xl max-w-full">
                     <span className="mb-1.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                       Phrase on display
                     </span>
@@ -525,8 +491,7 @@ export function WheelHostPanel() {
                       className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500"
                     />
                   </label>
-                  <div className="flex flex-wrap gap-2">
-                    {loadSavedPhraseButton}
+                  <div className="flex flex-wrap items-center gap-2">
                     {Boolean(wheel.phrase) && (
                       <button
                         type="button"
@@ -852,7 +817,7 @@ export function WheelHostPanel() {
                             }
                             placeholder="Topic"
                             aria-label={`Topic for phrase ${index + 1}`}
-                            className="min-w-28 flex-1 rounded-md border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white"
+                            className="w-36 max-w-full shrink-0 rounded-md border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white"
                           />
                           <input
                             value={phraseForm.phrase}
@@ -867,9 +832,9 @@ export function WheelHostPanel() {
                             placeholder="Phrase"
                             aria-label={`Phrase ${index + 1}`}
                             autoFocus
-                            className="min-w-40 flex-2 rounded-md border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white"
+                            className="w-72 max-w-full shrink-0 rounded-md border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white"
                           />
-                          <span className="rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm font-semibold tabular-nums text-neutral-300">
+                          <span className="shrink-0 rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm font-semibold tabular-nums text-neutral-300">
                             Zoom {Math.round(clampWheelZoom(item.zoom) * 100)}%
                           </span>
                           <button

@@ -321,12 +321,26 @@ export function SuiteProvider({
       }
       if (next.revision <= confirmedRevisionRef.current) {
         if ((role === "operator" || role === "player") && local) {
+          const remotePollLive =
+            next.poll.status === "open" ||
+            next.poll.status === "closed" ||
+            next.poll.status === "results";
+          const localPollLive =
+            local.poll.status === "open" ||
+            local.poll.status === "closed" ||
+            local.poll.status === "results";
           replaceSnapshot({
             ...local,
-            poll: mergePollLive(next.poll, local.poll),
+            // Prefer a live remote poll over a stale local idle draft.
+            poll:
+              remotePollLive && !localPollLive
+                ? next.poll
+                : mergePollLive(next.poll, local.poll),
             trivia: withTriviaTimer(next.trivia, local.trivia),
             derby: mergeDerbyVotes(local.derby, next.derby),
             takeIt: mergeTakeItPicks(local.takeIt, next.takeIt),
+            spectatorGame: next.spectatorGame ?? local.spectatorGame,
+            activeGame: next.activeGame ?? local.activeGame,
           });
           setConnected(true);
         }
@@ -361,7 +375,7 @@ export function SuiteProvider({
 
   useLocalSuiteSync(
     applyBroadcastSuite,
-    syncEnabled && role === "spectator",
+    syncEnabled && (role === "spectator" || role === "player"),
   );
 
   useEffect(() => {
@@ -399,6 +413,17 @@ export function SuiteProvider({
         });
         const data = (await res.json()) as { error?: string; revision?: number };
         if (!res.ok) throw new Error(data.error ?? "Update failed");
+        // If local state moved on during the PATCH (e.g. Open Voting wrote a
+        // new poll via /api/poll), this write may have clobbered it — persist
+        // the current snapshot again instead of treating stale JSON as truth.
+        const latest = snapshotRef.current;
+        const latestJson = latest
+          ? JSON.stringify(snapshotToSuite(latest))
+          : null;
+        if (latestJson != null && latestJson !== json) {
+          persistQueuedRef.current = true;
+          continue;
+        }
         lastPersistedJsonRef.current = json;
         if (typeof data.revision === "number") {
           confirmedRevisionRef.current = Math.max(
@@ -673,10 +698,21 @@ export function SuiteProvider({
   const applyServerSnapshot = useCallback(
     (next: EventSnapshot) => {
       const local = snapshotRef.current;
+      // Poll API actions (open/close/reset) mint a new poll id or status — take
+      // the server poll wholesale so a stale local idle draft cannot win.
+      const pollIdsDiffer =
+        Boolean(local?.poll?.id) &&
+        Boolean(next.poll?.id) &&
+        local!.poll.id !== next.poll.id;
+      const pollStatusDiffer =
+        Boolean(local) && local!.poll.status !== next.poll.status;
+      const pollLifecycleChanged = pollIdsDiffer || pollStatusDiffer;
       const merged: EventSnapshot = local
         ? {
             ...next,
-            poll: mergePollLive(next.poll, local.poll),
+            poll: pollLifecycleChanged
+              ? next.poll
+              : mergePollLive(next.poll, local.poll),
             trivia: withTriviaTimer(next.trivia, local.trivia),
             liveDrawer: withLiveDrawerTimer(
               pickLiveDrawer(local.liveDrawer, next.liveDrawer),
@@ -690,12 +726,28 @@ export function SuiteProvider({
       );
       rememberPersisted(snapshotToSuite(merged));
       replaceSnapshot(merged);
+      if (pollLifecycleChanged) {
+        // Drop queued keystroke persists that would rewrite an older idle poll
+        // over a freshly opened one, then re-save so Mongo matches.
+        if (persistTimerRef.current) {
+          clearTimeout(persistTimerRef.current);
+          persistTimerRef.current = null;
+        }
+        dirtyRef.current = false;
+        // rememberPersisted above would make persistLatest no-op — clear so we
+        // actually write the opened poll (and repair any in-flight idle PATCH).
+        lastPersistedJsonRef.current = null;
+        if (role === "operator") {
+          persistQueuedRef.current = true;
+          void persistLatest();
+        }
+      }
       if (role === "operator") {
         lastLocalBroadcastAtRef.current = Date.now();
         publishLocalSuite(snapshotToSuite(merged));
       }
     },
-    [rememberPersisted, replaceSnapshot, role],
+    [persistLatest, rememberPersisted, replaceSnapshot, role],
   );
 
   const refreshSnapshot = useCallback(async () => {

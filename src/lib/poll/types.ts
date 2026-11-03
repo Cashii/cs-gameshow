@@ -80,11 +80,32 @@ export type PollState = PollTimerState & {
  */
 export function mergePollLive(remote: PollState, local: PollState): PollState {
   const samePoll = Boolean(local.id) && local.id === remote.id;
+  const localTimer = {
+    timerEnabled: Boolean(local.timerEnabled),
+    timerDurationMs: local.timerDurationMs,
+    timerRemainingMs: local.timerRemainingMs,
+    timerRunning: Boolean(local.timerRunning),
+    timerEndsAt: local.timerEndsAt ?? null,
+  };
+
+  if (!samePoll) {
+    const localLive =
+      local.status === "open" ||
+      local.status === "closed" ||
+      local.status === "results";
+    // A stale suite PATCH can briefly push idle over a freshly opened poll;
+    // don't let that idle snapshot wipe the live one on spectator/player.
+    if (localLive && remote.status === "idle") {
+      return { ...local, ...localTimer };
+    }
+    return { ...remote, ...localTimer };
+  }
+
   const remoteVotes = new Map(
     remote.choices.map((choice) => [choice.id, choice.votes]),
   );
   const choices =
-    samePoll && local.choices.length > 0
+    local.choices.length > 0
       ? local.choices.map((choice) => ({
           ...choice,
           votes: remoteVotes.has(choice.id)
@@ -95,19 +116,19 @@ export function mergePollLive(remote: PollState, local: PollState): PollState {
 
   return {
     ...remote,
-    question: samePoll ? local.question : remote.question,
+    question: local.question,
     choices,
-    correctChoiceId: samePoll ? local.correctChoiceId : remote.correctChoiceId,
-    showPercentages: samePoll ? local.showPercentages : remote.showPercentages,
-    showJoinQr: samePoll ? local.showJoinQr : remote.showJoinQr,
-    scale: samePoll ? local.scale : remote.scale,
+    // Correct answer / reveal / percentages are API-driven — always take remote
+    // so Mark correct and Reveal update after refresh (local draft would otherwise
+    // keep a stale null correctChoiceId).
+    correctChoiceId: remote.correctChoiceId,
+    correctAnswerRevealed: remote.correctAnswerRevealed,
+    showPercentages: remote.showPercentages,
+    showJoinQr: local.showJoinQr,
+    scale: local.scale,
     groups: (local.groups?.length ? local.groups : remote.groups) ?? [],
     library: (local.library?.length ? local.library : remote.library) ?? [],
-    timerEnabled: Boolean(local.timerEnabled),
-    timerDurationMs: local.timerDurationMs,
-    timerRemainingMs: local.timerRemainingMs,
-    timerRunning: Boolean(local.timerRunning),
-    timerEndsAt: local.timerEndsAt ?? null,
+    ...localTimer,
   };
 }
 

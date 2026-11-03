@@ -171,7 +171,7 @@ export function SquarePhotoEditor({
             disabled={busy}
             onPointerDown={(event) => event.stopPropagation()}
             onClick={openPicker}
-            className="absolute right-1.5 bottom-1.5 z-10 rounded-md bg-neutral-950/80 px-1.5 py-0.5 text-[11px] font-semibold text-sky-300 hover:text-sky-200 disabled:opacity-40"
+            className="absolute right-2 bottom-2 z-10 min-h-11 rounded-lg bg-neutral-950/80 px-3 py-2 text-sm font-semibold text-white hover:text-white disabled:opacity-40"
           >
             Replace photo
           </button>

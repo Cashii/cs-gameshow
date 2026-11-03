@@ -1,11 +1,12 @@
 "use client";
 
-import { Lock, Play, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Lock, Play, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { PollQuestionBank } from "@/components/poll/PollQuestionBank";
 import { PollTimerPanel } from "@/components/poll/PollTimerPanel";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { JoinQrToggleButton } from "@/components/ui/JoinQrToggleButton";
+import { ResetButton } from "@/components/ui/ResetButton";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { uid } from "@/lib/utils";
 import {
@@ -14,6 +15,7 @@ import {
   type PollChoice,
   type PollState,
 } from "@/lib/poll/types";
+import type { EventSnapshot } from "@/lib/event/repository";
 import { useSuite } from "@/lib/suite-provider";
 
 const HISTORY_PAGE_SIZE = 10;
@@ -56,7 +58,7 @@ function formatVoteTime(iso: string): string {
 }
 
 export function PollHostPanel() {
-  const { state, refreshSnapshot, updatePoll } = useSuite();
+  const { state, refreshSnapshot, applyServerSnapshot, updatePoll } = useSuite();
   const { toastMessage, toastTone, showToast } = useToast();
   const poll = state.poll;
   const [questionDraft, setQuestionDraft] = useState(poll.question || "");
@@ -75,6 +77,7 @@ export function PollHostPanel() {
     null,
   );
   const [historyPage, setHistoryPage] = useState(0);
+  const [confirmReset, setConfirmReset] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
     pollId: string;
@@ -112,10 +115,14 @@ export function PollHostPanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as EventSnapshot & { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Action failed");
-      await refreshSnapshot();
-      setMessage("Done");
+      // Prefer the API snapshot so Open Voting isn't lost to a stale merge/fetch.
+      if (typeof data.revision === "number" && data.poll) {
+        applyServerSnapshot(data);
+      } else {
+        await refreshSnapshot();
+      }
       return true;
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Failed");
@@ -335,15 +342,12 @@ export function PollHostPanel() {
                 Open Voting
               </button>
             )}
-            <button
-              type="button"
+            <ResetButton
               disabled={loading}
-              onClick={() => runAction({ action: "clear" })}
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
+              onClick={() => setConfirmReset(true)}
             >
-              <RotateCcw size={16} />
-              Clear poll
-            </button>
+              Reset poll
+            </ResetButton>
             {poll.status === "idle" ? (
               <JoinQrToggleButton
                 disabled={loading}
@@ -360,13 +364,18 @@ export function PollHostPanel() {
               <button
                 type="button"
                 disabled={loading}
-                onClick={() =>
+                onClick={() => {
+                  const reveal = !poll.correctAnswerRevealed;
+                  updatePoll((prev) => ({
+                    ...prev,
+                    correctAnswerRevealed: reveal,
+                  }));
                   void runAction({
-                    action: poll.correctAnswerRevealed
-                      ? "hideCorrectAnswer"
-                      : "revealCorrectAnswer",
-                  })
-                }
+                    action: reveal
+                      ? "revealCorrectAnswer"
+                      : "hideCorrectAnswer",
+                  });
+                }}
                 className="inline-flex h-10 items-center rounded-md border border-amber-500 bg-amber-600 px-4 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-50"
               >
                 {poll.correctAnswerRevealed
@@ -482,8 +491,112 @@ export function PollHostPanel() {
               <p className="text-sm text-neutral-400">{message}</p>
             )}
 
-            <section>
-              <div className="flex items-baseline justify-between gap-3">
+            {poll.status !== "idle" && (
+              <div className="shrink-0">
+                <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                  Live tally
+                </span>
+                <p className="mt-1 text-sm text-neutral-400">
+                  Status:{" "}
+                  <span className="font-semibold text-white">{statusLabel}</span> —{" "}
+                  {totalVotes} vote{totalVotes === 1 ? "" : "s"}
+                </p>
+                {(poll.status === "closed" || poll.status === "results") &&
+                !poll.correctChoiceId ? (
+                  <p className="mt-2 rounded-lg border border-amber-500/50 bg-amber-950/40 px-3 py-2 text-sm font-semibold text-amber-200">
+                    Choose the correct answer — tap{" "}
+                    <span className="text-amber-100">Mark correct</span> on the
+                    winning choice below, then reveal it for players.
+                  </p>
+                ) : null}
+                <ul className="mt-2 space-y-2">
+                  {choices.map((c) => {
+                    const isCorrect = poll.correctChoiceId === c.id;
+                    return (
+                      <li
+                        key={c.id}
+                        className={`flex min-h-12 items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-base ${
+                          isCorrect
+                            ? "border-emerald-500/60 bg-emerald-950/50 text-emerald-100"
+                            : "border-neutral-700 bg-neutral-900/80 text-neutral-200"
+                        }`}
+                      >
+                        <span className="min-w-0 truncate font-medium">
+                          {c.text}
+                        </span>
+                        <div className="flex shrink-0 items-center gap-3">
+                          <strong className="w-10 text-right text-lg tabular-nums text-white">
+                            {c.votes}
+                          </strong>
+                          <button
+                            type="button"
+                            disabled={loading}
+                            onClick={() => {
+                              const choiceId = isCorrect ? null : c.id;
+                              updatePoll((prev) => ({
+                                ...prev,
+                                correctChoiceId: choiceId,
+                                correctAnswerRevealed: choiceId
+                                  ? prev.correctAnswerRevealed
+                                  : false,
+                              }));
+                              void runAction({
+                                action: "setCorrectChoice",
+                                choiceId,
+                              });
+                            }}
+                            className={`inline-flex h-10 min-w-32 shrink-0 items-center justify-center rounded-lg px-3 text-sm font-semibold whitespace-nowrap disabled:opacity-40 ${
+                              isCorrect
+                                ? "bg-emerald-600 text-white"
+                                : "border border-neutral-600 text-neutral-200 hover:bg-neutral-800"
+                            }`}
+                          >
+                            {isCorrect ? "Correct" : "Mark correct"}
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
+          </div>
+
+          <aside className="flex min-h-0 flex-col gap-4 lg:h-full lg:overflow-hidden">
+            <PollTimerPanel />
+            {poll.status !== "idle" ? (
+              <div className="flex shrink-0 flex-col">
+                <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                  Vote log
+                </span>
+                {voteLog.length === 0 ? (
+                  <p className="mt-1.5 text-sm text-neutral-500">No votes yet.</p>
+                ) : (
+                  <ul className="mt-1.5 max-h-48 space-y-1 overflow-y-auto text-sm lg:max-h-64">
+                    {voteLog.map((entry) => (
+                      <li
+                        key={entry.id}
+                        className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-2 text-neutral-400"
+                      >
+                        <span className="tabular-nums text-neutral-500">
+                          {formatVoteTime(entry.at)}
+                        </span>
+                        <span className="min-w-0 truncate">
+                          <span className="font-medium text-neutral-200">
+                            {entry.deviceCode || entry.voterLabel}
+                          </span>
+                          <span className="text-neutral-500"> · </span>
+                          <span>{entry.choiceText}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ) : null}
+            <section className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="flex shrink-0 items-baseline justify-between gap-3">
                 <h3 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                   Past polls ({history.length})
                 </h3>
@@ -503,7 +616,7 @@ export function PollHostPanel() {
                 </p>
               ) : (
                 <>
-                  <ul className="mt-3 space-y-2">
+                  <ul className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto lg:pr-1">
                     {visibleHistory.map((entry) => {
                       const open = expandedHistoryId === entry.id;
                       const entryVotes = entry.choices.reduce(
@@ -644,95 +757,21 @@ export function PollHostPanel() {
                 </>
               )}
             </section>
-          </div>
-
-          <aside className="flex min-h-0 flex-col gap-4 lg:h-full lg:overflow-hidden">
-            <PollTimerPanel />
-            {poll.status !== "idle" && (
-              <div className="shrink-0">
-                <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                  Live tally
-                </span>
-                <p className="mt-1 text-sm text-neutral-400">
-                  Status:{" "}
-                  <span className="font-semibold text-white">{statusLabel}</span> —{" "}
-                  {totalVotes} vote{totalVotes === 1 ? "" : "s"}
-                </p>
-                <ul className="mt-1.5 space-y-1.5 text-sm">
-                  {choices.map((c) => {
-                    const isCorrect = poll.correctChoiceId === c.id;
-                    return (
-                      <li
-                        key={c.id}
-                        className={`flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 ${
-                          isCorrect
-                            ? "bg-emerald-950/50 text-emerald-100"
-                            : "text-neutral-300"
-                        }`}
-                      >
-                        <span className="min-w-0 truncate">{c.text}</span>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <strong className="w-8 text-right tabular-nums text-white">
-                            {c.votes}
-                          </strong>
-                          <button
-                            type="button"
-                            disabled={loading}
-                            onClick={() =>
-                              void runAction({
-                                action: "setCorrectChoice",
-                                choiceId: isCorrect ? null : c.id,
-                              })
-                            }
-                            className={`inline-flex w-28 shrink-0 items-center justify-center rounded-md px-2 py-1 text-xs font-semibold whitespace-nowrap disabled:opacity-40 ${
-                              isCorrect
-                                ? "bg-emerald-600 text-white"
-                                : "border border-neutral-600 text-neutral-300 hover:bg-neutral-800"
-                            }`}
-                          >
-                            {isCorrect ? "Correct" : "Mark correct"}
-                          </button>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-
-            {poll.status !== "idle" && (
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                <span className="shrink-0 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                  Vote log
-                </span>
-                {voteLog.length === 0 ? (
-                  <p className="mt-1.5 text-sm text-neutral-500">No votes yet.</p>
-                ) : (
-                  <ul className="mt-1.5 max-h-64 min-h-0 flex-1 space-y-1 overflow-y-auto text-sm lg:max-h-none">
-                    {voteLog.map((entry) => (
-                      <li
-                        key={entry.id}
-                        className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-x-2 text-neutral-400"
-                      >
-                        <span className="tabular-nums text-neutral-500">
-                          {formatVoteTime(entry.at)}
-                        </span>
-                        <span className="min-w-0 truncate">
-                          <span className="font-medium text-neutral-200">
-                            {entry.deviceCode || entry.voterLabel}
-                          </span>
-                          <span className="text-neutral-500"> · </span>
-                          <span>{entry.choiceText}</span>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
           </aside>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmReset}
+        onOpenChange={setConfirmReset}
+        title="Reset poll?"
+        message="This clears the current question, answers, and votes. The poll is saved to Past polls if it had votes."
+        confirmLabel="Reset"
+        variant="danger"
+        onConfirm={() => {
+          void runAction({ action: "clear" });
+        }}
+      />
 
       <ConfirmDialog
         open={deleteConfirm.open}

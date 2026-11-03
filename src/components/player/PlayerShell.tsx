@@ -94,9 +94,14 @@ function PlayerContent() {
     trivia.status,
   ]);
 
+  // Follow the spectator screen; if Spectator is still Idle while the operator
+  // is on O69 with a live poll, show the poll so phones can vote.
   const pollLive =
-    spectatorGame === "poll" &&
-    (poll.status === "open" || poll.status === "results");
+    (spectatorGame === "poll" ||
+      (state.activeGame === "poll" && spectatorGame === "idle")) &&
+    (poll.status === "open" ||
+      poll.status === "closed" ||
+      poll.status === "results");
 
   useEffect(() => {
     if (!pollLive || !poll.id || !deviceId) {
@@ -106,7 +111,7 @@ function PlayerContent() {
     }
 
     let cancelled = false;
-    if (poll.status === "open") setCheckingVote(true);
+    setCheckingVote(true);
     fetch(
       `/api/poll/status?pollId=${encodeURIComponent(poll.id)}&deviceId=${encodeURIComponent(deviceId)}`,
       { cache: "no-store" },
