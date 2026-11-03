@@ -515,7 +515,7 @@ export function WheelHostPanel() {
             </section>
 
             <section className="mt-6 border-t border-neutral-700 pt-6">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="mb-4 flex flex-wrap items-center gap-3">
                 <h2 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                   Letter Controls
                 </h2>
