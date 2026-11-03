@@ -1,6 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
+import { createPortal } from "react-dom";
 import { Settings } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import { Select } from "@/components/ui/Select";
@@ -15,6 +22,9 @@ import {
 export function DerbyHeaderSettings() {
   const { state, updateDerby } = useSuite();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [panelStyle, setPanelStyle] = useState<CSSProperties>({});
   const game = state.derby ?? createDefaultDerbyState();
   const theme = getDerbyTheme(game);
 
@@ -22,18 +32,47 @@ export function DerbyHeaderSettings() {
     updateDerby((prev) => ({ ...prev, theme: next }));
   };
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current) return;
+
+    const updatePosition = () => {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setPanelStyle({
+        position: "fixed",
+        bottom: window.innerHeight - rect.top + 8,
+        right: Math.max(8, window.innerWidth - rect.right),
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
+
   return (
     <div className="relative">
-        <button
-          type="button"
-          aria-label="Derby Race settings"
-          title="Settings"
-          onClick={() => setOpen((value) => !value)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-700 bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
-        >
-          <Settings size={18} />
-        </button>
-        {open && (
+      <button
+        ref={buttonRef}
+        type="button"
+        aria-label="Derby Race settings"
+        title="Settings"
+        onClick={() => setOpen((value) => !value)}
+        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-700 bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
+      >
+        <Settings size={18} />
+      </button>
+      {mounted &&
+        open &&
+        createPortal(
           <>
             <button
               type="button"
@@ -41,7 +80,10 @@ export function DerbyHeaderSettings() {
               onClick={() => setOpen(false)}
               className="fixed inset-0 z-40 cursor-default border-0 bg-transparent"
             />
-            <div className="absolute top-[calc(100%+8px)] right-0 z-50 w-80 rounded-lg border border-neutral-700 bg-neutral-900 p-4 shadow-xl">
+            <div
+              className="z-50 w-80 rounded-lg border border-neutral-700 bg-neutral-900 p-4 shadow-xl"
+              style={panelStyle}
+            >
               <p className="mb-3 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                 Settings
               </p>
@@ -59,7 +101,8 @@ export function DerbyHeaderSettings() {
                 />
               </div>
             </div>
-          </>
+          </>,
+          document.body,
         )}
     </div>
   );

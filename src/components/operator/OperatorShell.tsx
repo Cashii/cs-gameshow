@@ -449,7 +449,7 @@ function OperatorContent({
           ))}
         </nav>
 
-        <div className="border-t border-neutral-800 p-2">
+        <div className="p-2">
           <Link
             href="/operator/updates"
             aria-label="Updates"
@@ -597,7 +597,7 @@ function OperatorContent({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-neutral-800 bg-neutral-900 px-6">
+        <header className="flex h-14 shrink-0 items-center gap-4 border-b border-neutral-800 bg-neutral-900 px-6">
           <div className="flex min-w-0 items-center gap-2.5 leading-tight">
             <HeaderIcon
               size={22}
@@ -612,16 +612,6 @@ function OperatorContent({
             <h1 className="truncate text-lg font-bold text-white">
               {ACTIVE_GAME_LABELS[state.activeGame]}
             </h1>
-          </div>
-          <div className="flex min-w-0 shrink items-center justify-end gap-3">
-            {state.activeGame !== "idle" &&
-            spectatorGame !== state.activeGame ? (
-              <p className="min-w-0 truncate rounded-md border border-amber-300 px-2.5 py-1 text-right text-sm font-semibold text-amber-300">
-                Spectator view is not on{" "}
-                {ACTIVE_GAME_LABELS[state.activeGame]}. Use the Spectator
-                screen list.
-              </p>
-            ) : null}
           </div>
         </header>
 
@@ -769,11 +759,11 @@ function OperatorContent({
           ))}
         </nav>
 
-        <div className="border-t border-neutral-800 p-2">
+        <div className="p-2">
           <button
             type="button"
             onClick={openSpectator}
-            className="inline-flex w-full flex-col items-center justify-center gap-1 rounded-md bg-teal-600 px-1.5 py-2 font-normal text-white hover:bg-teal-500"
+            className="inline-flex w-full flex-col items-center justify-center gap-1 rounded-md bg-transparent px-1.5 py-2 font-normal text-neutral-300 hover:bg-neutral-800 hover:text-white"
           >
             <Presentation size={18} strokeWidth={1.5} className="shrink-0" />
             <span className="w-full text-center text-[10px] leading-tight font-medium">

@@ -2,11 +2,21 @@
 
 import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Check, FolderOpen, Minus, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
+import {
+  Check,
+  Eye,
+  FolderOpen,
+  Minus,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { ResetButton } from "@/components/ui/ResetButton";
 import { Toast, useToast } from "@/components/ui/Toast";
+import { Tooltip } from "@/components/ui/Tooltip";
 import {
   bankHeaderNeutralClass,
   bankHeaderSaveClass,
@@ -361,151 +371,54 @@ export function WheelHostPanel() {
   const isLetterRevealed = (letter: string) =>
     isLetterGuessed(letter) || wheel.revealedAll;
 
+  const loadSavedPhraseButton = (
+    <button
+      type="button"
+      aria-haspopup="dialog"
+      onClick={() => setBankOpen(true)}
+      className="inline-flex h-10 items-center gap-1.5 rounded-md border border-sky-500 bg-sky-600 px-3 text-sm font-semibold text-white hover:bg-sky-500"
+    >
+      <FolderOpen size={14} />
+      Load saved phrase
+    </button>
+  );
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-              Game actions
-            </span>
-            {locked && (
-              <button
-                type="button"
-                onClick={handleStartChange}
-                className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
-              >
-                Edit Display
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() =>
-                updateWheel((prev) => ({ ...prev, revealedAll: true }))
-              }
-              disabled={!wheel.phrase || wheel.revealedAll}
-              className={`inline-flex h-10 items-center rounded-md px-4 text-sm font-semibold transition-colors ${
-                !wheel.phrase || wheel.revealedAll
-                  ? "cursor-not-allowed border border-neutral-600 bg-neutral-700 text-neutral-500"
-                  : "border border-green-500 bg-green-600 text-white hover:bg-green-700"
-              }`}
-            >
-              Reveal All
-            </button>
-            <button
-              type="button"
-              disabled={!boardHasProgress}
-              onClick={() =>
-                updateWheel((prev) => ({
-                  ...prev,
-                  revealedLetters: [],
-                  revealedAll: false,
-                  wrongCount: 0,
-                }))
-              }
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-amber-500 bg-amber-600 px-4 text-sm font-semibold text-white hover:bg-amber-500 disabled:cursor-not-allowed disabled:border-neutral-600 disabled:bg-neutral-700 disabled:text-neutral-500"
-            >
-              <RotateCcw size={16} />
-              Reset phrase
-            </button>
-            <ResetButton onClick={() => setResetConfirmOpen(true)}>
-              Reset Game
-            </ResetButton>
-            <button
-              type="button"
-              aria-haspopup="dialog"
-              onClick={() => setBankOpen(true)}
-              className="inline-flex h-10 items-center gap-1.5 rounded-md border border-sky-500 bg-sky-600 px-3 text-sm font-semibold text-white hover:bg-sky-500"
-            >
-              <FolderOpen size={14} />
-              Load saved phrase
-            </button>
-          </div>
-
-          <div className="ml-auto flex flex-wrap items-center gap-4">
-            <div className="inline-flex h-10 items-center gap-2">
-              <span className="text-sm font-semibold text-neutral-200">
-                Letter legend
-              </span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={wheel.showLetterLegend}
-                aria-label="Toggle letter legend"
-                onClick={() =>
-                  updateWheel((prev) => ({
-                    ...prev,
-                    showLetterLegend: !prev.showLetterLegend,
-                  }))
-                }
-                className={`relative h-6 w-11 rounded-full transition-colors ${
-                  wheel.showLetterLegend ? "bg-emerald-500" : "bg-neutral-500"
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                    wheel.showLetterLegend ? "translate-x-5" : "translate-x-0"
-                  }`}
-                />
-              </button>
-            </div>
-            <div className="inline-flex h-10 items-center gap-2">
-              <span className="text-sm font-semibold text-neutral-200">
-                Strikes
-              </span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={wheel.strikesEnabled !== false}
-                aria-label="Toggle strikes for wrong letters"
-                onClick={() =>
-                  updateWheel((prev) => ({
-                    ...prev,
-                    strikesEnabled: prev.strikesEnabled === false,
-                  }))
-                }
-                className={`relative h-6 w-11 rounded-full transition-colors ${
-                  wheel.strikesEnabled !== false
-                    ? "bg-emerald-500"
-                    : "bg-neutral-500"
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                    wheel.strikesEnabled !== false
-                      ? "translate-x-5"
-                      : "translate-x-0"
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="w-full px-6 py-6">
           <div>
             <section>
               {locked ? (
                 <>
-                  <div className="mb-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+                  <div className="mb-4 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
                     <div className="min-w-0">
                       <p className="mb-1.5 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                         Topic on display
                       </p>
-                      <p className="text-lg font-semibold text-white">
-                        {wheel.topic.trim() || "None"}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <p className="text-lg font-semibold text-white">
+                          {wheel.topic.trim() || "None"}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleStartChange}
+                          className="inline-flex h-10 items-center gap-1.5 rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
+                        >
+                          <Pencil size={14} />
+                          Edit display
+                        </button>
+                        {loadSavedPhraseButton}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                        Board zoom
-                      </span>
-                      <span className="min-w-12 text-right text-sm font-semibold tabular-nums text-neutral-300">
-                        {Math.round(clampWheelZoom(wheel.zoom) * 100)}%
-                      </span>
-                      <div className="inline-flex items-center gap-3">
+                    <div className="flex flex-col items-center">
+                      <p className="mb-1.5 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                        Board Zoom:{" "}
+                        <span className="tabular-nums">
+                          {Math.round(clampWheelZoom(wheel.zoom) * 100)}%
+                        </span>
+                      </p>
+                      <div className="flex flex-wrap items-center justify-center gap-3">
                         <button
                           type="button"
                           aria-label="Zoom out"
@@ -547,7 +460,7 @@ export function WheelHostPanel() {
                 </>
               ) : (
                 <>
-                  <div className="mb-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+                  <div className="mb-3 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
                     <label className="min-w-0 flex-1">
                       <span className="mb-1.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                         Topic on display
@@ -560,14 +473,14 @@ export function WheelHostPanel() {
                         className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500"
                       />
                     </label>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                        Board zoom
-                      </span>
-                      <span className="min-w-12 text-right text-sm font-semibold tabular-nums text-neutral-300">
-                        {Math.round(clampWheelZoom(wheel.zoom) * 100)}%
-                      </span>
-                      <div className="inline-flex items-center gap-3">
+                    <div className="flex flex-col items-center">
+                      <p className="mb-1.5 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                        Board Zoom:{" "}
+                        <span className="tabular-nums">
+                          {Math.round(clampWheelZoom(wheel.zoom) * 100)}%
+                        </span>
+                      </p>
+                      <div className="flex flex-wrap items-center justify-center gap-3">
                         <button
                           type="button"
                           aria-label="Zoom out"
@@ -613,6 +526,7 @@ export function WheelHostPanel() {
                     />
                   </label>
                   <div className="flex flex-wrap gap-2">
+                    {loadSavedPhraseButton}
                     {Boolean(wheel.phrase) && (
                       <button
                         type="button"
@@ -636,9 +550,40 @@ export function WheelHostPanel() {
             </section>
 
             <section className="mt-6 border-t border-neutral-700 pt-6">
-              <h2 className="mb-4 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-                Letter Controls
-              </h2>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                  Letter Controls
+                </h2>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={!boardHasProgress}
+                    onClick={() =>
+                      updateWheel((prev) => ({
+                        ...prev,
+                        revealedLetters: [],
+                        revealedAll: false,
+                        wrongCount: 0,
+                      }))
+                    }
+                    className="inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold text-amber-300 hover:bg-amber-500/10 disabled:cursor-not-allowed disabled:text-neutral-500"
+                  >
+                    <RotateCcw size={16} />
+                    Reset Letters
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateWheel((prev) => ({ ...prev, revealedAll: true }))
+                    }
+                    disabled={!wheel.phrase || wheel.revealedAll}
+                    className="inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold text-green-300 hover:bg-green-500/10 disabled:cursor-not-allowed disabled:text-neutral-500"
+                  >
+                    <Eye size={16} />
+                    Reveal All
+                  </button>
+                </div>
+              </div>
               <div className="flex flex-wrap justify-center gap-3">
                 {ALPHABET.map((letter) => {
                   const disabled = isLetterRevealed(letter) || !wheel.phrase;
@@ -657,6 +602,85 @@ export function WheelHostPanel() {
               </div>
             </section>
           </div>
+        </div>
+      </div>
+
+      <div className="shrink-0 border-t border-neutral-800 bg-neutral-900 px-6 py-3">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+          <div className="flex items-center justify-start">
+            <Tooltip content="Reset game?" delayDuration={0} size="md">
+              <button
+                type="button"
+                aria-label="Reset game?"
+                onClick={() => setResetConfirmOpen(true)}
+                className="inline-flex h-10 min-w-10 shrink-0 flex-col items-center justify-center gap-0.5 rounded-md px-2 text-white hover:text-neutral-200"
+              >
+                <RotateCcw size={18} />
+                <span className="text-[10px] font-semibold leading-none tracking-wide uppercase">
+                  Reset
+                </span>
+              </button>
+            </Tooltip>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <div className="inline-flex h-10 items-center gap-2">
+              <span className="text-sm font-semibold text-neutral-200">
+                Letter legend
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={wheel.showLetterLegend}
+                aria-label="Toggle letter legend"
+                onClick={() =>
+                  updateWheel((prev) => ({
+                    ...prev,
+                    showLetterLegend: !prev.showLetterLegend,
+                  }))
+                }
+                className={`relative h-6 w-11 rounded-full transition-colors ${
+                  wheel.showLetterLegend ? "bg-emerald-500" : "bg-neutral-500"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                    wheel.showLetterLegend ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+            <div className="inline-flex h-10 items-center gap-2">
+              <span className="text-sm font-semibold text-neutral-200">
+                Show strikes
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={wheel.strikesEnabled !== false}
+                aria-label="Toggle show strikes for wrong letters"
+                onClick={() =>
+                  updateWheel((prev) => ({
+                    ...prev,
+                    strikesEnabled: prev.strikesEnabled === false,
+                  }))
+                }
+                className={`relative h-6 w-11 rounded-full transition-colors ${
+                  wheel.strikesEnabled !== false
+                    ? "bg-emerald-500"
+                    : "bg-neutral-500"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                    wheel.strikesEnabled !== false
+                      ? "translate-x-5"
+                      : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+          <div />
         </div>
       </div>
 
@@ -730,9 +754,6 @@ export function WheelHostPanel() {
                   autoFocus
                   className="min-w-40 flex-2 rounded-lg border border-neutral-600 bg-neutral-800 px-3 py-2 text-sm text-white placeholder-neutral-500"
                 />
-                <span className="rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm font-semibold tabular-nums text-neutral-300">
-                  Zoom {Math.round(clampWheelZoom(wheel.zoom) * 100)}%
-                </span>
                 <button
                   type="button"
                   onClick={() => setPhraseForm(null)}

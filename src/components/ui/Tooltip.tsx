@@ -16,12 +16,15 @@ export function Tooltip({
   content,
   side = "top",
   delayDuration,
+  size = "sm",
 }: {
   children: ReactElement;
   content: string;
   side?: "top" | "right" | "bottom" | "left";
   delayDuration?: number;
+  size?: "sm" | "md";
 }) {
+  const large = size === "md";
   return (
     <TooltipPrimitive.Root delayDuration={delayDuration}>
       <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
@@ -33,13 +36,14 @@ export function Tooltip({
           style={{
             backgroundColor: "var(--color-neutral-900)",
             color: "var(--color-neutral-100)",
-            padding: "6px 12px",
+            padding: large ? "8px 14px" : "6px 12px",
             borderRadius: 6,
-            fontSize: 12,
+            border: "1px solid var(--color-neutral-600)",
+            fontSize: large ? 16 : 12,
             fontWeight: 500,
             boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
             zIndex: 99999,
-            maxWidth: "200px",
+            maxWidth: large ? "280px" : "200px",
             pointerEvents: "none",
           }}
         >

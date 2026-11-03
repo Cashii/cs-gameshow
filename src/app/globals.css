@@ -55,6 +55,30 @@ body {
   margin: 0;
 }
 
+button:not(:disabled):not([aria-disabled="true"]),
+[role="button"]:not(:disabled):not([aria-disabled="true"]),
+summary,
+a[href],
+label[for],
+input[type="button"]:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="reset"]:not(:disabled),
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled),
+input[type="file"]:not(:disabled),
+select:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled,
+button[aria-disabled="true"],
+[role="button"]:disabled,
+[role="button"][aria-disabled="true"],
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
+}
+
 .operator-ui {
   font-size: 16px;
 }
@@ -234,6 +258,21 @@ html.studio-ui *::-webkit-scrollbar-thumb:hover {
   }
 }
 
+@keyframes derby-start-appear {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.derby-start-appear {
+  animation: derby-start-appear 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 .spectator-blackout {
   position: fixed;
   inset: 0;
@@ -280,7 +319,8 @@ html.studio-ui *::-webkit-scrollbar-thumb:hover {
     animation-duration: 0.01ms;
   }
 
-  .live-drawer-token-arrive {
+  .live-drawer-token-arrive,
+  .derby-start-appear {
     animation: none;
   }
 }

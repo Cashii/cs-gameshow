@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   Trash2,
@@ -89,16 +89,6 @@ function StrikeMarks({
   );
 }
 
-const ghostIconButtonStyle: CSSProperties = {
-  marginRight: 0,
-  height: 36,
-  width: 36,
-  padding: 0,
-  border: "none",
-  background: "transparent",
-  color: "var(--color-neutral-400)",
-};
-
 export function FeudHostPanel() {
   const { state, updateFeud, currentFeudRound } = useSuite();
   const sounds = useSound();
@@ -106,6 +96,8 @@ export function FeudHostPanel() {
   const round = currentFeudRound;
   const [dragAnswerId, setDragAnswerId] = useState<string | null>(null);
   const [questionPickerOpen, setQuestionPickerOpen] = useState(false);
+  const [resetPickerOpen, setResetPickerOpen] = useState(false);
+  const [resetType, setResetType] = useState<"round" | "game" | null>(null);
   const [questionDialogOpen, setQuestionDialogOpen] = useState(false);
   const [questionDialogMode, setQuestionDialogMode] = useState<"add" | "edit">(
     "add",
@@ -329,47 +321,29 @@ export function FeudHostPanel() {
   };
 
   const resetRound = () => {
-    setConfirm({
-      open: true,
-      title: "Reset Round",
-      message:
-        "Are you sure you want to reset this round? This will hide all answers and clear strikes.",
-      variant: "danger",
-      onConfirm: () => {
-        setRound((r) => {
-          r.answers.forEach((a) => {
-            a.revealed = false;
-            a.awardedTo = undefined;
-          });
-          r.strikes = 0;
-        });
-      },
+    setRound((r) => {
+      r.answers.forEach((a) => {
+        a.revealed = false;
+        a.awardedTo = undefined;
+      });
+      r.strikes = 0;
     });
   };
 
   const resetGame = () => {
-    setConfirm({
-      open: true,
-      title: "Reset Game",
-      message:
-        "Are you sure you want to reset the entire game? This will hide all answers, clear all strikes, reset team scores, and return to round 1.",
-      variant: "danger",
-      onConfirm: () => {
-        updateFeud((prev) => {
-          const copy = structuredClone(prev);
-          copy.rounds.forEach((r) => {
-            r.answers.forEach((a) => {
-              a.revealed = false;
-              a.awardedTo = undefined;
-            });
-            r.strikes = 0;
-          });
-          copy.currentRoundIndex = 0;
-          copy.leftTeam = { ...copy.leftTeam, score: 0 };
-          copy.rightTeam = { ...copy.rightTeam, score: 0 };
-          return copy;
+    updateFeud((prev) => {
+      const copy = structuredClone(prev);
+      copy.rounds.forEach((r) => {
+        r.answers.forEach((a) => {
+          a.revealed = false;
+          a.awardedTo = undefined;
         });
-      },
+        r.strikes = 0;
+      });
+      copy.currentRoundIndex = 0;
+      copy.leftTeam = { ...copy.leftTeam, score: 0 };
+      copy.rightTeam = { ...copy.rightTeam, score: 0 };
+      return copy;
     });
   };
 
@@ -418,44 +392,6 @@ export function FeudHostPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-            Game actions
-          </span>
-          <ResetButton tone="orange" onClick={resetRound}>
-            Reset Round
-          </ResetButton>
-          <ResetButton onClick={resetGame}>Reset Game</ResetButton>
-          <div className="ml-auto inline-flex h-10 items-center gap-2">
-            <span className="text-sm font-semibold text-neutral-200">
-              Answer scores
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={feud.showAnswerScores}
-              aria-label="Toggle answer scores"
-              onClick={() =>
-                updateFeud((prev) => ({
-                  ...prev,
-                  showAnswerScores: !prev.showAnswerScores,
-                }))
-              }
-              className={`relative h-6 w-11 rounded-full transition-colors ${
-                feud.showAnswerScores ? "bg-emerald-500" : "bg-neutral-500"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                  feud.showAnswerScores ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div
         style={{
           display: "grid",
@@ -493,24 +429,31 @@ export function FeudHostPanel() {
               <div style={{ fontWeight: 600, fontSize: 16, color: "var(--color-white)" }}>
                 Teams
               </div>
-              <Tooltip
-                content={
-                  feud.showTeamScores
-                    ? "Hide teams on audience"
-                    : "Show teams on audience"
+              <button
+                type="button"
+                aria-label={
+                  feud.showTeamScores ? "Hide teams" : "Show teams"
                 }
+                aria-pressed={feud.showTeamScores}
+                onClick={() =>
+                  updateFeud((prev) => ({
+                    ...prev,
+                    showTeamScores: !prev.showTeamScores,
+                  }))
+                }
+                className={`inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-semibold ${
+                  feud.showTeamScores
+                    ? "border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
+                    : "border-sky-500 bg-transparent text-sky-300 hover:bg-sky-500/10"
+                }`}
               >
-                <IconButton
-                  label={feud.showTeamScores ? <Eye size={16} /> : <EyeOff size={16} />}
-                  onClick={() =>
-                    updateFeud((prev) => ({
-                      ...prev,
-                      showTeamScores: !prev.showTeamScores,
-                    }))
-                  }
-                  style={{ marginRight: 0 }}
-                />
-              </Tooltip>
+                {feud.showTeamScores ? (
+                  <Eye size={16} aria-hidden />
+                ) : (
+                  <EyeOff size={16} aria-hidden />
+                )}
+                {feud.showTeamScores ? "Hide teams" : "Show teams"}
+              </button>
             </div>
             <div
               style={{
@@ -543,23 +486,15 @@ export function FeudHostPanel() {
                         gap: 8,
                         padding: 12,
                         borderRadius: 12,
+                        border: `3px solid ${isRed ? RED_TEAM : BLUE_TEAM}`,
                         background: isRed
-                          ? "rgba(220, 38, 38, 0.14)"
-                          : "rgba(37, 99, 235, 0.14)",
-                        border: `2px solid ${isRed ? RED_TEAM : BLUE_TEAM}`,
+                          ? "linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, transparent 42%), linear-gradient(165deg, #f87171 0%, #dc2626 45%, #b91c1c 100%)"
+                          : "linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, transparent 42%), linear-gradient(165deg, #60a5fa 0%, #2563eb 45%, #1d4ed8 100%)",
+                        boxShadow: isRed
+                          ? "0 8px 18px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(185, 28, 28, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35)"
+                          : "0 8px 18px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(29, 78, 216, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35)",
                       }}
                     >
-                      <div
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 700,
-                          letterSpacing: "0.06em",
-                          textTransform: "uppercase",
-                          color: isRed ? RED_TEAM_INK : BLUE_TEAM_INK,
-                        }}
-                      >
-                        {label} team
-                      </div>
                       <div>
                         <label
                           style={{
@@ -569,7 +504,7 @@ export function FeudHostPanel() {
                             fontWeight: 600,
                             letterSpacing: "0.04em",
                             textTransform: "uppercase",
-                            color: "var(--color-neutral-400)",
+                            color: "rgba(255, 255, 255, 0.78)",
                           }}
                         >
                           Name
@@ -594,7 +529,7 @@ export function FeudHostPanel() {
                             fontWeight: 600,
                             letterSpacing: "0.04em",
                             textTransform: "uppercase",
-                            color: "var(--color-neutral-400)",
+                            color: "rgba(255, 255, 255, 0.78)",
                           }}
                         >
                           Score
@@ -722,13 +657,45 @@ export function FeudHostPanel() {
                 <div style={{ fontWeight: 600, fontSize: 16, color: "var(--color-white)" }}>
                   Answers
                 </div>
-                <Tooltip content="Add Answer">
-                  <IconButton
-                    label={<Plus size={16} />}
-                    onClick={addAnswer}
-                    style={{ marginRight: 0 }}
-                  />
-                </Tooltip>
+                <div className="inline-flex items-center gap-3">
+                  <div className="inline-flex h-10 items-center gap-2">
+                    <span className="text-sm font-semibold text-neutral-200">
+                      Show round score
+                    </span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={feud.showAnswerScores}
+                      aria-label="Toggle show round score"
+                      onClick={() =>
+                        updateFeud((prev) => ({
+                          ...prev,
+                          showAnswerScores: !prev.showAnswerScores,
+                        }))
+                      }
+                      className={`relative h-6 w-11 rounded-full transition-colors ${
+                        feud.showAnswerScores
+                          ? "bg-emerald-500"
+                          : "bg-neutral-500"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                          feud.showAnswerScores
+                            ? "translate-x-5"
+                            : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <Tooltip content="Add Answer">
+                    <IconButton
+                      label={<Plus size={16} />}
+                      onClick={addAnswer}
+                      style={{ marginRight: 0 }}
+                    />
+                  </Tooltip>
+                </div>
               </div>
               <div>
                 <div
@@ -908,7 +875,6 @@ export function FeudHostPanel() {
                     />
                     <NumberInput
                       value={a.points}
-                      disabled={!feud.showAnswerScores}
                       className="no-spin"
                       style={{
                         flexShrink: 0,
@@ -1009,7 +975,7 @@ export function FeudHostPanel() {
                 aria-label="Question"
                 aria-haspopup="dialog"
                 onClick={() => setQuestionPickerOpen(true)}
-                className="inline-flex h-11 w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-neutral-700 bg-neutral-800 py-0 pr-3 pl-3 text-left text-base font-normal text-white hover:bg-neutral-700"
+                className="inline-flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-md border border-neutral-700 bg-neutral-800 py-0 pr-3 pl-3 text-left text-base font-normal text-white hover:bg-neutral-700"
               >
                 <span className="min-w-0 flex-1 truncate">
                   {`${feud.currentRoundIndex + 1}. ${round.question?.trim() || "(untitled)"}`}
@@ -1017,23 +983,30 @@ export function FeudHostPanel() {
                 <ChevronDown size={16} className="shrink-0 text-neutral-400" aria-hidden />
               </button>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+            <div className="flex shrink-0 items-center gap-2">
               <Tooltip content="Add Round">
-                <IconButton
-                  className="hover:bg-neutral-800 hover:text-white"
-                  label={<Plus size={18} />}
+                <button
+                  type="button"
+                  aria-label="Add Round"
                   onClick={openAddRound}
-                  style={ghostIconButtonStyle}
-                />
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
+                >
+                  <Plus size={18} />
+                </button>
               </Tooltip>
               <Tooltip content="Edit Question">
-                <IconButton
-                  className="hover:bg-neutral-800 hover:text-white"
-                  label={<Pencil size={18} />}
+                <button
+                  type="button"
+                  aria-label="Edit Question"
                   onClick={openEditQuestion}
-                  style={ghostIconButtonStyle}
-                />
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-white"
+                >
+                  <Pencil size={18} />
+                </button>
               </Tooltip>
+              <ResetButton onClick={() => setResetPickerOpen(true)}>
+                Reset
+              </ResetButton>
               <Tooltip
                 delayDuration={0}
                 content={
@@ -1054,16 +1027,16 @@ export function FeudHostPanel() {
                       showHeader: !prev.showHeader,
                     }))
                   }
-                  className={`inline-flex h-11 items-center gap-2 rounded-lg border px-4 text-sm font-semibold ${
+                  className={`inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold ${
                     feud.showHeader
                       ? "border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
                       : "border-sky-500 bg-transparent text-sky-300 hover:bg-sky-500/10"
                   }`}
                 >
                   {feud.showHeader ? (
-                    <Eye size={20} aria-hidden />
+                    <Eye size={16} aria-hidden />
                   ) : (
-                    <EyeOff size={20} aria-hidden />
+                    <EyeOff size={16} aria-hidden />
                   )}
                   {feud.showHeader ? "Hide question" : "Show question"}
                 </button>
@@ -1406,6 +1379,97 @@ export function FeudHostPanel() {
                   {questionDialogMode === "add" ? "Create Round" : "Save"}
                 </button>
               </div>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      <Dialog.Root
+        open={resetPickerOpen}
+        onOpenChange={(open) => {
+          setResetPickerOpen(open);
+          if (!open) setResetType(null);
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[1100] bg-black/70" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 z-[1101] min-w-[400px] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-neutral-700 bg-neutral-900 p-6 shadow-2xl">
+            <div className="mb-4 flex items-start justify-between">
+              <Dialog.Title className="m-0 text-lg font-semibold text-neutral-200">
+                Reset
+              </Dialog.Title>
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  className="rounded p-1 text-neutral-400 hover:bg-neutral-800"
+                >
+                  <X size={18} />
+                </button>
+              </Dialog.Close>
+            </div>
+            <Dialog.Description className="mb-4 text-sm leading-relaxed text-neutral-400">
+              Choose what to reset.
+            </Dialog.Description>
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                aria-pressed={resetType === "round"}
+                onClick={() => setResetType("round")}
+                className={`rounded-xl border px-4 py-3 text-left transition-colors ${
+                  resetType === "round"
+                    ? "border-orange-400 bg-orange-500/25 ring-2 ring-orange-400/40"
+                    : "border-orange-500/50 bg-orange-500/10 hover:bg-orange-500/20"
+                }`}
+              >
+                <span className="block text-base font-semibold text-orange-200">
+                  Round
+                </span>
+                <span className="mt-1 block text-sm leading-relaxed text-neutral-400">
+                  Hide all answers and clear strikes for this round only. Team
+                  scores stay the same.
+                </span>
+              </button>
+              <button
+                type="button"
+                aria-pressed={resetType === "game"}
+                onClick={() => setResetType("game")}
+                className={`rounded-xl border px-4 py-3 text-left transition-colors ${
+                  resetType === "game"
+                    ? "border-red-400 bg-red-500/25 ring-2 ring-red-400/40"
+                    : "border-red-500/50 bg-red-500/10 hover:bg-red-500/20"
+                }`}
+              >
+                <span className="block text-base font-semibold text-red-200">
+                  Game
+                </span>
+                <span className="mt-1 block text-sm leading-relaxed text-neutral-400">
+                  Hide all answers, clear all strikes, reset team scores, and
+                  return to round 1.
+                </span>
+              </button>
+            </div>
+            <div className="mt-5 flex justify-end gap-3">
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  className="rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm font-medium text-neutral-200"
+                >
+                  Cancel
+                </button>
+              </Dialog.Close>
+              <button
+                type="button"
+                disabled={resetType == null}
+                onClick={() => {
+                  if (resetType === "round") resetRound();
+                  else if (resetType === "game") resetGame();
+                  setResetPickerOpen(false);
+                  setResetType(null);
+                }}
+                className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-neutral-700 disabled:text-neutral-500"
+              >
+                Reset
+              </button>
             </div>
           </Dialog.Content>
         </Dialog.Portal>

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { PollQuestionBank } from "@/components/poll/PollQuestionBank";
 import { PollTimerPanel } from "@/components/poll/PollTimerPanel";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { JoinQrToggleButton } from "@/components/ui/JoinQrToggleButton";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { uid } from "@/lib/utils";
 import {
@@ -344,23 +345,16 @@ export function PollHostPanel() {
               Clear poll
             </button>
             {poll.status === "idle" ? (
-              <button
-                type="button"
+              <JoinQrToggleButton
                 disabled={loading}
+                active={Boolean(poll.showJoinQr)}
                 onClick={() =>
                   updatePoll((prev) => ({
                     ...prev,
                     showJoinQr: !prev.showJoinQr,
                   }))
                 }
-                className={`inline-flex h-10 items-center rounded-md border px-4 text-sm font-semibold disabled:opacity-50 ${
-                  poll.showJoinQr
-                    ? "border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
-                    : "border-sky-500 bg-transparent text-sky-300 hover:bg-sky-500/10"
-                }`}
-              >
-                {poll.showJoinQr ? "Hide QR code" : "Show QR code"}
-              </button>
+              />
             ) : null}
             {poll.status !== "idle" && poll.correctChoiceId ? (
               <button

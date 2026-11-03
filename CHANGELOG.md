@@ -1,5 +1,20 @@
 # Updates
 
+## November 3, 2026
+
+1. **Friendly Feud** — **Show round score** sits left of Add Answer (was Answer scores on Game actions). Teams visibility is a **Show teams** / **Hide teams** button with an icon. One **Reset** button opens a choice of Round or Game (with what each clears). Answer point fields stay editable even when round scores are hidden on the audience. Red and blue team score tiles on the audience screen are polished and fill the side columns; Teams settings cards use the same colors. Answer tile text is larger on the spectator screen. Border light bulbs pulse softly.
+1. **Word Up** — Bottom bar: **Reset** on the left (like Derby), Letter legend and **Show strikes** centered. **Load saved phrase** sits next to **Edit display**. **Reset Letters** and **Reveal All** (text buttons with icons) sit with Letter Controls. Board zoom label lines up above the zoom controls with Topic on display. Adding a phrase only asks for topic and phrase (no zoom field).
+1. **Operator desk** — **Open Spectator** is a secondary control (not the teal primary style).
+1. **Operator desk** — Buttons and other clickable controls show a pointer cursor (disabled ones show not-allowed).
+1. **Operator desk** — The amber Spectator warning tag no longer appears on the right side of the header.
+1. **Derby Race** — Bottom bar: white **Reset** (icon + label) left of Show/Hide QR, race length and **Racer Size** centered, Settings on the right. Status says **Select a winner**; racer cards show a pointer cursor when you can choose. **Start race** includes the race length in parentheses. Reset shows a larger instant “Reset race?” tip and confirms before clearing.
+1. **Operator desk** — The left game list and spectator rail no longer show a line above their bottom buttons.
+
+## November 2, 2026
+
+1. **Derby Race** — Status is large and centered above the racers and uses more width before wrapping. After you pick a winner, a large **Start race** button appears under Status. During the race, a large countdown sits in the center. When it finishes, **Race again** appears under Status (no yellow banner). Controls live in a bottom bar: race length and Zoom centered, then **Reset Race**. **Total phone votes** sits under the racer cards. **Reset Race** stays disabled until there is a winner, votes, or a race in progress.
+1. **Show / Hide QR** — Every join QR button uses the same look: QR icon, outline when off, solid when on (Derby, O69, Elimination Trivia, Message Board).
+
 ## October 31, 2026
 
 1. **Operator dashboard** — Each page shows its icon in the header. If Spectator is on another game, a light amber tag sits on the right of the header.

@@ -26,7 +26,8 @@ import { ResetButton } from "@/components/ui/ResetButton";
 import { TriviaTimerPanel } from "@/components/trivia/TriviaTimerPanel";
 import { OperatorNotice } from "@/components/operator/OperatorNotice";
 import { uid } from "@/lib/utils";
-import { FolderOpen, Play, Plus, QrCode, Trash2 } from "lucide-react";
+import { FolderOpen, Play, Plus, Trash2 } from "lucide-react";
+import { JoinQrToggleButton } from "@/components/ui/JoinQrToggleButton";
 import { QueueMoveControls } from "@/components/ui/QueueMoveControls";
 import { usePriceItemLayoutAnimation } from "@/components/price-order/usePriceItemLayoutAnimation";
 
@@ -415,24 +416,16 @@ export function TriviaHostPanel() {
             </button>
           )}
           {trivia.status === "idle" ? (
-            <button
-              type="button"
+            <JoinQrToggleButton
               disabled={loading}
+              active={Boolean(trivia.showJoinQr)}
               onClick={() =>
                 updateTrivia((prev) => ({
                   ...prev,
                   showJoinQr: !prev.showJoinQr,
                 }))
               }
-              className={`inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold disabled:opacity-50 ${
-                trivia.showJoinQr
-                  ? "border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
-                  : "border-sky-500 bg-transparent text-sky-300 hover:bg-sky-500/10"
-              }`}
-            >
-              <QrCode size={16} />
-              {trivia.showJoinQr ? "Hide QR code" : "Show QR code"}
-            </button>
+            />
           ) : null}
           <ResetButton
             disabled={loading}

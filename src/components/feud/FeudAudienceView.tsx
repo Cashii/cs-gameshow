@@ -63,11 +63,13 @@ function TeamScore({
   const { display, bump } = useAnimatedScore(team.score);
   return (
     <div className={`team-score team-score-${side}`}>
-      <div className="team-score-name">
-        {team.name || (side === "left" ? "Left" : "Right")}
-      </div>
-      <div className={`team-score-value${bump ? " score-bump" : ""}`}>
-        {display}
+      <div className="team-score-card">
+        <div className="team-score-name">
+          {team.name || (side === "left" ? "Left" : "Right")}
+        </div>
+        <div className={`team-score-value${bump ? " score-bump" : ""}`}>
+          {display}
+        </div>
       </div>
     </div>
   );

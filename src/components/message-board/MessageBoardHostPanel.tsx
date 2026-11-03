@@ -18,6 +18,7 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { JoinQrToggleButton } from "@/components/ui/JoinQrToggleButton";
 import { useSuite } from "@/lib/suite-provider";
 import { uid } from "@/lib/utils";
 import {
@@ -536,24 +537,18 @@ export function MessageBoardHostPanel() {
               >
                 Clear
               </button>
-              <button
-                type="button"
+              <JoinQrToggleButton
+                active={Boolean(state.messageBoard?.showJoinQr)}
+                showLabel="Show player QR"
+                hideLabel="Hide player QR"
                 onClick={() =>
                   updateMessageBoard((prev) => ({
                     ...prev,
                     showJoinQr: !prev.showJoinQr,
                   }))
                 }
-                className={`inline-flex h-11 w-full items-center justify-center rounded-md border px-3 text-base font-semibold whitespace-nowrap ${
-                  state.messageBoard?.showJoinQr
-                    ? "border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
-                    : "border-sky-500 bg-transparent text-sky-300 hover:bg-sky-500/10"
-                }`}
-              >
-                {state.messageBoard?.showJoinQr
-                  ? "Hide player QR"
-                  : "Show player QR"}
-              </button>
+                className="h-11 w-full justify-center px-3 text-base whitespace-nowrap"
+              />
             </div>
           </div>
         </div>
