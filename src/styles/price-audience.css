@@ -1337,10 +1337,18 @@
 }
 
 .price-stage-show .price-guesser-body .price-curtain-stage {
-  width: min(60vw, 50vh);
+  /* Size to the name, up to the open width beside the photo, so a long
+     title wraps later and the photo and price tag stay on screen. */
+  align-items: stretch;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .price-stage-show .price-guesser-body .price-photo-frame {
+  width: min(60vw, 50vh);
+  max-width: 100%;
+  align-self: center;
   border-width: 6px;
   box-shadow:
     0 16px 44px rgba(0, 0, 0, 0.45),
@@ -1358,6 +1366,8 @@
 }
 
 .price-stage-show .price-guesser-body .price-item-label {
+  min-width: 0;
+  max-width: 100%;
   font-size: clamp(1.6rem, 3.6vw, 3.1rem);
 }
 
