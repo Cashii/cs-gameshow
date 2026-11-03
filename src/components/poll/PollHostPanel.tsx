@@ -15,7 +15,7 @@ import {
   type PollChoice,
   type PollState,
 } from "@/lib/poll/types";
-import type { EventSnapshot } from "@/lib/event/repository";
+import type { EventSnapshot } from "@/lib/suite-state";
 import { useSuite } from "@/lib/suite-provider";
 
 const HISTORY_PAGE_SIZE = 10;
