@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Pause, Play } from "lucide-react";
-import { StatusSwitch } from "@/components/operator/StatusSwitch";
+import { CountdownVisibilityButton } from "@/components/ui/CountdownVisibilityButton";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { useSuite } from "@/lib/suite-provider";
 import {
@@ -84,12 +84,9 @@ export function PollTimerPanel() {
           {formatPollClock(remainingMs)}
         </span>
         <div className="ml-auto">
-          <StatusSwitch
-            checked={poll.timerEnabled}
-            labelOn="Show"
-            labelOff="Hide"
-            ariaLabel="Show countdown on the big screen"
-            onToggle={() =>
+          <CountdownVisibilityButton
+            visible={poll.timerEnabled}
+            onClick={() =>
               updatePoll((prev) =>
                 setPollTimerEnabled(prev, !prev.timerEnabled),
               )

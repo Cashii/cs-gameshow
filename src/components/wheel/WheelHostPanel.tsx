@@ -16,6 +16,7 @@ import {
 import { useSuite } from "@/lib/suite-provider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast, useToast } from "@/components/ui/Toast";
+import { StackedIconButton } from "@/components/ui/StackedIconButton";
 import { Tooltip } from "@/components/ui/Tooltip";
 import {
   bankHeaderNeutralClass,
@@ -162,6 +163,36 @@ function PhraseRevealRow({
         ))}
       </div>
     </>
+  );
+}
+
+function DisplayCheckbox({
+  checked,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  label: string;
+  onChange: () => void;
+}) {
+  return (
+    <label className="inline-flex h-10 cursor-pointer items-center gap-2 text-sm font-semibold text-neutral-200">
+      <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={onChange}
+          className="absolute inset-0 m-0 h-4 w-4 cursor-pointer appearance-none rounded border border-neutral-500 bg-transparent checked:border-sky-500 checked:bg-sky-600 focus-visible:ring-2 focus-visible:ring-sky-500"
+        />
+        <Check
+          size={12}
+          strokeWidth={3}
+          aria-hidden
+          className={`pointer-events-none relative z-10 ${checked ? "text-white" : "text-transparent"}`}
+        />
+      </span>
+      {label}
+    </label>
   );
 }
 
@@ -372,26 +403,34 @@ export function WheelHostPanel() {
     isLetterGuessed(letter) || wheel.revealedAll;
 
   const loadSavedPhraseButton = (
-    <button
-      type="button"
-      aria-haspopup="dialog"
-      onClick={() => setBankOpen(true)}
-      className="inline-flex h-10 items-center gap-1.5 rounded-md border border-sky-500 bg-sky-600 px-3 text-sm font-semibold text-white hover:bg-sky-500"
-    >
-      <FolderOpen size={14} />
-      Load saved phrase
-    </button>
+    <Tooltip content="Load saved phrase" delayDuration={0} size="md">
+      <StackedIconButton
+        aria-label="Load saved phrase"
+        aria-haspopup="dialog"
+        onClick={() => setBankOpen(true)}
+        icon={<FolderOpen size={18} />}
+        label="Load"
+      />
+    </Tooltip>
+  );
+
+  const resetButton = (
+    <Tooltip content="Reset game?" delayDuration={0} size="md">
+      <StackedIconButton
+        aria-label="Reset game?"
+        onClick={() => setResetConfirmOpen(true)}
+        icon={<RotateCcw size={18} />}
+        label="Reset"
+      />
+    </Tooltip>
   );
 
   const boardZoomControls = (
     <div className="flex shrink-0 flex-col items-start gap-1.5">
       <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-        Board Zoom:{" "}
-        <span className="tabular-nums text-neutral-300">
-          {Math.round(clampWheelZoom(wheel.zoom) * 100)}%
-        </span>
+        Board Zoom
       </span>
-      <div className="flex items-center gap-2">
+      <div className="flex h-16 items-center gap-3">
         <button
           type="button"
           aria-label="Zoom out"
@@ -399,10 +438,13 @@ export function WheelHostPanel() {
           onClick={() =>
             applyBoardZoom(clampWheelZoom(wheel.zoom) - WHEEL_ZOOM_STEP)
           }
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-neutral-600 bg-neutral-800 text-white hover:bg-neutral-700 disabled:cursor-not-allowed disabled:border-neutral-700 disabled:bg-neutral-800 disabled:text-neutral-500"
         >
           <Minus size={18} />
         </button>
+        <span className="min-w-12 text-center text-sm font-semibold tabular-nums text-neutral-300">
+          {Math.round(clampWheelZoom(wheel.zoom) * 100)}%
+        </span>
         <button
           type="button"
           aria-label="Zoom in"
@@ -410,10 +452,43 @@ export function WheelHostPanel() {
           onClick={() =>
             applyBoardZoom(clampWheelZoom(wheel.zoom) + WHEEL_ZOOM_STEP)
           }
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-neutral-600 bg-neutral-800 text-white hover:bg-neutral-700 disabled:cursor-not-allowed disabled:border-neutral-700 disabled:bg-neutral-800 disabled:text-neutral-500"
         >
           <Plus size={18} />
         </button>
+      </div>
+    </div>
+  );
+
+  const boardDisplayActions = (
+    <div className="ml-auto flex shrink-0 flex-col items-start gap-1.5">
+      <span
+        className="text-xs font-semibold tracking-wide uppercase invisible"
+        aria-hidden
+      >
+        Board Zoom
+      </span>
+      <div className="flex h-16 items-center gap-4">
+        <DisplayCheckbox
+          checked={wheel.showLetterLegend}
+          label="Letter legend"
+          onChange={() =>
+            updateWheel((prev) => ({
+              ...prev,
+              showLetterLegend: !prev.showLetterLegend,
+            }))
+          }
+        />
+        <DisplayCheckbox
+          checked={wheel.strikesEnabled !== false}
+          label="Show strikes"
+          onChange={() =>
+            updateWheel((prev) => ({
+              ...prev,
+              strikesEnabled: prev.strikesEnabled === false,
+            }))
+          }
+        />
       </div>
     </div>
   );
@@ -426,7 +501,7 @@ export function WheelHostPanel() {
             <section>
               {locked ? (
                 <>
-                  <div className="mb-4 flex flex-wrap items-start gap-x-6 gap-y-3">
+                  <div className="mb-4 flex w-full flex-wrap items-start gap-x-6 gap-y-3">
                     <div className="min-w-0">
                       <p className="mb-1.5 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                         Topic on display
@@ -435,18 +510,20 @@ export function WheelHostPanel() {
                         <p className="text-lg font-semibold text-white">
                           {wheel.topic.trim() || "None"}
                         </p>
-                        <button
-                          type="button"
-                          onClick={handleStartChange}
-                          className="inline-flex h-10 items-center gap-1.5 rounded-md border border-teal-500 bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-500"
-                        >
-                          <Pencil size={14} />
-                          Edit display
-                        </button>
+                        <Tooltip content="Edit display" delayDuration={0} size="md">
+                          <StackedIconButton
+                            aria-label="Edit display"
+                            onClick={handleStartChange}
+                            icon={<Pencil size={18} />}
+                            label="Edit"
+                          />
+                        </Tooltip>
+                        {resetButton}
                         {loadSavedPhraseButton}
                       </div>
                     </div>
                     {boardZoomControls}
+                    {boardDisplayActions}
                   </div>
                   <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                     Phrase on display
@@ -460,7 +537,7 @@ export function WheelHostPanel() {
                 </>
               ) : (
                 <>
-                  <div className="mb-3 flex flex-wrap items-end gap-x-4 gap-y-3">
+                  <div className="mb-3 flex w-full flex-wrap items-start gap-x-4 gap-y-3">
                     <label className="block w-md max-w-full min-w-0">
                       <span className="mb-1.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                         Topic on display
@@ -474,7 +551,9 @@ export function WheelHostPanel() {
                       />
                     </label>
                     {loadSavedPhraseButton}
+                    {resetButton}
                     {boardZoomControls}
+                    {boardDisplayActions}
                   </div>
                   <label className="mb-4 block w-xl max-w-full">
                     <span className="mb-1.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
@@ -567,85 +646,6 @@ export function WheelHostPanel() {
               </div>
             </section>
           </div>
-        </div>
-      </div>
-
-      <div className="shrink-0 border-t border-neutral-800 bg-neutral-900 px-6 py-3">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-          <div className="flex items-center justify-start">
-            <Tooltip content="Reset game?" delayDuration={0} size="md">
-              <button
-                type="button"
-                aria-label="Reset game?"
-                onClick={() => setResetConfirmOpen(true)}
-                className="inline-flex h-10 min-w-10 shrink-0 flex-col items-center justify-center gap-0.5 rounded-md px-2 text-white hover:text-neutral-200"
-              >
-                <RotateCcw size={18} />
-                <span className="text-[10px] font-semibold leading-none tracking-wide uppercase">
-                  Reset
-                </span>
-              </button>
-            </Tooltip>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <div className="inline-flex h-10 items-center gap-2">
-              <span className="text-sm font-semibold text-neutral-200">
-                Letter legend
-              </span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={wheel.showLetterLegend}
-                aria-label="Toggle letter legend"
-                onClick={() =>
-                  updateWheel((prev) => ({
-                    ...prev,
-                    showLetterLegend: !prev.showLetterLegend,
-                  }))
-                }
-                className={`relative h-6 w-11 rounded-full transition-colors ${
-                  wheel.showLetterLegend ? "bg-emerald-500" : "bg-neutral-500"
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                    wheel.showLetterLegend ? "translate-x-5" : "translate-x-0"
-                  }`}
-                />
-              </button>
-            </div>
-            <div className="inline-flex h-10 items-center gap-2">
-              <span className="text-sm font-semibold text-neutral-200">
-                Show strikes
-              </span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={wheel.strikesEnabled !== false}
-                aria-label="Toggle show strikes for wrong letters"
-                onClick={() =>
-                  updateWheel((prev) => ({
-                    ...prev,
-                    strikesEnabled: prev.strikesEnabled === false,
-                  }))
-                }
-                className={`relative h-6 w-11 rounded-full transition-colors ${
-                  wheel.strikesEnabled !== false
-                    ? "bg-emerald-500"
-                    : "bg-neutral-500"
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                    wheel.strikesEnabled !== false
-                      ? "translate-x-5"
-                      : "translate-x-0"
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-          <div />
         </div>
       </div>
 

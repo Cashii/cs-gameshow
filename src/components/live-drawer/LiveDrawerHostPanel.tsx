@@ -1566,7 +1566,7 @@ export function LiveDrawerHostPanel() {
 
               <aside
                 className={`relative flex w-full shrink-0 flex-col divide-y divide-neutral-700 overflow-visible transition-[width] duration-200 xl:self-stretch ${
-                  rightPanelCollapsed ? "xl:w-6" : "xl:w-80"
+                  rightPanelCollapsed ? "xl:w-6" : "xl:w-96"
                 }`}
               >
                 <button

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Minus, Play, Plus, RotateCcw } from "lucide-react";
 import { JoinQrToggleButton } from "@/components/ui/JoinQrToggleButton";
+import { StackedIconButton } from "@/components/ui/StackedIconButton";
 import { useSuite } from "@/lib/suite-provider";
 import {
   clampDerbyDurationMs,
@@ -36,6 +37,9 @@ function newRaceId(): string {
   return `derby-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+const nudgeButtonClass =
+  "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-neutral-600 bg-neutral-800 text-white hover:bg-neutral-700 disabled:cursor-not-allowed disabled:border-neutral-700 disabled:bg-neutral-800 disabled:text-neutral-500";
+
 function formatClock(ms: number): string {
   const totalSec = Math.max(0, Math.ceil(ms / 1000));
   const m = Math.floor(totalSec / 60);
@@ -52,18 +56,13 @@ function DerbyResetIconButton({
 }) {
   return (
     <Tooltip content="Reset race?" delayDuration={0} size="md">
-      <button
-        type="button"
+      <StackedIconButton
         aria-label="Reset race?"
         disabled={disabled}
         onClick={onClick}
-        className="inline-flex h-10 min-w-10 shrink-0 flex-col items-center justify-center gap-0.5 rounded-md px-2 text-white hover:text-neutral-200 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        <RotateCcw size={18} />
-        <span className="text-[10px] font-semibold leading-none tracking-wide uppercase">
-          Reset
-        </span>
-      </button>
+        icon={<RotateCcw size={18} />}
+        label="Reset"
+      />
     </Tooltip>
   );
 }
@@ -279,6 +278,107 @@ export function DerbyHostPanel() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+          <div className="flex flex-wrap items-center justify-start gap-3">
+            <DerbyResetIconButton
+              disabled={!canReset}
+              onClick={() => setConfirmResetOpen(true)}
+            />
+            {game.phase === "idle" ? (
+              <JoinQrToggleButton
+                active={Boolean(game.showJoinQr)}
+                onClick={() =>
+                  updateDerby((prev) => ({
+                    ...prev,
+                    showJoinQr: !prev.showJoinQr,
+                  }))
+                }
+              />
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-stretch justify-center gap-8">
+            <div className="flex flex-col items-center gap-1.5">
+              <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                Race length
+              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  aria-label="Decrease race length"
+                  disabled={racing || durationSecondsForLimits <= minDurationSeconds}
+                  onClick={() => nudgeDuration(-1)}
+                  className={nudgeButtonClass}
+                >
+                  <Minus size={18} />
+                </button>
+                <input
+                  type="number"
+                  min={minDurationSeconds}
+                  max={maxDurationSeconds}
+                  step={1}
+                  disabled={racing}
+                  aria-label="Race length in seconds"
+                  value={secondsDraft}
+                  onChange={(event) => setSecondsDraft(event.target.value)}
+                  onBlur={() => commitDurationSeconds(secondsDraft)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.currentTarget.blur();
+                    }
+                  }}
+                  className="h-10 w-16 rounded-md border border-neutral-600 bg-neutral-800 text-center text-sm font-semibold text-white tabular-nums focus:border-sky-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+                <button
+                  type="button"
+                  aria-label="Increase race length"
+                  disabled={racing || durationSecondsForLimits >= maxDurationSeconds}
+                  onClick={() => nudgeDuration(1)}
+                  className={nudgeButtonClass}
+                >
+                  <Plus size={18} />
+                </button>
+                <span className="text-sm font-semibold text-neutral-400">sec</span>
+              </div>
+            </div>
+            <span
+              className="w-px shrink-0 self-stretch bg-neutral-600"
+              aria-hidden
+            />
+            <div className="flex flex-col items-center gap-1.5">
+              <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                Racer Size
+              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  aria-label="Decrease racer size"
+                  disabled={racerScale <= MIN_DERBY_RACER_SCALE}
+                  onClick={() => setRacerScale(racerScale - 0.1)}
+                  className={nudgeButtonClass}
+                >
+                  <Minus size={18} />
+                </button>
+                <span className="min-w-12 text-center text-sm font-semibold tabular-nums text-neutral-300">
+                  {Math.round(racerScale * 100)}%
+                </span>
+                <button
+                  type="button"
+                  aria-label="Increase racer size"
+                  disabled={racerScale >= MAX_DERBY_RACER_SCALE}
+                  onClick={() => setRacerScale(racerScale + 0.1)}
+                  className={nudgeButtonClass}
+                >
+                  <Plus size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center justify-end">
+            <DerbyHeaderSettings />
+          </div>
+        </div>
+      </div>
       <div className="min-h-0 flex-1 overflow-auto">
         <div className="flex w-full flex-col gap-6 px-6 py-6">
         <div>
@@ -413,100 +513,6 @@ export function DerbyHostPanel() {
             </span>
           </div>
         </div>
-        </div>
-      </div>
-
-      <div className="shrink-0 border-t border-neutral-800 bg-neutral-900 px-6 py-3">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-          <div className="flex flex-wrap items-center justify-start gap-3">
-            <DerbyResetIconButton
-              disabled={!canReset}
-              onClick={() => setConfirmResetOpen(true)}
-            />
-            {game.phase === "idle" ? (
-              <JoinQrToggleButton
-                active={Boolean(game.showJoinQr)}
-                onClick={() =>
-                  updateDerby((prev) => ({
-                    ...prev,
-                    showJoinQr: !prev.showJoinQr,
-                  }))
-                }
-              />
-            ) : null}
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-              Race length
-            </span>
-            <button
-              type="button"
-              aria-label="Decrease race length"
-              disabled={racing || durationSecondsForLimits <= minDurationSeconds}
-              onClick={() => nudgeDuration(-1)}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-neutral-700 disabled:bg-neutral-800 disabled:text-neutral-500"
-            >
-              <Minus size={18} />
-            </button>
-            <input
-              type="number"
-              min={minDurationSeconds}
-              max={maxDurationSeconds}
-              step={1}
-              disabled={racing}
-              aria-label="Race length in seconds"
-              value={secondsDraft}
-              onChange={(event) => setSecondsDraft(event.target.value)}
-              onBlur={() => commitDurationSeconds(secondsDraft)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.currentTarget.blur();
-                }
-              }}
-              className="h-10 w-16 rounded-md border border-neutral-600 bg-neutral-800 text-center text-sm font-semibold text-white tabular-nums focus:border-sky-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            />
-            <button
-              type="button"
-              aria-label="Increase race length"
-              disabled={racing || durationSecondsForLimits >= maxDurationSeconds}
-              onClick={() => nudgeDuration(1)}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-neutral-700 disabled:bg-neutral-800 disabled:text-neutral-500"
-            >
-              <Plus size={18} />
-            </button>
-            <span className="text-sm font-semibold text-neutral-400">sec</span>
-            <span
-              className="mx-1 h-6 w-px shrink-0 bg-neutral-600"
-              aria-hidden
-            />
-            <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-              Racer Size
-            </span>
-            <span className="min-w-12 text-right text-sm font-semibold tabular-nums text-neutral-300">
-              {Math.round(racerScale * 100)}%
-            </span>
-            <button
-              type="button"
-              aria-label="Decrease racer size"
-              disabled={racerScale <= MIN_DERBY_RACER_SCALE}
-              onClick={() => setRacerScale(racerScale - 0.1)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-neutral-700 disabled:bg-neutral-800 disabled:text-neutral-500"
-            >
-              <Minus size={18} />
-            </button>
-            <button
-              type="button"
-              aria-label="Increase racer size"
-              disabled={racerScale >= MAX_DERBY_RACER_SCALE}
-              onClick={() => setRacerScale(racerScale + 0.1)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-neutral-700 disabled:bg-neutral-800 disabled:text-neutral-500"
-            >
-              <Plus size={18} />
-            </button>
-          </div>
-          <div className="flex items-center justify-end">
-            <DerbyHeaderSettings />
-          </div>
         </div>
       </div>
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Pause, Play } from "lucide-react";
-import { StatusSwitch } from "@/components/operator/StatusSwitch";
+import { CountdownVisibilityButton } from "@/components/ui/CountdownVisibilityButton";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { useSuite } from "@/lib/suite-provider";
 import {
@@ -76,6 +76,8 @@ export function LiveDrawerTimerPanel() {
 
   const controlButtonClass =
     "inline-flex h-11 min-w-11 items-center justify-center rounded-md px-4 text-base font-semibold";
+  const durationFieldClass =
+    "h-11 w-full rounded-md border border-neutral-700 bg-neutral-950 text-center text-base font-semibold text-white tabular-nums focus:border-sky-500 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
   return (
     <section className="flex flex-col gap-3 px-3 py-4">
@@ -84,13 +86,10 @@ export function LiveDrawerTimerPanel() {
         <span className="min-w-14 text-2xl font-bold tabular-nums text-white">
           {formatLiveDrawerClock(remainingMs)}
         </span>
-        <div className="ml-auto">
-          <StatusSwitch
-            checked={game.timerEnabled}
-            labelOn="Show"
-            labelOff="Hide"
-            ariaLabel="Show countdown on the big screen"
-            onToggle={() =>
+        <div className="ml-auto shrink-0">
+          <CountdownVisibilityButton
+            visible={game.timerEnabled}
+            onClick={() =>
               updateLiveDrawer((prev) =>
                 setLiveDrawerTimerEnabled(prev, !prev.timerEnabled),
               )
@@ -112,9 +111,11 @@ export function LiveDrawerTimerPanel() {
           </button>
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        <label className="flex h-11 w-full items-center gap-1.5 rounded-md border border-neutral-600 bg-neutral-800 px-3 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-          Min
+      <div className="grid grid-cols-3 items-end gap-2">
+        <label className="flex min-w-0 flex-col gap-1">
+          <span className="text-[10px] font-semibold tracking-wide text-neutral-400 uppercase">
+            Min
+          </span>
           <input
             type="number"
             min={0}
@@ -126,11 +127,13 @@ export function LiveDrawerTimerPanel() {
                 Math.max(0, Number.parseInt(event.target.value || "0", 10) || 0),
               )
             }
-            className="h-full min-w-0 flex-1 bg-transparent text-center text-base font-semibold text-white tabular-nums focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className={durationFieldClass}
           />
         </label>
-        <label className="flex h-11 w-full items-center gap-1.5 rounded-md border border-neutral-600 bg-neutral-800 px-3 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-          Sec
+        <label className="flex min-w-0 flex-col gap-1">
+          <span className="text-[10px] font-semibold tracking-wide text-neutral-400 uppercase">
+            Sec
+          </span>
           <input
             type="number"
             min={0}
@@ -148,7 +151,7 @@ export function LiveDrawerTimerPanel() {
                 ),
               )
             }
-            className="h-full min-w-0 flex-1 bg-transparent text-center text-base font-semibold text-white tabular-nums focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className={durationFieldClass}
           />
         </label>
         <button

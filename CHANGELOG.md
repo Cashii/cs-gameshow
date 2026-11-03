@@ -2,6 +2,32 @@
 
 ## November 3, 2026
 
+1. **Word Up** — **Board Zoom**, **Letter legend**, and **Show strikes** sit centered with **Edit**, **Reset**, and **Load**.
+1. **Elimination Trivia** — **Min** and **Sec** are typed fields. **30s**, **45s**, and **1m** stay buttons.
+1. **Newly Weds** — **Minutes** and **Seconds** are typed fields. The time choices stay buttons.
+1. **Live Drawer** — **Min** and **Sec** are typed fields. **30s**, **45s**, and **1m** stay buttons.
+1. **Live Drawer** — The side panel is a little wider, so the countdown and **Show countdown** / **Hide countdown** stay on one line.
+1. **Word Up** — **Board Zoom** lines up with **Topic on display**. **Letter legend** and **Show strikes** sit up with those controls.
+1. **Live Drawer** — **Show countdown** and **Hide countdown** stay on one line.
+1. **Elimination Trivia** — **Reset Series** asks you to confirm before it clears the series. Saved questions stay.
+1. **Countdowns** — **Show countdown** and **Hide countdown** are outline buttons on Elimination Trivia, O69 Club Poll, and Live Drawer.
+1. **Word Up and Derby Race** — **Edit**, **Load**, **Reset**, and **Settings** have more room above the icon, and they highlight when you point at them.
+1. **Friendly Feud** — **Reset** and **Show question** / **Hide question** have an outline, like **Hide teams**.
+1. **Word Up** — **Load** is an icon with the label underneath.
+1. **Word Up** — **Edit** is an icon with the label underneath, and **Reset** sits to its right.
+1. **Friendly Feud** — **Show round score** is a checkbox, with a check mark when the score is on screen.
+1. **Word Up** — **Reset** sits to the right of **Load saved phrase**.
+1. **Word Up** — **Letter legend** and **Show strikes** are checkboxes. Checked means that option is on.
+1. **Friendly Feud** — **Add Strike**, **Remove Strike**, **Single Strike**, and the **Left**, **Right**, and **No one** buttons use the same thin outline as **Hide teams**.
+1. **Word Up** — **Letter legend**, **Show strikes**, and **Reset** sit at the right end of the **Board Zoom** row. **Letter legend** and **Show strikes** are icon buttons that show on or off, instead of switches.
+1. **Friendly Feud** — **Show teams** and **Hide teams** stay outlined, including while the teams are on screen.
+1. **Show / Hide QR** — The button stays outlined when the code is on screen, on Derby Race, O69 Club Poll, Elimination Trivia, and Message Board.
+1. **Derby Race** — **Reset** and **Settings** have more space between the icon and the label. The **Settings** menu stays on screen and opens below the button when there isn’t room above.
+1. **Word Up** — **Board Zoom** uses gray **−** and **+** buttons, with the percentage between them.
+1. **Derby Race** — A divider sits between **Race length** and **Racer Size**. **Settings** is an icon with the label underneath, like **Reset**.
+1. **Friendly Feud** — **Reset** and **Show question** / **Hide question** are colored text buttons.
+1. **Derby Race** — **Race length** and **Racer Size** labels sit above their controls. **−** and **+** stay gray, and **Racer Size** is **−**, the percentage, then **+**.
+1. **Derby Race and Word Up** — The bottom bar is back under the page title. Derby still has **Reset**, the join QR, race length, **Racer Size**, and Settings. Word Up still has **Reset**, **Letter legend**, and **Show strikes**.
 1. **Price is Tight** — Page contents are centered. Desk is labeled **Current Item**. No Game actions bar. **Load saved item** sits above the photo; Clear is a white trash icon on the photo. Below: primary **Next item** and outline **Queue current**. **Replace photo** is larger and white for touch. Upcoming items ends with a dashed **Load saved item** slot (removed from the section header); tiles have a max width and square thumbnails matching row height. **Show Correct** and **Show Not quite** are outline buttons in an **Overlays** section above Upcoming items.
 1. **Price Order** — Name and price fields match the larger Price is Tight desk fields.
 1. **O69 Club Poll** — The “Done” status text after actions is removed. **Live tally** sits under the question; **Vote log** (scrollable, max height) sits above **Past polls** in the right column. Live tally rows (with borders) and **Mark correct** are larger. **Mark correct** updates immediately (no refresh needed). **Reset poll** is a red button with a confirm step (was Clear poll). After voting closes, a prompt asks you to **Mark correct**. After voting closes, players stay on a wait screen for the reveal (not standby) and see if they got it right when the correct answer is shown. Opening voting keeps spectator and player screens in sync (a stale save can no longer leave them on standby); player phones also pick up Open Voting over the local sync channel.

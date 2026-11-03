@@ -308,7 +308,7 @@ export function QuestionTimeHostPanel() {
                       className={`inline-flex h-9 items-center rounded-md px-3 text-sm font-semibold ${
                         selected
                           ? "bg-rose-500 text-white"
-                          : "border border-neutral-700 bg-neutral-950 text-neutral-200 hover:border-neutral-500"
+                          : "border border-neutral-600 bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
                       }`}
                     >
                       {formatQuestionTimePreset(ms)}
@@ -335,7 +335,7 @@ export function QuestionTimeHostPanel() {
                         ),
                       )
                     }
-                    className="h-10 w-24 rounded-lg border border-neutral-700 bg-neutral-950 px-3 text-white focus:border-sky-500 focus:outline-none"
+                    className="h-11 w-24 rounded-md border border-neutral-700 bg-neutral-950 text-center text-base font-semibold text-white tabular-nums focus:border-sky-500 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
@@ -358,13 +358,13 @@ export function QuestionTimeHostPanel() {
                         ),
                       )
                     }
-                    className="h-10 w-24 rounded-lg border border-neutral-700 bg-neutral-950 px-3 text-white focus:border-sky-500 focus:outline-none"
+                    className="h-11 w-24 rounded-md border border-neutral-700 bg-neutral-950 text-center text-base font-semibold text-white tabular-nums focus:border-sky-500 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
                 </label>
                 <button
                   type="button"
                   onClick={applyCustomDuration}
-                  className="inline-flex h-10 items-center rounded-md border border-teal-500 bg-transparent px-4 text-sm font-semibold text-teal-300 hover:bg-teal-500/10"
+                  className="inline-flex h-11 items-center rounded-md border border-teal-500 bg-transparent px-4 text-sm font-semibold text-teal-300 hover:bg-teal-500/10"
                 >
                   Set duration
                 </button>

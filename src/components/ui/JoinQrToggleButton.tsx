@@ -24,10 +24,7 @@ export function JoinQrToggleButton({
       aria-pressed={active}
       className={[
         "inline-flex items-center gap-2 rounded-md border font-semibold disabled:opacity-50",
-        "h-10 px-4 text-sm",
-        active
-          ? "border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
-          : "border-sky-500 bg-transparent text-sky-300 hover:bg-sky-500/10",
+        "h-10 border-sky-500 bg-transparent px-4 text-sm text-sky-300 hover:bg-sky-500/10",
         className,
       ]
         .filter(Boolean)

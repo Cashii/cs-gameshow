@@ -22,6 +22,7 @@ import {
   type TriviaQueuedQuestion,
 } from "@/lib/trivia/types";
 import { TriviaQuestionBank } from "@/components/trivia/TriviaQuestionBank";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { TriviaTimerPanel } from "@/components/trivia/TriviaTimerPanel";
 import { OperatorNotice } from "@/components/operator/OperatorNotice";
@@ -44,6 +45,7 @@ export function TriviaHostPanel() {
     trivia.correctChoiceId ?? null,
   );
   const [loading, setLoading] = useState(false);
+  const [resetSeriesOpen, setResetSeriesOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [roster, setRoster] = useState<string[]>([]);
   const [queueDraft, setQueueDraft] = useState<TriviaQueuedQuestion[]>(
@@ -429,7 +431,7 @@ export function TriviaHostPanel() {
           ) : null}
           <ResetButton
             disabled={loading}
-            onClick={() => void runAction({ action: "resetSeries" })}
+            onClick={() => setResetSeriesOpen(true)}
           >
             Reset Series
           </ResetButton>
@@ -1209,6 +1211,17 @@ export function TriviaHostPanel() {
           </section>
         </div>
       </div>
+      <ConfirmDialog
+        open={resetSeriesOpen}
+        onOpenChange={setResetSeriesOpen}
+        title="Reset Series"
+        message="Clear this series? Players, votes, the current question, and the queue are removed. Saved questions stay."
+        confirmLabel="Reset Series"
+        variant="danger"
+        onConfirm={() => {
+          void runAction({ action: "resetSeries" });
+        }}
+      />
     </div>
     </div>
   );

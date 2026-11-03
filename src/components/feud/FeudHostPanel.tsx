@@ -9,6 +9,7 @@ import {
   Eye,
   EyeOff,
   GripVertical,
+  RotateCcw,
   ChevronDown,
   Check,
   X,
@@ -30,7 +31,6 @@ import {
   useBankGroups,
 } from "@/components/operator/BankGroups";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { ResetButton } from "@/components/ui/ResetButton";
 import { FeudAudienceView } from "./FeudAudienceView";
 
 const RED_TEAM = "#dc2626";
@@ -441,11 +441,7 @@ export function FeudHostPanel() {
                     showTeamScores: !prev.showTeamScores,
                   }))
                 }
-                className={`inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-semibold ${
-                  feud.showTeamScores
-                    ? "border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
-                    : "border-sky-500 bg-transparent text-sky-300 hover:bg-sky-500/10"
-                }`}
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-sky-500 bg-transparent px-3 text-sm font-semibold text-sky-300 hover:bg-sky-500/10"
               >
                 {feud.showTeamScores ? (
                   <Eye size={16} aria-hidden />
@@ -626,7 +622,7 @@ export function FeudHostPanel() {
                     whiteSpace: "pre-line",
                     background: "transparent",
                     color: action.disabled ? "var(--color-neutral-600)" : action.color,
-                    border: `2px solid ${action.disabled ? "var(--color-neutral-700)" : action.color}`,
+                    border: `1px solid ${action.disabled ? "var(--color-neutral-700)" : action.color}`,
                   }}
                 />
               ))}
@@ -658,36 +654,28 @@ export function FeudHostPanel() {
                   Answers
                 </div>
                 <div className="inline-flex items-center gap-3">
-                  <div className="inline-flex h-10 items-center gap-2">
-                    <span className="text-sm font-semibold text-neutral-200">
-                      Show round score
-                    </span>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={feud.showAnswerScores}
-                      aria-label="Toggle show round score"
-                      onClick={() =>
-                        updateFeud((prev) => ({
-                          ...prev,
-                          showAnswerScores: !prev.showAnswerScores,
-                        }))
-                      }
-                      className={`relative h-6 w-11 rounded-full transition-colors ${
-                        feud.showAnswerScores
-                          ? "bg-emerald-500"
-                          : "bg-neutral-500"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                          feud.showAnswerScores
-                            ? "translate-x-5"
-                            : "translate-x-0"
-                        }`}
+                  <label className="inline-flex h-10 cursor-pointer items-center gap-2 text-sm font-semibold text-neutral-200">
+                    <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+                      <input
+                        type="checkbox"
+                        checked={feud.showAnswerScores}
+                        onChange={() =>
+                          updateFeud((prev) => ({
+                            ...prev,
+                            showAnswerScores: !prev.showAnswerScores,
+                          }))
+                        }
+                        className="absolute inset-0 m-0 h-4 w-4 cursor-pointer appearance-none rounded border border-neutral-500 bg-transparent checked:border-sky-500 checked:bg-sky-600 focus-visible:ring-2 focus-visible:ring-sky-500"
                       />
-                    </button>
-                  </div>
+                      <Check
+                        size={12}
+                        strokeWidth={3}
+                        aria-hidden
+                        className={`pointer-events-none relative z-10 ${feud.showAnswerScores ? "text-white" : "text-transparent"}`}
+                      />
+                    </span>
+                    Show round score
+                  </label>
                   <Tooltip content="Add Answer">
                     <IconButton
                       label={<Plus size={16} />}
@@ -739,7 +727,7 @@ export function FeudHostPanel() {
                           height: 44,
                           padding: "0 10px",
                           borderRadius: 8,
-                          border: `2px solid ${selected ? fill : color}`,
+                          border: `1px solid ${selected ? fill : color}`,
                           background: selected ? fill : "transparent",
                           color: selected ? "#fff" : color,
                           fontSize: 14,
@@ -1004,9 +992,14 @@ export function FeudHostPanel() {
                   <Pencil size={18} />
                 </button>
               </Tooltip>
-              <ResetButton onClick={() => setResetPickerOpen(true)}>
+              <button
+                type="button"
+                onClick={() => setResetPickerOpen(true)}
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-red-400 bg-transparent px-3 text-sm font-semibold text-red-300 hover:bg-red-500/10"
+              >
+                <RotateCcw size={16} />
                 Reset
-              </ResetButton>
+              </button>
               <Tooltip
                 delayDuration={0}
                 content={
@@ -1027,11 +1020,7 @@ export function FeudHostPanel() {
                       showHeader: !prev.showHeader,
                     }))
                   }
-                  className={`inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold ${
-                    feud.showHeader
-                      ? "border-sky-500 bg-sky-600 text-white hover:bg-sky-500"
-                      : "border-sky-500 bg-transparent text-sky-300 hover:bg-sky-500/10"
-                  }`}
+                  className="inline-flex h-10 items-center gap-2 rounded-md border border-sky-500 bg-transparent px-3 text-sm font-semibold text-sky-300 hover:bg-sky-500/10"
                 >
                   {feud.showHeader ? (
                     <Eye size={16} aria-hidden />

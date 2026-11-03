@@ -11,6 +11,7 @@ import { createPortal } from "react-dom";
 import { Settings } from "lucide-react";
 import { useSuite } from "@/lib/suite-provider";
 import { Select } from "@/components/ui/Select";
+import { StackedIconButton } from "@/components/ui/StackedIconButton";
 import {
   createDefaultDerbyState,
   DERBY_THEME_OPTIONS,
@@ -24,6 +25,7 @@ export function DerbyHeaderSettings() {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const [panelStyle, setPanelStyle] = useState<CSSProperties>({});
   const game = state.derby ?? createDefaultDerbyState();
   const theme = getDerbyTheme(game);
@@ -41,11 +43,31 @@ export function DerbyHeaderSettings() {
 
     const updatePosition = () => {
       const rect = buttonRef.current?.getBoundingClientRect();
-      if (!rect) return;
+      const panel = panelRef.current;
+      if (!rect || !panel) return;
+      const margin = 8;
+      const panelHeight = panel.offsetHeight;
+      const panelWidth = panel.offsetWidth;
+      const spaceBelow = window.innerHeight - rect.bottom - margin;
+      const openBelow =
+        spaceBelow >= panelHeight || rect.top < panelHeight + margin;
+      const unclampedTop = openBelow
+        ? rect.bottom + margin
+        : rect.top - panelHeight - margin;
+      const maxTop = Math.max(margin, window.innerHeight - panelHeight - margin);
+      const top = Math.min(Math.max(margin, unclampedTop), maxTop);
+      const unclampedRight = window.innerWidth - rect.right;
+      const maxRight = Math.max(
+        margin,
+        window.innerWidth - panelWidth - margin,
+      );
+      const right = Math.min(Math.max(margin, unclampedRight), maxRight);
       setPanelStyle({
         position: "fixed",
-        bottom: window.innerHeight - rect.top + 8,
-        right: Math.max(8, window.innerWidth - rect.right),
+        top,
+        right,
+        bottom: "auto",
+        maxHeight: window.innerHeight - margin * 2,
       });
     };
 
@@ -60,16 +82,13 @@ export function DerbyHeaderSettings() {
 
   return (
     <div className="relative">
-      <button
+      <StackedIconButton
         ref={buttonRef}
-        type="button"
         aria-label="Derby Race settings"
-        title="Settings"
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-700 bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
-      >
-        <Settings size={18} />
-      </button>
+        icon={<Settings size={18} />}
+        label="Settings"
+      />
       {mounted &&
         open &&
         createPortal(
@@ -81,7 +100,8 @@ export function DerbyHeaderSettings() {
               className="fixed inset-0 z-40 cursor-default border-0 bg-transparent"
             />
             <div
-              className="z-50 w-80 rounded-lg border border-neutral-700 bg-neutral-900 p-4 shadow-xl"
+              ref={panelRef}
+              className="fixed z-50 w-80 overflow-auto rounded-lg border border-neutral-700 bg-neutral-900 p-4 shadow-xl"
               style={panelStyle}
             >
               <p className="mb-3 text-xs font-semibold tracking-wide text-neutral-400 uppercase">
