@@ -537,21 +537,27 @@ export function WheelHostPanel() {
                 </>
               ) : (
                 <>
-                  <div className="mb-3 flex w-full flex-wrap items-start gap-x-4 gap-y-3">
-                    <label className="block w-md max-w-full min-w-0">
-                      <span className="mb-1.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase">
+                  <div className="mb-3 flex w-full flex-wrap items-start gap-x-6 gap-y-3">
+                    <div className="min-w-0">
+                      <label
+                        htmlFor="wheel-topic-on-display"
+                        className="mb-1.5 block text-xs font-semibold tracking-wide text-neutral-400 uppercase"
+                      >
                         Topic on display
-                      </span>
-                      <input
-                        type="text"
-                        value={topicInput}
-                        onChange={(e) => setTopicInput(e.target.value)}
-                        placeholder="Shown on the spectator banner"
-                        className="w-full rounded-md border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500"
-                      />
-                    </label>
-                    {loadSavedPhraseButton}
-                    {resetButton}
+                      </label>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <input
+                          id="wheel-topic-on-display"
+                          type="text"
+                          value={topicInput}
+                          onChange={(e) => setTopicInput(e.target.value)}
+                          placeholder="Shown on the spectator banner"
+                          className="w-md max-w-full rounded-md border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500"
+                        />
+                        {loadSavedPhraseButton}
+                        {resetButton}
+                      </div>
+                    </div>
                     {boardZoomControls}
                     {boardDisplayActions}
                   </div>

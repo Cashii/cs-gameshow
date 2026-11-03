@@ -2,6 +2,7 @@
 
 ## November 3, 2026
 
+1. **Word Up** — With no phrase set, **Load**, **Reset**, and **Board Zoom** line up the same way they do when a phrase is on screen.
 1. **Word Up** — **Board Zoom**, **Letter legend**, and **Show strikes** sit centered with **Edit**, **Reset**, and **Load**.
 1. **Elimination Trivia** — **Min** and **Sec** are typed fields. **30s**, **45s**, and **1m** stay buttons.
 1. **Newly Weds** — **Minutes** and **Seconds** are typed fields. The time choices stay buttons.
