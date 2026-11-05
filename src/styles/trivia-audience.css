@@ -73,7 +73,8 @@
 .trivia-glow {
   pointer-events: none;
   position: absolute;
-  inset: -10%;
+  inset: -18%;
+  z-index: 0;
   background:
     repeating-conic-gradient(
       from 0deg at 50% 46%,
@@ -82,12 +83,18 @@
     );
   opacity: 0.55;
   mask-image: radial-gradient(circle at 50% 46%, #000 12%, transparent 58%);
+  transform-origin: 50% 46%;
+  will-change: transform, opacity;
+  animation:
+    trivia-glow-spin 96s linear infinite,
+    trivia-glow-breathe 10s ease-in-out infinite;
 }
 
 .trivia-sparkles {
   pointer-events: none;
   position: absolute;
   inset: 0;
+  z-index: 0;
   background-image:
     radial-gradient(1.5px 1.5px at 12% 18%, #fff 70%, transparent),
     radial-gradient(1px 1px at 28% 72%, var(--jack-gold-soft) 70%, transparent),
@@ -101,14 +108,30 @@
   animation: trivia-twinkle 3.6s ease-in-out infinite;
 }
 
+.trivia-stage::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: -20%;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 42% 36% at 32% 38%, rgba(61, 255, 138, 0.14), transparent 68%),
+    radial-gradient(ellipse 38% 34% at 72% 58%, rgba(124, 58, 237, 0.18), transparent 70%),
+    radial-gradient(ellipse 34% 30% at 58% 82%, rgba(255, 220, 20, 0.08), transparent 68%);
+  will-change: transform, opacity;
+  animation: trivia-wash-drift 28s ease-in-out infinite alternate;
+}
+
 .trivia-question {
   position: relative;
   z-index: 1;
+  flex-shrink: 0;
   margin: 0 auto;
-  max-width: 92%;
-  padding: clamp(1.2rem, 3.2vh, 2.4rem) 1rem 0.4rem;
+  max-width: min(96vw, 100%);
+  width: 100%;
+  padding: clamp(0.7rem, 2.4vh, 2.4rem) clamp(0.75rem, 2vw, 1.5rem) 0.4rem;
   text-align: center;
-  font-size: clamp(2.4rem, 6.4vw, 6.4rem);
+  font-size: clamp(1.85rem, min(6.4vw, 7.2vh), 6.4rem);
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.08;
@@ -119,24 +142,44 @@
     0 2px 0 rgba(0, 0, 0, 0.55);
 }
 
+.trivia-board {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns:
+    minmax(5.5rem, 11vw)
+    minmax(0, 1fr)
+    minmax(5.5rem, 11vw);
+  align-items: stretch;
+  gap: clamp(0.45rem, 1.2vw, 1rem);
+  width: 100%;
+  margin: clamp(0.45rem, 1.6vh, 1.6rem) auto 0;
+  padding: 0 clamp(0.45rem, 1vw, 0.85rem) clamp(0.7rem, 2vh, 1.6rem);
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
 .trivia-choices {
   position: relative;
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(var(--trivia-cols, 2), minmax(0, 1fr));
-  gap: clamp(0.8rem, 2vw, 1.6rem);
-  width: min(92vw, 68rem);
-  margin: clamp(0.8rem, 2vh, 1.6rem) auto 0;
-  flex-shrink: 0;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: clamp(0.55rem, 1.6vh, 1.6rem);
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  align-content: stretch;
 }
 
 .trivia-choice {
   display: flex;
-  min-height: clamp(7.5rem, 18vh, 12rem);
+  min-height: 0;
+  height: 100%;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: clamp(1rem, 2.4vh, 2rem) 1.2rem;
+  padding: clamp(0.55rem, 1.8vh, 2rem) 1.2rem;
   text-align: center;
   border-radius: 1.15rem;
   border: 2px solid transparent;
@@ -193,7 +236,7 @@
 .trivia-choice-label {
   margin: 0;
   max-width: 100%;
-  font-size: clamp(1.6rem, 4vw, 3.4rem);
+  font-size: clamp(1.45rem, min(5.4vw, 6.4vh), 4rem);
   font-weight: 700;
   letter-spacing: 0.06em;
   line-height: 1.12;
@@ -225,35 +268,22 @@
   filter: grayscale(0.35);
 }
 
-.trivia-bottom {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  min-height: 0;
-  flex: 1;
-  align-items: stretch;
-  justify-content: center;
-  gap: clamp(1.5rem, 4vw, 3rem);
-  width: min(96vw, 78rem);
-  margin: 0 auto;
-  padding: clamp(0.8rem, 2vh, 1.6rem) 1rem clamp(1rem, 2.4vh, 1.8rem);
-}
-
 .trivia-remaining {
   display: flex;
   min-width: 0;
-  flex: 1;
+  min-height: 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
+  padding: 0 0.2rem;
 }
 
 .trivia-count {
   margin: 0;
-  font-size: clamp(4.2rem, 12vw, 9rem);
+  font-size: clamp(2.4rem, min(8vw, 12vh), 7.5rem);
   font-weight: 700;
-  line-height: 0.9;
+  line-height: 0.95;
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
   color: #fffef6;
@@ -263,33 +293,40 @@
 }
 
 .trivia-status {
-  margin: 0.55rem 0 0;
-  font-size: clamp(0.95rem, 2vw, 1.4rem);
+  margin: clamp(0.25rem, 0.8vh, 0.55rem) 0 0;
+  max-width: 100%;
+  font-size: clamp(0.7rem, min(1.5vw, 2vh), 1.15rem);
   font-weight: 700;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--jack-muted);
+  overflow-wrap: anywhere;
 }
 
 .trivia-winners {
-  margin: 0.9rem 0 0;
-  max-width: 42rem;
+  margin: 0.7rem 0 0;
+  max-width: 100%;
   font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: clamp(1.1rem, 2.4vw, 2rem);
+  font-size: clamp(0.85rem, min(1.6vw, 2vh), 1.4rem);
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.12em;
   color: var(--jack-gold);
   text-shadow: 0 0 16px rgba(255, 220, 20, 0.4);
+  overflow-wrap: anywhere;
 }
 
 .trivia-qr {
+  min-width: 0;
   min-height: 0;
-  width: min(28vw, 18rem);
-  flex-shrink: 0;
+  width: 100%;
+  height: 100%;
+  align-self: stretch;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .trivia-sparkles {
+  .trivia-sparkles,
+  .trivia-glow,
+  .trivia-stage::before {
     animation: none;
   }
 
@@ -305,6 +342,40 @@
   }
   50% {
     opacity: 0.85;
+  }
+}
+
+@keyframes trivia-glow-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes trivia-glow-breathe {
+  0%,
+  100% {
+    opacity: 0.42;
+  }
+  50% {
+    opacity: 0.62;
+  }
+}
+
+@keyframes trivia-wash-drift {
+  0% {
+    transform: translate3d(-2.5%, -1.5%, 0) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate3d(2%, 1.5%, 0) scale(1.06);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(1.5%, -2%, 0) scale(1.02);
+    opacity: 0.8;
   }
 }
 

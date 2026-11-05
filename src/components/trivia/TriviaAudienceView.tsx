@@ -108,53 +108,53 @@ export function TriviaAudienceView({
       <div className="trivia-sparkles" aria-hidden />
       <TriviaCountdown trivia={trivia} />
       <h1 className="trivia-question">{trivia.question.trim()}</h1>
-      <div
-        className="trivia-choices"
-        style={{ "--trivia-cols": cols } as CSSProperties}
-      >
-        {options.map((option, index) => {
-          const choiceId = triviaChoiceIdAt(index);
-          if (!choiceId) return null;
-          const count =
-            trivia.choiceCounts?.[index] ??
-            (index === 0
-              ? trivia.choiceACount
-              : index === 1
-                ? trivia.choiceBCount
-                : 0);
-          return (
-            <div
-              key={choiceId}
-              className={[
-                "trivia-choice",
-                `trivia-choice-${choiceId}`,
-                showSplit && trivia.survivingChoiceId === choiceId
-                  ? "trivia-choice-survives"
-                  : "",
-                showSplit &&
-                trivia.survivingChoiceId &&
-                trivia.survivingChoiceId !== choiceId
-                  ? "trivia-choice-out"
-                  : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              <p className="trivia-choice-label">{option}</p>
-              {showSplit ? (
-                <p className="trivia-choice-count">{count}</p>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-      <div className="trivia-bottom">
+      <div className="trivia-board">
         <div className="trivia-remaining">
           <p className="trivia-count">{trivia.remainingCount}</p>
           <p className="trivia-status">{statusText}</p>
           {trivia.status === "finished" && trivia.winnerCodes.length > 1 ? (
             <p className="trivia-winners">{trivia.winnerCodes.join("  ")}</p>
           ) : null}
+        </div>
+        <div
+          className="trivia-choices"
+          style={{ "--trivia-cols": cols } as CSSProperties}
+        >
+          {options.map((option, index) => {
+            const choiceId = triviaChoiceIdAt(index);
+            if (!choiceId) return null;
+            const count =
+              trivia.choiceCounts?.[index] ??
+              (index === 0
+                ? trivia.choiceACount
+                : index === 1
+                  ? trivia.choiceBCount
+                  : 0);
+            return (
+              <div
+                key={choiceId}
+                className={[
+                  "trivia-choice",
+                  `trivia-choice-${choiceId}`,
+                  showSplit && trivia.survivingChoiceId === choiceId
+                    ? "trivia-choice-survives"
+                    : "",
+                  showSplit &&
+                  trivia.survivingChoiceId &&
+                  trivia.survivingChoiceId !== choiceId
+                    ? "trivia-choice-out"
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <p className="trivia-choice-label">{option}</p>
+                {showSplit ? (
+                  <p className="trivia-choice-count">{count}</p>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
         <div className="trivia-qr">
           <PlayerVoteQr label="Scan to play" />

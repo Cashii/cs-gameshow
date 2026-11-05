@@ -2,6 +2,7 @@
 
 ## November 5, 2026
 
+1. **Elimination Trivia** — Answer text on the audience screen is larger, and the background drifts and pulses gently.
 1. **Derby Race** — The join QR blur reaches higher over the track, without blurring the title sign.
 1. **Friendly Feud** — Team score cards sit above the board, lined up with the board’s left and right edges, with the round points total centered between them. The dashboard preview shows the team cards correctly. The answer board uses more of the screen width.
 1. **Friendly Feud** — With teams hidden, all eight answer tiles stay inside the board (the bottom row no longer spills out).
