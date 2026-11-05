@@ -10,12 +10,12 @@ There is no player phone board.
 2. Put **Newly Weds** on the Spectator screen.
 3. Type the question. It appears live on the projector.
 4. Name the teams (add up to eight, remove down to two) and tap **+1** / **+5** / **+10** (or type a score) as they earn points.
-5. Pick a timer length (presets or minutes/seconds), then **Start**. **Pause**, **Resume**, and **Reset Clock** control the same countdown the audience sees.
+5. Pick a timer length (presets or minutes/seconds), then **Start**. **Pause**, **Resume**, and **Reset Clock** control the same countdown the audience sees. **Show countdown** / **Hide countdown** turns the big-screen clock on or off (starting also shows it).
 6. **Clear question** blanks the board. **Reset Scores** zeros every team. **Reset Game** clears the question, scores, and clock but keeps team names and the timer length.
 
 ## Spectator
 
-Indigo night-sky board with a glass question card, a row of team scores, and a large ring countdown. The clock turns urgent in the last ten seconds and holds at `0:00` when time is up.
+Indigo night-sky board with a glass question card, a row of team scores, and a large ring countdown when the timer is shown. The clock turns urgent in the last ten seconds and holds at `0:00` when time is up.
 
 ## Question repository
 

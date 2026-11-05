@@ -5,6 +5,7 @@ import {
   DEFAULT_QUESTION_TIME_TITLE,
   formatQuestionTimeClock,
   questionTimeRemainingMs,
+  questionTimeTimerOnScreen,
   type QuestionTimeState,
   type QuestionTimeTeam,
 } from "@/lib/question-time/types";
@@ -171,9 +172,12 @@ export function QuestionTimeAudienceView({
   const remainingMs =
     now == null ? game.timerRemainingMs : questionTimeRemainingMs(game, now);
   const title = game.title.trim() || DEFAULT_QUESTION_TIME_TITLE;
+  const timerVisible = questionTimeTimerOnScreen(game);
 
   return (
-    <div className="qt-stage">
+    <div
+      className={`qt-stage${timerVisible ? "" : " qt-stage--no-timer"}`}
+    >
       <div className="qt-sky" aria-hidden />
       <div className="qt-aurora qt-aurora-left" aria-hidden />
       <div className="qt-aurora qt-aurora-right" aria-hidden />
@@ -207,7 +211,12 @@ export function QuestionTimeAudienceView({
               />
             ))}
           </div>
-          <GiantClock remainingMs={remainingMs} durationMs={game.timerDurationMs} />
+          {timerVisible ? (
+            <GiantClock
+              remainingMs={remainingMs}
+              durationMs={game.timerDurationMs}
+            />
+          ) : null}
         </div>
       </div>
     </div>

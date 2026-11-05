@@ -26,6 +26,8 @@ export type QuestionTimeState = {
   title: string;
   question: string;
   teams: QuestionTimeTeam[];
+  /** When true, a running or paused countdown can appear on the big screen. */
+  timerEnabled: boolean;
   /** Configured length of the clock. */
   timerDurationMs: number;
   /** Remaining time when paused or idle. */
@@ -64,6 +66,7 @@ export function createDefaultQuestionTimeState(): QuestionTimeState {
       createQuestionTimeTeam("Team 1"),
       createQuestionTimeTeam("Team 2"),
     ],
+    timerEnabled: false,
     timerDurationMs: DEFAULT_QUESTION_TIME_DURATION_MS,
     timerRemainingMs: DEFAULT_QUESTION_TIME_DURATION_MS,
     timerRunning: false,
@@ -169,6 +172,7 @@ export function startQuestionTimeTimer(
   const nextRemaining = remaining > 0 ? remaining : state.timerDurationMs;
   return {
     ...state,
+    timerEnabled: true,
     timerRemainingMs: nextRemaining,
     timerRunning: true,
     timerEndsAt: now + nextRemaining,
@@ -210,6 +214,21 @@ export function setQuestionTimeDuration(
     timerRunning: false,
     timerEndsAt: null,
   };
+}
+
+export function setQuestionTimeTimerEnabled(
+  state: QuestionTimeState,
+  enabled: boolean,
+): QuestionTimeState {
+  if (enabled) return { ...state, timerEnabled: true };
+  return pauseQuestionTimeTimer({ ...state, timerEnabled: false });
+}
+
+/** Audience clock is hidden until the operator starts it, and stays up through a pause or zero. */
+export function questionTimeTimerOnScreen(state: QuestionTimeState): boolean {
+  if (!state.timerEnabled) return false;
+  if (state.timerRunning) return true;
+  return state.timerRemainingMs < state.timerDurationMs;
 }
 
 export function formatQuestionTimeClock(ms: number): string {

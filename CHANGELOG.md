@@ -2,6 +2,7 @@
 
 ## November 5, 2026
 
+1. **Newly Weds** — **Show countdown** / **Hide countdown** turns the big-screen timer on or off (same as Elimination Trivia, O69 Club Poll, and Live Drawer). Starting the clock also shows it. The question card is a bit shorter. With the clock hidden, the question and teams stay full width and centered, with larger team score cards.
 1. **O69 Club Poll** — Above the question (no Game actions bar): large square buttons in order — **Show QR** (filled) / **Hide QR** (outline), **Open Voting** / **Close Voting**, **Reveal Answer**, **Show Percentage** (filled sky) / **Hide Percentage** (outline), **Reset poll**. **Show QR** is outlined when disabled. After voting closes, **Open Voting** is outlined; **Hide Answer** is outlined while the answer is showing. **Reveal Answer** stays filled on hover (including when disabled). Unused actions stay visible but disabled (**Reset** until voting starts, **Reveal** until a correct answer is marked, **QR** while voting is live). **Load** stays beside the question field. Resetting also turns percentages off. On the audience screen, percentage bars and numbers ease in when you show them, and the brand green/purple/gold background has more motion — drifting washes, soft orbs, a slow glow, and sparkles.
 
 1. **Elimination Trivia** — Answer text on the audience screen is larger, and the background drifts and pulses gently.

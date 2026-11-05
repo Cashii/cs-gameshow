@@ -901,6 +901,7 @@ function normalizeQuestionTimeState(
     question:
       typeof raw.question === "string" ? raw.question : defaults.question,
     teams,
+    timerEnabled: Boolean(raw.timerEnabled),
     timerDurationMs,
     timerRemainingMs,
     timerRunning: timerRunning && timerEndsAt != null,

@@ -16,12 +16,14 @@ import {
   questionTimeRemainingMs,
   resetQuestionTimeTimer,
   setQuestionTimeDuration,
+  setQuestionTimeTimerEnabled,
   mergeQuestionTimeBank,
   startQuestionTimeTimer,
   type QuestionTimeState,
 } from "@/lib/question-time/types";
 import { QuestionRepository } from "@/components/question-time/QuestionRepository";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { CountdownVisibilityButton } from "@/components/ui/CountdownVisibilityButton";
 import { ResetButton } from "@/components/ui/ResetButton";
 import { uid } from "@/lib/utils";
 function durationParts(ms: number) {
@@ -268,7 +270,15 @@ export function QuestionTimeHostPanel() {
                     {formatQuestionTimeClock(remainingMs)}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <CountdownVisibilityButton
+                    visible={Boolean(game.timerEnabled)}
+                    onClick={() =>
+                      patch((prev) =>
+                        setQuestionTimeTimerEnabled(prev, !prev.timerEnabled),
+                      )
+                    }
+                  />
                   <button
                     type="button"
                     disabled={!canStart && !game.timerRunning}
