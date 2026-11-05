@@ -1,9 +1,80 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import LetterBoard from "./LetterBoard";
 import type { WheelGameState } from "@/lib/wheel/types";
 import "@/styles/wheel-audience.css";
+
+const TOPIC_MIN_FONT_PX = 14;
+const TOPIC_MAX_LINES = 2;
+
+function topicFitsTwoLines(el: HTMLElement): boolean {
+  const style = getComputedStyle(el);
+  const lineHeight = Number.parseFloat(style.lineHeight);
+  const padY =
+    Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom);
+  if (!Number.isFinite(lineHeight) || lineHeight <= 0) return true;
+  const maxHeight = padY + lineHeight * TOPIC_MAX_LINES + 1;
+  return el.scrollHeight <= maxHeight;
+}
+
+function TopicBanner({
+  topic,
+  onSized,
+}: Readonly<{
+  topic: string;
+  onSized: (el: HTMLParagraphElement | null) => void;
+}>) {
+  const ref = useRef<HTMLParagraphElement>(null);
+
+  const fit = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    el.style.fontSize = "";
+    const maxPx = Number.parseFloat(getComputedStyle(el).fontSize);
+    if (Number.isFinite(maxPx) && maxPx >= TOPIC_MIN_FONT_PX) {
+      if (!topicFitsTwoLines(el)) {
+        let lo = TOPIC_MIN_FONT_PX;
+        let hi = maxPx;
+        for (let i = 0; i < 18; i += 1) {
+          const mid = (lo + hi) / 2;
+          el.style.fontSize = `${mid}px`;
+          if (topicFitsTwoLines(el)) lo = mid;
+          else hi = mid;
+        }
+        el.style.fontSize = `${lo}px`;
+      }
+    }
+
+    onSized(el);
+  }, [onSized, topic]);
+
+  useLayoutEffect(() => {
+    fit();
+    const frame = window.requestAnimationFrame(() => fit());
+    const el = ref.current;
+    if (!el) {
+      return () => window.cancelAnimationFrame(frame);
+    }
+
+    const observer = new ResizeObserver(() => fit());
+    observer.observe(el);
+    if (el.parentElement) observer.observe(el.parentElement);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+      onSized(null);
+    };
+  }, [fit, onSized]);
+
+  return (
+    <p ref={ref} className="topic-banner">
+      {topic}
+    </p>
+  );
+}
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -36,12 +107,26 @@ function isLetterSelected(wheel: WheelGameState, letter: string): boolean {
   return wheel.phrase.toUpperCase().includes(letter);
 }
 
+const TOPIC_BOARD_GAP_PX = 12;
+
 export function WheelAudienceView({
   wheel,
 }: Readonly<{ wheel: WheelGameState }>) {
   const wrongCount = wheel.wrongCount ?? 0;
   const [wrongPulse, setWrongPulse] = useState<number | null>(null);
   const prevWrongRef = useRef(wrongCount);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const topic = wheel.topic.trim();
+
+  const syncTopicSpace = useCallback((banner: HTMLParagraphElement | null) => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    if (!banner) {
+      stage.style.removeProperty("padding-top");
+      return;
+    }
+    stage.style.paddingTop = `${banner.offsetTop + banner.offsetHeight + TOPIC_BOARD_GAP_PX}px`;
+  }, []);
 
   useEffect(() => {
     const prev = prevWrongRef.current;
@@ -60,6 +145,11 @@ export function WheelAudienceView({
       window.clearTimeout(t);
     };
   }, [wrongCount]);
+
+  useLayoutEffect(() => {
+    if (topic) return;
+    syncTopicSpace(null);
+  }, [syncTopicSpace, topic]);
 
   return (
     <div className="wheel-audience">
@@ -128,14 +218,13 @@ export function WheelAudienceView({
       </div>
 
       <div
+        ref={stageRef}
         className={`relative z-10 flex h-full w-full items-center justify-center p-4 sm:p-6 board-stage${
           wheel.showLetterLegend ? " has-letter-legend" : ""
-        }${wheel.topic.trim() ? " has-topic" : ""}`}
+        }`}
         style={{ overflow: "hidden" }}
       >
-        {wheel.topic.trim() ? (
-          <p className="topic-banner">{wheel.topic.trim()}</p>
-        ) : null}
+        {topic ? <TopicBanner topic={topic} onSized={syncTopicSpace} /> : null}
         <LetterBoard
           phrase={wheel.phrase}
           revealedLetters={wheel.revealedLetters}

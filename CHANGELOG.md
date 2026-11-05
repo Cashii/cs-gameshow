@@ -1,5 +1,9 @@
 # Updates
 
+## November 5, 2026
+
+1. **Word Up** — Topics on the audience board use smaller text and can wrap up to two lines. Longer topics shrink so they stay within those two lines and don’t cover the puzzle. When the topic is only one line, the puzzle uses the leftover space above it.
+
 ## November 3, 2026
 
 1. **Price is Tight** — Long item names use more of the screen width, so the photo and price tag stay fully on screen.

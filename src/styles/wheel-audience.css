@@ -361,11 +361,9 @@
 }
 
 .wheel-audience .board-stage {
-  transition: padding-bottom 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.wheel-audience .has-topic {
-  padding-top: clamp(7.5rem, 18vh, 11.5rem) !important;
+  transition:
+    padding-top 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    padding-bottom 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .wheel-audience .topic-banner {
@@ -377,8 +375,8 @@
   width: auto;
   max-width: none;
   margin: 0;
-  padding: 0.65rem 1.9rem 0.75rem;
-  overflow: visible;
+  padding: 0.55rem 1.5rem 0.65rem;
+  overflow: hidden;
   white-space: normal;
   overflow-wrap: break-word;
   text-align: center;
@@ -391,9 +389,9 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.55);
   color: #14532d;
   font-family: var(--font-oswald), Impact, "Arial Black", sans-serif;
-  font-size: clamp(2.4rem, 7.5vw, 5.5rem);
+  font-size: clamp(1.6rem, 4.8vw, 3.25rem);
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   line-height: 1.15;
   text-align: center;
   text-transform: uppercase;
