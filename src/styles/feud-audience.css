@@ -86,61 +86,93 @@
   flex-shrink: 0;
 }
 
+.feud-audience .board-stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  max-width: min(1680px, 96vw);
+  margin: 0 auto;
+  padding: 0 clamp(8px, 1.2vw, 16px) 20px;
+  container-type: inline-size;
+}
+
 .feud-audience .score-row {
   position: relative;
   z-index: 10;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   gap: 16px;
   width: 100%;
-  max-width: min(1400px, 94vw);
-  margin: 16px auto 12px;
-  padding: 0 20px;
+  margin: 16px 0 12px;
+  padding: 0;
   flex-shrink: 0;
+}
+
+.feud-audience .score-row.with-teams {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: clamp(8px, 1.2cqi, 20px);
+}
+
+.feud-audience .score-row.with-teams .score {
+  justify-self: center;
+  grid-column: 2;
+}
+
+.feud-audience .score-row.teams-only {
+  grid-template-columns: auto 1fr auto;
+}
+
+.feud-audience .score-row.teams-only .team-score-right {
+  grid-column: 3;
 }
 
 .feud-audience .team-score {
   display: flex;
-  width: 100%;
+  width: min(220px, 20cqi);
+  min-width: 0;
+  max-width: 22cqi;
   flex-direction: column;
   align-items: stretch;
-  justify-content: flex-start;
-  min-width: 0;
+  justify-content: center;
   z-index: 10;
-  align-self: start;
-  padding-top: clamp(4px, 1.5vh, 20px);
 }
 
 .feud-audience .team-score-left {
-  justify-self: stretch;
-  padding-right: 0;
+  justify-self: start;
+  grid-column: 1;
 }
 
 .feud-audience .team-score-right {
-  justify-self: stretch;
-  padding-left: 0;
+  justify-self: end;
+  grid-column: 3;
 }
 
 .feud-audience .team-score-card {
   display: flex;
   width: 100%;
-  max-width: none;
+  min-width: 0;
   flex-direction: column;
   align-items: stretch;
-  gap: clamp(6px, 1vh, 10px);
-  padding: clamp(8px, 1.1vh, 12px) clamp(2px, 0.25vw, 4px)
-    clamp(10px, 1.3vh, 14px);
-  border-radius: clamp(14px, 1.6vw, 20px);
+  gap: clamp(3px, 0.7cqi, 8px);
+  padding: clamp(5px, 1cqi, 10px) clamp(6px, 1.2cqi, 14px)
+    clamp(6px, 1.1cqi, 12px);
+  border-radius: clamp(10px, 1.4cqi, 16px);
   border: 3px solid #dc2626;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, transparent 42%),
     linear-gradient(165deg, #f87171 0%, #dc2626 45%, #b91c1c 100%);
   box-shadow:
-    0 14px 28px rgba(0, 0, 0, 0.5),
+    0 10px 22px rgba(0, 0, 0, 0.45),
     0 0 0 1px rgba(185, 28, 28, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    inset 0 -8px 18px rgba(0, 0, 0, 0.28);
+    inset 0 -6px 14px rgba(0, 0, 0, 0.28);
 }
 
 .feud-audience .team-score-right .team-score-card {
@@ -149,14 +181,14 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, transparent 42%),
     linear-gradient(165deg, #60a5fa 0%, #2563eb 45%, #1d4ed8 100%);
   box-shadow:
-    0 14px 28px rgba(0, 0, 0, 0.5),
+    0 10px 22px rgba(0, 0, 0, 0.45),
     0 0 0 1px rgba(29, 78, 216, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    inset 0 -8px 18px rgba(0, 0, 0, 0.28);
+    inset 0 -6px 14px rgba(0, 0, 0, 0.28);
 }
 
 .feud-audience .team-score-name {
-  font-size: clamp(28px, min(3.4vw, 4.8vh), 52px);
+  font-size: clamp(11px, 3cqi, 28px);
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -168,8 +200,8 @@
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   max-width: 100%;
   width: 100%;
   line-height: 1.05;
@@ -179,11 +211,11 @@
 
 .feud-audience .team-score-value {
   font-weight: 800;
-  font-size: clamp(48px, min(5.8vw, 7.8vh), 92px);
+  font-size: clamp(16px, 5cqi, 56px);
   min-width: 0;
   width: 100%;
   max-width: 100%;
-  padding: clamp(8px, 1.1vh, 12px) clamp(2px, 0.2vw, 4px);
+  padding: clamp(3px, 0.8cqi, 8px) clamp(3px, 0.8cqi, 10px);
   text-align: center;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em;
@@ -192,11 +224,11 @@
   background:
     linear-gradient(180deg, #ffffff 0%, #f8fafc 38%, #e2e8f0 100%);
   border: 3px solid rgba(255, 255, 255, 0.75);
-  border-radius: clamp(10px, 1.2vw, 16px);
+  border-radius: clamp(6px, 1cqi, 12px);
   box-shadow:
-    0 8px 18px rgba(0, 0, 0, 0.35),
+    0 6px 14px rgba(0, 0, 0, 0.3),
     inset 0 2px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -4px 10px rgba(15, 23, 42, 0.12);
+    inset 0 -3px 8px rgba(15, 23, 42, 0.12);
   flex-shrink: 0;
 }
 
@@ -229,11 +261,12 @@
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-auto-rows: 1fr;
-  gap: 14px;
-  padding: 32px;
+  /* minmax(0, 1fr) lets 4 answer rows shrink instead of overflowing */
+  grid-auto-rows: minmax(0, 1fr);
+  gap: clamp(6px, 1.2vh, 14px);
+  padding: clamp(12px, 2.5vh, 32px);
   width: 100%;
-  max-width: min(1400px, 90vw);
+  max-width: none;
   height: 100%;
   max-height: 100%;
   background: linear-gradient(135deg, #0f1620 0%, #1a2332 50%, #0f1620 100%);
@@ -248,6 +281,9 @@
   justify-items: stretch;
   justify-content: center;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  align-self: stretch;
 }
 
 .feud-audience .board-container {
@@ -255,29 +291,12 @@
   width: 100%;
   flex: 1 1 auto;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  padding: 20px;
+  padding: 0;
   min-height: 0;
   z-index: 1;
-  overflow-y: auto;
-}
-
-.feud-audience .board-container.with-side-teams {
-  display: grid;
-  grid-template-columns: minmax(8rem, 15vw) minmax(0, 1fr) minmax(8rem, 15vw);
-  align-items: start;
-  justify-items: stretch;
-  gap: clamp(6px, 1vw, 16px);
-  padding-left: clamp(10px, 1.5vw, 20px);
-  padding-right: clamp(10px, 1.5vw, 20px);
   overflow: hidden;
-}
-
-.feud-audience .board-container.with-side-teams .board {
-  max-width: 100%;
-  justify-self: center;
-  align-self: stretch;
 }
 
 .feud-audience .lightbulb {
@@ -318,12 +337,17 @@
     inset 0 2px 0 rgba(255, 255, 255, 0.06);
   perspective: 1000px;
   width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  /* Avoid overflow:hidden here — it flattens the 3D flip */
+  container-type: size;
 }
 
 .feud-audience .tile-inner {
   position: relative;
   height: 100%;
-  min-height: 88px;
+  min-height: 0;
   border-radius: 10px;
   /* overflow:hidden flattens preserve-3d and breaks the flip */
   transform-style: preserve-3d;
@@ -360,10 +384,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(40px, min(5.8vw, 7vh), 92px);
+  font-size: clamp(22px, min(5.8vw, 7vh, 55cqh), 92px);
   font-weight: 700;
-  width: clamp(68px, min(9vw, 10vh), 124px);
-  height: clamp(68px, min(9vw, 10vh), 124px);
+  width: clamp(40px, min(9vw, 10vh, 70cqh, 22cqw), 124px);
+  height: clamp(40px, min(9vw, 10vh, 70cqh, 22cqw), 124px);
   border-radius: 50%;
   background: linear-gradient(135deg, #1a4d7d, #0d3a5f);
   border: 3px solid #ffffff;
@@ -390,7 +414,7 @@
 .feud-audience .tile-text {
   min-width: 0;
   text-align: left;
-  font-size: clamp(28px, min(3.8vw, 5.5vh), 72px);
+  font-size: clamp(18px, min(3.8vw, 5.5vh, 42cqh), 72px);
   font-weight: 700;
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
   line-height: 1.15;
@@ -410,7 +434,7 @@
 }
 
 .feud-audience .tile-points {
-  font-size: clamp(40px, min(5.2vw, 7vh), 80px);
+  font-size: clamp(22px, min(5.2vw, 7vh, 50cqh), 80px);
   background: var(--gold);
   color: #1b1f1e;
   padding: 2px 14px;
@@ -548,61 +572,66 @@
   font-size: clamp(18px, 2.2vw, 36px);
 }
 
+.host-embed .feud-audience .board-stage {
+  max-width: 100%;
+  padding: 0 8px 8px;
+}
+
 .host-embed .feud-audience .score {
-  font-size: clamp(18px, 2vw, 36px);
-  padding: 6px 20px;
-  border-width: 3px;
-  min-width: 100px;
-  width: 100px;
+  font-size: clamp(14px, 4cqi, 28px);
+  padding: 4px 12px;
+  border-width: 2px;
+  min-width: 4.5rem;
+  width: auto;
   margin: 0;
 }
 
 .host-embed .feud-audience .score-row {
-  margin: 8px auto 6px;
-  gap: 8px;
-  padding: 0 12px;
+  margin: 6px 0 4px;
+  gap: 6px;
+  padding: 0;
+}
+
+.host-embed .feud-audience .score-row.with-teams {
+  gap: 6px;
+}
+
+.host-embed .feud-audience .team-score {
+  width: min(96px, 18cqi);
+  max-width: 20cqi;
 }
 
 .host-embed .feud-audience .team-score-card {
-  max-width: none;
-  gap: 6px;
-  padding: 8px 4px 10px;
-  border-radius: 12px;
-  border-width: 2px;
-}
-
-.host-embed .feud-audience .team-score-name {
-  font-size: clamp(12px, 1.5cqi, 18px);
-}
-
-.host-embed .feud-audience .team-score-value {
-  font-size: clamp(18px, 2.2cqi, 32px);
-  padding: 6px 6px;
+  gap: 2px;
+  padding: 3px 4px 4px;
   border-radius: 8px;
   border-width: 2px;
 }
 
-.host-embed .feud-audience .board-container {
-  padding: 12px;
-  container-type: inline-size;
+.host-embed .feud-audience .team-score-name {
+  font-size: clamp(8px, 2.6cqi, 12px);
 }
 
-.host-embed .feud-audience .board-container.with-side-teams {
-  grid-template-columns: minmax(4.5rem, 15%) minmax(0, 1fr) minmax(4.5rem, 15%);
-  gap: 6px;
-  padding-left: 8px;
-  padding-right: 8px;
+.host-embed .feud-audience .team-score-value {
+  font-size: clamp(11px, 4cqi, 18px);
+  padding: 2px 3px;
+  border-radius: 5px;
+  border-width: 2px;
+}
+
+.host-embed .feud-audience .board-container {
+  padding: 0;
 }
 
 .host-embed .feud-audience .board {
   max-width: 100%;
-  padding: 12px;
+  padding: 10px;
   gap: 6px;
   border-width: 3px;
 }
 
 .host-embed .feud-audience .tile-inner {
-  min-height: 48px;
+  min-height: 0;
 }
 
 .host-embed .feud-audience .tile-number {
