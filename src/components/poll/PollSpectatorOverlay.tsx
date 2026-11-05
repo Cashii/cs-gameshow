@@ -11,6 +11,7 @@ import {
 import { PlayerVoteQr } from "@/components/poll/PlayerVoteQr";
 import { GameshowLogo } from "@/components/studio/GameshowLogo";
 import { StandbyScreen } from "@/components/studio/StandbyScreen";
+import "@/styles/poll-audience.css";
 
 function PollCountdown({ poll }: Readonly<{ poll: PollState }>) {
   const [now, setNow] = useState<number | null>(null);
@@ -62,6 +63,27 @@ export function PollSpectatorOverlay({
   const live = poll.status === "open";
   const showCorrect =
     poll.correctAnswerRevealed && Boolean(poll.correctChoiceId);
+  const showPercentages = poll.showPercentages !== false;
+  const [percentagesAnimatedIn, setPercentagesAnimatedIn] = useState(false);
+
+  useEffect(() => {
+    if (!showPercentages || poll.status === "idle") {
+      setPercentagesAnimatedIn(false);
+      return;
+    }
+    setPercentagesAnimatedIn(false);
+    let innerFrame = 0;
+    const frame = window.requestAnimationFrame(() => {
+      innerFrame = window.requestAnimationFrame(() =>
+        setPercentagesAnimatedIn(true),
+      );
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.cancelAnimationFrame(innerFrame);
+    };
+  }, [showPercentages, poll.id, poll.status]);
+
   // Keep standby while the operator drafts; Voting Live reveals the question.
   // ShowJoinQr lets them put up the player QR before the question is live.
   if (poll.status === "idle") {
@@ -88,7 +110,6 @@ export function PollSpectatorOverlay({
     );
   }
 
-  const showPercentages = poll.showPercentages !== false;
   const scale = clampPollScale(poll.scale);
   const count = poll.choices.length;
   const rows = Math.max(1, Math.ceil(count / 2));
@@ -99,8 +120,12 @@ export function PollSpectatorOverlay({
   const timerVisible = pollTimerOnScreen(poll);
 
   return (
-    <div className="relative z-10 h-full w-full overflow-hidden bg-[#0a0a0a] text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(20,184,166,0.18),transparent_42%),radial-gradient(ellipse_at_top_right,rgba(14,165,233,0.16),transparent_40%),radial-gradient(ellipse_at_bottom,rgba(245,158,11,0.14),transparent_45%)]" />
+    <div className="poll-stage">
+      <div className="poll-stage__glow" aria-hidden />
+      <div className="poll-stage__wash" aria-hidden />
+      <div className="poll-stage__wash-soft" aria-hidden />
+      <div className="poll-stage__orbs" aria-hidden />
+      <div className="poll-stage__sparkles" aria-hidden />
 
       <div className="relative z-10 flex h-full min-h-0 w-full flex-col px-8 py-6 sm:px-16 sm:py-8">
         <div className="relative shrink-0">
@@ -190,12 +215,15 @@ export function PollSpectatorOverlay({
                     </span>
                     {showPercentages ? (
                       <span
-                        className={`mt-[max(0.15rem,1.5cqh)] shrink-0 font-bold tabular-nums ${
-                          isCorrect ? "text-emerald-300" : "text-amber-300"
-                        }`}
+                        className={`poll-pct-label mt-[max(0.15rem,1.5cqh)] shrink-0 font-bold tabular-nums ${
+                          percentagesAnimatedIn ? "poll-pct-label--in" : ""
+                        } ${isCorrect ? "poll-pct-label--correct" : ""}`}
                         style={{
                           fontSize: `min(calc(clamp(1.75rem, 8vw, 7.5rem) * ${scale}), 42cqh)`,
                           lineHeight: 1,
+                          transitionDelay: percentagesAnimatedIn
+                            ? `${index * 70}ms`
+                            : "0ms",
                         }}
                       >
                         {`${pct}%`}
@@ -203,14 +231,17 @@ export function PollSpectatorOverlay({
                     ) : null}
                   </div>
                   {showPercentages ? (
-                    <div className="h-[clamp(0.45rem,9cqh,1.75rem)] overflow-hidden rounded-full bg-white/10">
+                    <div className="poll-bar-track">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ease-out ${
-                          isCorrect
-                            ? "bg-linear-to-r from-emerald-400 via-teal-400 to-lime-300"
-                            : "bg-linear-to-r from-teal-400 via-cyan-400 to-amber-300"
-                        }`}
-                        style={{ width: `${pct}%` }}
+                        className={`poll-bar-fill ${
+                          percentagesAnimatedIn ? "poll-bar-fill--in" : ""
+                        } ${isCorrect ? "poll-bar-fill--correct" : ""}`}
+                        style={{
+                          width: `${pct}%`,
+                          transitionDelay: percentagesAnimatedIn
+                            ? `${index * 70}ms`
+                            : "0ms",
+                        }}
                       />
                     </div>
                   ) : null}

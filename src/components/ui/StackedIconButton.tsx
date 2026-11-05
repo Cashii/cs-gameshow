@@ -25,7 +25,7 @@ export const StackedIconButton = forwardRef<
       {...props}
     >
       {icon}
-      <span className="text-[10px] font-semibold leading-none tracking-wide uppercase">
+      <span className="w-full text-center text-[10px] font-semibold leading-tight tracking-wide uppercase">
         {label}
       </span>
     </button>

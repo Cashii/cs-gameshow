@@ -1,0 +1,338 @@
+.poll-stage {
+  --jack-gold: #ffdc14;
+  --jack-gold-soft: #fff794;
+  --jack-green: #3dff8a;
+  --jack-green-deep: #0f9f55;
+  --jack-purple: #c084fc;
+  --jack-purple-deep: #7c3aed;
+  --jack-ink: #f7f3ea;
+  position: relative;
+  z-index: 10;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  color: var(--jack-ink);
+  background:
+    radial-gradient(
+      ellipse 58% 48% at 50% 42%,
+      rgba(61, 255, 138, 0.1),
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 42% 36% at 88% 88%,
+      rgba(124, 58, 237, 0.2),
+      transparent 58%
+    ),
+    linear-gradient(180deg, #050505 0%, #0a0a0a 46%, #0d0714 100%);
+}
+
+.poll-stage__glow,
+.poll-stage__wash,
+.poll-stage__wash-soft,
+.poll-stage__orbs,
+.poll-stage__sparkles {
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.poll-stage__glow {
+  inset: -20%;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 48%,
+    rgba(61, 255, 138, 0.07) 0deg 6deg,
+    transparent 6deg 18deg
+  );
+  opacity: 0.5;
+  mask-image: radial-gradient(circle at 50% 48%, #000 10%, transparent 56%);
+  transform-origin: 50% 48%;
+  will-change: transform, opacity;
+  animation:
+    poll-glow-spin 88s linear infinite,
+    poll-glow-breathe 9s ease-in-out infinite;
+}
+
+.poll-stage__wash,
+.poll-stage__wash-soft {
+  inset: -24%;
+  will-change: transform, opacity;
+}
+
+.poll-stage__wash {
+  background:
+    radial-gradient(
+      ellipse 46% 40% at 18% 22%,
+      rgba(61, 255, 138, 0.22),
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 42% 38% at 86% 18%,
+      rgba(124, 58, 237, 0.26),
+      transparent 66%
+    ),
+    radial-gradient(
+      ellipse 48% 42% at 52% 92%,
+      rgba(255, 220, 20, 0.14),
+      transparent 70%
+    );
+  animation: poll-wash-drift 26s ease-in-out infinite alternate;
+}
+
+.poll-stage__wash-soft {
+  background:
+    radial-gradient(
+      ellipse 36% 32% at 68% 48%,
+      rgba(192, 132, 252, 0.14),
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 30% 28% at 28% 68%,
+      rgba(61, 255, 138, 0.12),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 28% 26% at 78% 78%,
+      rgba(255, 220, 20, 0.08),
+      transparent 68%
+    );
+  opacity: 0.9;
+  animation: poll-wash-pulse 16s ease-in-out infinite alternate;
+}
+
+.poll-stage__orbs {
+  inset: 0;
+  overflow: hidden;
+}
+
+.poll-stage__orbs::before,
+.poll-stage__orbs::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(2px);
+  will-change: transform, opacity;
+}
+
+.poll-stage__orbs::before {
+  top: 12%;
+  left: 8%;
+  width: min(28vw, 18rem);
+  height: min(28vw, 18rem);
+  background: radial-gradient(
+    circle,
+    rgba(61, 255, 138, 0.2) 0%,
+    rgba(61, 255, 138, 0.05) 42%,
+    transparent 70%
+  );
+  animation: poll-orb-a 14s ease-in-out infinite alternate;
+}
+
+.poll-stage__orbs::after {
+  right: 6%;
+  bottom: 10%;
+  width: min(34vw, 22rem);
+  height: min(34vw, 22rem);
+  background: radial-gradient(
+    circle,
+    rgba(192, 132, 252, 0.22) 0%,
+    rgba(124, 58, 237, 0.08) 45%,
+    transparent 72%
+  );
+  animation: poll-orb-b 18s ease-in-out infinite alternate;
+}
+
+.poll-stage__sparkles {
+  inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 18%, #fff 70%, transparent),
+    radial-gradient(1px 1px at 28% 72%, var(--jack-gold-soft) 70%, transparent),
+    radial-gradient(1.5px 1.5px at 63% 14%, #fff 70%, transparent),
+    radial-gradient(1px 1px at 81% 58%, var(--jack-purple) 70%, transparent),
+    radial-gradient(1.5px 1.5px at 47% 41%, var(--jack-green) 70%, transparent),
+    radial-gradient(1px 1px at 91% 22%, #fff 70%, transparent),
+    radial-gradient(1.5px 1.5px at 8% 88%, var(--jack-gold) 70%, transparent),
+    radial-gradient(1px 1px at 74% 86%, #fff 70%, transparent),
+    radial-gradient(1.5px 1.5px at 39% 8%, var(--jack-purple) 70%, transparent),
+    radial-gradient(1px 1px at 55% 90%, var(--jack-green) 70%, transparent),
+    radial-gradient(1.5px 1.5px at 18% 48%, #fff 70%, transparent),
+    radial-gradient(1px 1px at 86% 36%, var(--jack-gold-soft) 70%, transparent);
+  opacity: 0.7;
+  animation: poll-twinkle 3.8s ease-in-out infinite;
+}
+
+.poll-bar-track {
+  height: clamp(0.45rem, 9cqh, 1.75rem);
+  overflow: hidden;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.poll-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: linear-gradient(
+    90deg,
+    var(--jack-green) 0%,
+    var(--jack-purple) 52%,
+    var(--jack-gold) 100%
+  );
+  transition:
+    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.5s ease-out;
+}
+
+.poll-bar-fill--correct {
+  background: linear-gradient(
+    90deg,
+    var(--jack-green-deep) 0%,
+    var(--jack-green) 55%,
+    var(--jack-gold-soft) 100%
+  );
+}
+
+.poll-bar-fill--in {
+  transform: scaleX(1);
+}
+
+.poll-pct-label {
+  color: var(--jack-gold);
+  opacity: 0;
+  transform: translateY(0.35em);
+  transition:
+    opacity 0.45s ease,
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.poll-pct-label--correct {
+  color: var(--jack-green);
+}
+
+.poll-pct-label--in {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes poll-wash-drift {
+  0% {
+    transform: translate3d(-3%, -2%, 0) scale(1.05);
+    opacity: 0.72;
+  }
+  50% {
+    transform: translate3d(2.5%, 2%, 0) scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(2%, -2.5%, 0) scale(1.07);
+    opacity: 0.82;
+  }
+}
+
+@keyframes poll-wash-pulse {
+  0% {
+    transform: translate3d(2%, 2.5%, 0) scale(1.03);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate3d(-2.5%, -1.5%, 0) scale(1.14);
+    opacity: 0.95;
+  }
+}
+
+@keyframes poll-glow-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes poll-glow-breathe {
+  0%,
+  100% {
+    opacity: 0.38;
+  }
+  50% {
+    opacity: 0.62;
+  }
+}
+
+@keyframes poll-orb-a {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.92);
+    opacity: 0.45;
+  }
+  100% {
+    transform: translate3d(18%, 28%, 0) scale(1.18);
+    opacity: 0.9;
+  }
+}
+
+@keyframes poll-orb-b {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1.05);
+    opacity: 0.55;
+  }
+  100% {
+    transform: translate3d(-16%, -22%, 0) scale(0.88);
+    opacity: 0.95;
+  }
+}
+
+@keyframes poll-twinkle {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  40% {
+    opacity: 0.85;
+  }
+  70% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poll-stage__glow,
+  .poll-stage__wash,
+  .poll-stage__wash-soft,
+  .poll-stage__orbs::before,
+  .poll-stage__orbs::after,
+  .poll-stage__sparkles {
+    animation: none;
+  }
+
+  .poll-stage__glow,
+  .poll-stage__wash,
+  .poll-stage__wash-soft {
+    inset: 0;
+    opacity: 0.85;
+    transform: none;
+  }
+
+  .poll-stage__orbs::before,
+  .poll-stage__orbs::after {
+    opacity: 0.55;
+    transform: none;
+  }
+
+  .poll-stage__sparkles {
+    opacity: 0.55;
+  }
+
+  .poll-bar-fill,
+  .poll-pct-label {
+    transition: none;
+  }
+
+  .poll-bar-fill {
+    transform: scaleX(1);
+  }
+
+  .poll-pct-label {
+    opacity: 1;
+    transform: none;
+  }
+}

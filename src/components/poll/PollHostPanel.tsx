@@ -1,12 +1,11 @@
 "use client";
 
-import { Lock, Play, Plus, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Lock, Percent, Play, Plus, QrCode, RotateCcw, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { PollQuestionBank } from "@/components/poll/PollQuestionBank";
 import { PollTimerPanel } from "@/components/poll/PollTimerPanel";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { JoinQrToggleButton } from "@/components/ui/JoinQrToggleButton";
-import { ResetButton } from "@/components/ui/ResetButton";
+import { StackedIconButton } from "@/components/ui/StackedIconButton";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { uid } from "@/lib/utils";
 import {
@@ -19,6 +18,8 @@ import type { EventSnapshot } from "@/lib/suite-state";
 import { useSuite } from "@/lib/suite-provider";
 
 const HISTORY_PAGE_SIZE = 10;
+const pollSquareBtnClass =
+  "h-24 w-24 min-h-24 min-w-24 gap-2.5 [&_span]:text-xs";
 
 type ChoiceDraft = { id: string; text: string };
 
@@ -313,122 +314,131 @@ export function PollHostPanel() {
     />
   );
 
+  const percentagesShown = poll.showPercentages !== false;
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-6 py-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
-              Game actions
-            </span>
-            {votingOpen ? (
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => void runAction({ action: "close" })}
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-orange-500 bg-orange-600 px-4 text-sm font-semibold text-white hover:bg-orange-500 disabled:opacity-40"
-              >
-                <Lock size={16} />
-                Close Voting
-              </button>
-            ) : (
-              <button
-                type="button"
-                disabled={loading || !question.trim()}
-                onClick={handleOpen}
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-emerald-500 bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-40"
-              >
-                <Play size={16} />
-                Open Voting
-              </button>
-            )}
-            <ResetButton
-              disabled={loading}
-              onClick={() => setConfirmReset(true)}
-            >
-              Reset poll
-            </ResetButton>
-            {poll.status === "idle" ? (
-              <JoinQrToggleButton
-                disabled={loading}
-                active={Boolean(poll.showJoinQr)}
-                onClick={() =>
-                  updatePoll((prev) => ({
-                    ...prev,
-                    showJoinQr: !prev.showJoinQr,
-                  }))
-                }
-              />
-            ) : null}
-            {poll.status !== "idle" && poll.correctChoiceId ? (
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => {
-                  const reveal = !poll.correctAnswerRevealed;
-                  updatePoll((prev) => ({
-                    ...prev,
-                    correctAnswerRevealed: reveal,
-                  }));
-                  void runAction({
-                    action: reveal
-                      ? "revealCorrectAnswer"
-                      : "hideCorrectAnswer",
-                  });
-                }}
-                className="inline-flex h-10 items-center rounded-md border border-amber-500 bg-amber-600 px-4 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-50"
-              >
-                {poll.correctAnswerRevealed
-                  ? "Hide correct answer"
-                  : "Reveal correct answer"}
-              </button>
-            ) : null}
-          </div>
-
-          <div className="ml-auto flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={poll.showPercentages !== false}
-              aria-label="Toggle live percentages"
-              disabled={loading}
-              onClick={() =>
-                void runAction({
-                  action: "setShowPercentages",
-                  showPercentages: poll.showPercentages === false,
-                })
-              }
-              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-40 ${
-                poll.showPercentages !== false ? "bg-sky-500" : "bg-neutral-500"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
-                  poll.showPercentages !== false
-                    ? "translate-x-5"
-                    : "translate-x-0"
-                }`}
-              />
-            </button>
-            <span
-              className={`text-sm font-semibold ${
-                poll.showPercentages !== false
-                  ? "text-sky-300"
-                  : "text-neutral-400"
-              }`}
-            >
-              {poll.showPercentages !== false
-                ? "Percentages shown"
-                : "Percentages hidden"}
-            </span>
-          </div>
-        </div>
-      </div>
-
       <div className="min-h-0 flex-1 overflow-auto px-6 py-6 lg:overflow-hidden">
         <div className="grid items-start gap-6 lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.8fr)] lg:overflow-hidden">
           <div className="space-y-8 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
             <div className="space-y-4">
+              <div className="flex flex-wrap items-start gap-2">
+                <StackedIconButton
+                  aria-label={
+                    poll.showJoinQr ? "Hide QR code" : "Show QR code"
+                  }
+                  aria-pressed={Boolean(poll.showJoinQr)}
+                  disabled={loading || poll.status !== "idle"}
+                  onClick={() =>
+                    updatePoll((prev) => ({
+                      ...prev,
+                      showJoinQr: !prev.showJoinQr,
+                    }))
+                  }
+                  icon={<QrCode size={24} />}
+                  label={poll.showJoinQr ? "Hide QR" : "Show QR"}
+                  className={`${pollSquareBtnClass} border border-sky-500 ${
+                    poll.showJoinQr || poll.status !== "idle"
+                      ? "bg-transparent !text-sky-300 hover:bg-sky-500/10"
+                      : "border-0 bg-sky-600 text-white hover:bg-sky-500"
+                  }`}
+                />
+                {votingOpen ? (
+                  <StackedIconButton
+                    aria-label="Close voting"
+                    disabled={loading}
+                    onClick={() => void runAction({ action: "close" })}
+                    icon={<Lock size={24} />}
+                    label="Close Voting"
+                    className={`${pollSquareBtnClass} border border-orange-500 bg-orange-600 text-white hover:bg-orange-500`}
+                  />
+                ) : (
+                  <StackedIconButton
+                    aria-label="Open voting"
+                    disabled={loading || !question.trim()}
+                    onClick={handleOpen}
+                    icon={<Play size={24} />}
+                    label="Open Voting"
+                    className={`${pollSquareBtnClass} border border-emerald-500 ${
+                      poll.status === "closed" || poll.status === "results"
+                        ? "bg-transparent !text-emerald-300 hover:bg-emerald-500/10"
+                        : "bg-emerald-600 text-white hover:bg-emerald-500"
+                    }`}
+                  />
+                )}
+                <StackedIconButton
+                  aria-label={
+                    poll.correctAnswerRevealed
+                      ? "Hide correct answer"
+                      : "Reveal correct answer"
+                  }
+                  disabled={
+                    loading ||
+                    poll.status === "idle" ||
+                    !poll.correctChoiceId
+                  }
+                  onClick={() => {
+                    const reveal = !poll.correctAnswerRevealed;
+                    updatePoll((prev) => ({
+                      ...prev,
+                      correctAnswerRevealed: reveal,
+                    }));
+                    void runAction({
+                      action: reveal
+                        ? "revealCorrectAnswer"
+                        : "hideCorrectAnswer",
+                    });
+                  }}
+                  icon={
+                    poll.correctAnswerRevealed ? (
+                      <EyeOff size={24} />
+                    ) : (
+                      <Eye size={24} />
+                    )
+                  }
+                  label={
+                    poll.correctAnswerRevealed
+                      ? "Hide Answer"
+                      : "Reveal Answer"
+                  }
+                  className={`${pollSquareBtnClass} border border-amber-500 ${
+                    poll.correctAnswerRevealed
+                      ? "bg-transparent !text-amber-300 hover:bg-amber-500/10"
+                      : "bg-amber-600 text-white hover:!bg-amber-500 disabled:hover:!bg-amber-600"
+                  }`}
+                />
+                <StackedIconButton
+                  aria-label={
+                    percentagesShown ? "Hide percentage" : "Show percentage"
+                  }
+                  aria-pressed={percentagesShown}
+                  disabled={loading}
+                  onClick={() =>
+                    void runAction({
+                      action: "setShowPercentages",
+                      showPercentages: !percentagesShown,
+                    })
+                  }
+                  icon={<Percent size={24} />}
+                  label={
+                    percentagesShown ? "Hide Percentage" : "Show Percentage"
+                  }
+                  className={`${pollSquareBtnClass} border border-sky-500 ${
+                    percentagesShown
+                      ? "bg-transparent !text-sky-300 hover:bg-sky-500/10"
+                      : "border-0 bg-sky-600 text-white hover:bg-sky-500"
+                  }`}
+                />
+                <StackedIconButton
+                  aria-label="Reset poll"
+                  disabled={loading || poll.status === "idle"}
+                  onClick={() => setConfirmReset(true)}
+                  icon={<RotateCcw size={24} />}
+                  label="Reset poll"
+                  className={`${pollSquareBtnClass} border border-red-500 bg-red-600 text-white hover:bg-red-700`}
+                />
+              </div>
+
               <div>
                 <span className="text-xs font-semibold tracking-wide text-neutral-400 uppercase">
                   Question

@@ -209,7 +209,7 @@ export async function POST(request: Request) {
             : prev.pollHistory ?? [],
           poll: {
             ...createEmptyPoll(),
-            showPercentages: prev.poll?.showPercentages !== false,
+            showPercentages: false,
             showJoinQr: false,
             scale: clampPollScale(prev.poll?.scale),
             library: prev.poll?.library ?? [],
