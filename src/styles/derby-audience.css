@@ -31,7 +31,8 @@
 
 .derby-chrome {
   position: relative;
-  z-index: 2;
+  /* Above the join QR blur so the title sign stays sharp */
+  z-index: 30;
   display: flex;
   flex: 0 0 var(--derby-chrome-h);
   align-items: center;

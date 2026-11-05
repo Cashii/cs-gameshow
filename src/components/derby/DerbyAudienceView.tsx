@@ -260,7 +260,7 @@ export function DerbyAudienceView({
 
       {game.phase === "idle" && game.raceId ? (
         <div
-          className={`derby-join-qr-overlay absolute inset-x-0 bottom-0 top-[calc(var(--derby-chrome-h)-5rem)] z-20 flex items-center justify-center ${
+          className={`derby-join-qr-overlay absolute inset-x-0 bottom-0 top-[calc(var(--derby-chrome-h)-10.5rem)] z-20 flex items-center justify-center ${
             game.showJoinQr ? "is-visible" : "is-hidden"
           }`}
           aria-hidden={!game.showJoinQr}
@@ -271,8 +271,8 @@ export function DerbyAudienceView({
               background:
                 "linear-gradient(to bottom, transparent 0%, rgba(10,10,10,0.35) 32%, rgba(10,10,10,0.55) 100%)",
               WebkitMaskImage:
-                "linear-gradient(to bottom, transparent 0%, black 28%)",
-              maskImage: "linear-gradient(to bottom, transparent 0%, black 28%)",
+                "linear-gradient(to bottom, transparent 0%, black 22%)",
+              maskImage: "linear-gradient(to bottom, transparent 0%, black 22%)",
             }}
             aria-hidden
           />

@@ -2,6 +2,7 @@
 
 ## November 5, 2026
 
+1. **Derby Race** — The join QR blur reaches higher over the track, without blurring the title sign.
 1. **Friendly Feud** — Team score cards sit above the board, lined up with the board’s left and right edges, with the round points total centered between them. The dashboard preview shows the team cards correctly. The answer board uses more of the screen width.
 1. **Friendly Feud** — With teams hidden, all eight answer tiles stay inside the board (the bottom row no longer spills out).
 1. **Word Up** — Topics on the audience board use smaller text and can wrap up to two lines. Longer topics shrink so they stay within those two lines and don’t cover the puzzle. When the topic is only one line, the puzzle uses the leftover space above it.
